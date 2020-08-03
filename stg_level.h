@@ -58,6 +58,7 @@ public:
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
     void Brain(int char_id, lua_State *co) noexcept;
     virtual void Debut(int char_id, float x, float y) final;
+    virtual void Airborne(int char_id, float x, float y, lua_State *co) final;
     virtual void Airborne(int char_id, float x, float y,
                           SCPatternsCode ptn, SCPatternData pd) final;
     virtual void Pause() const final;
@@ -69,7 +70,7 @@ private:
     /* Physics sim setting */
     static constexpr int VELOCITY_ITERATIONS = 6;
     static constexpr int POSITION_ITERATIONS = 2;
-    
+
     /* Limit */
     static constexpr int MAX_ENTITIES = 2048u;
     static constexpr int MAX_ON_STAGE = 256u;

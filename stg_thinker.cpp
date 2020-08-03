@@ -74,11 +74,11 @@ void STGThinker::Think()
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
         std::cerr << "STG thinker lua error: " << lua_tostring(ai, -1) << std::endl;
-    if (rn != 0)
+    else if (rn != 0)
         std::cerr << "STG thinker lua return something stupid!\n";
 #endif
 
-    if (good == LUA_OK)
+    if (good != LUA_YIELD)
         Con->DisableThr(ID);
 }
 
@@ -122,22 +122,22 @@ void STGThinker::Move(int dir)
 {
     ALLEGRO_EVENT event;
 
-    if (dir & static_cast<int>(Movement::UP))
+    if (dir & static_cast<int>(Movement::B_U))
     {
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::UP);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
-    if (dir & static_cast<int>(Movement::DOWN))
+    if (dir & static_cast<int>(Movement::B_D))
     {
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::DOWN);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
-    if (dir & static_cast<int>(Movement::LEFT))
+    if (dir & static_cast<int>(Movement::B_L))
     {
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::LEFT);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
-    if (dir & static_cast<int>(Movement::RIGHT))
+    if (dir & static_cast<int>(Movement::B_R))
     {
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::RIGHT);
         al_emit_user_event(InputMaster, &event, nullptr);

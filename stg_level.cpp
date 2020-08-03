@@ -72,22 +72,18 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
 static int further_load_thinker(lua_State *L)
 {
     int id;
-    lua_State *co;
     STGLevel *level;
 
 #ifdef STG_LUA_API_ARG_CHECK
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     id = luaL_checkinteger(L, 2) - 1;
     luaL_checktype(L, 3, LUA_TTHREAD);
-    co = lua_tothread(L, 3);
-    luaL_argcheck(L, lua_isfunction(co, 1), 3, "further load with invalid coroutine");
 #else
-    co = lua_tothread(L, 3);
     id = lua_tointeger(L, 2) - 1;
 #endif
     level = static_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    level->Brain(id, co);
+    level->Brain(id, lua_tothread(L, 3));
 
     return 0;
 }
@@ -144,7 +140,7 @@ static int debut(lua_State *L)
 }
 
 /* Tell game to let a new char on stage.
- * 1=level, 2=char_id, 3=pox_x, 4-pos_y, 5=pattern, 6...=pd
+ * 1=level, 2=char_id, 3=pox_x, 4-pos_y, 5=pattern/thread, 6...=pd
  * no return */
 static int airborne(lua_State *L)
 {
@@ -166,9 +162,13 @@ static int airborne(lua_State *L)
 #endif
     level = static_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    load_pattern(L, 5, &ptn, &pd);
-
-    level->Airborne(id, x, y, ptn, std::move(pd));
+    if (!lua_isthread(L, 5))
+    {
+        load_pattern(L, 5, &ptn, &pd);
+        level->Airborne(id, x, y, ptn, std::move(pd));
+    }
+    else
+        level->Airborne(id, x, y, lua_tothread(L, 5));
 
     return 0;
 }
@@ -405,7 +405,7 @@ void STGLevel::Update()
         std::cerr << "STG stage lua return something stupid!\n";
 #endif
     /* STG game over, just notify game. */
-    if (good == LUA_OK)
+    if (good != LUA_YIELD)
         con->STGReturn(true);
 }
 
@@ -539,6 +539,34 @@ void STGLevel::Debut(int id, float x, float y)
     sprite_renderers_n += 1;
 }
 
+void STGLevel::Airborne(int id, float x, float y, lua_State *co)
+{
+    int real_id = get_id();
+
+    bd.position.Set(x * physical_width, y * physical_height);
+    b2Body *b = world->CreateBody(&bd);
+
+    al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
+                             onstage_thinkers[thinkers_n].InputMaster);
+    al_register_event_source(onstage_thinkers[thinkers_n].Recv,
+                             onstage_charactors[charactors_n].KneeJump);
+
+    onstage_thinkers[thinkers_n].Active(real_id, co);
+    records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
+    thinkers_n += 1;
+
+    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
+                             onstage_charactors[charactors_n].RendererMaster);
+
+    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[id],
+                                            all_state.MakeChar(my_charactor[id]));
+    sprite_renderers[sprite_renderers_n].Show(real_id, b, my_charactor[id].Texs.VeryFirstTex);
+    records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
+    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+    charactors_n += 1;
+    sprite_renderers_n += 1;
+}
+
 void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternData pd)
 {
     int real_id = get_id();
@@ -559,8 +587,8 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
                              onstage_charactors[charactors_n].RendererMaster);
 
-    onstage_charactors[charactors_n].Enable(real_id, b,
-                                            my_charactor[id], all_state.MakeChar(my_charactor[id]));
+    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[id],
+                                            all_state.MakeChar(my_charactor[id]));
     sprite_renderers[sprite_renderers_n].Show(real_id, b, my_charactor[id].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;

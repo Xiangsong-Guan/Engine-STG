@@ -3,10 +3,13 @@
 
 #include "data_struct.h"
 
+#include <lua.hpp>
+
 class STGFlowController
 {
 public:
     virtual void Debut(int char_id, float x, float y) = 0;
+    virtual void Airborne(int char_id, float x, float y, lua_State *co) = 0;
     virtual void Airborne(int char_id, float x, float y,
                           SCPatternsCode ptn, SCPatternData pd) = 0;
     virtual void Pause() const = 0;
