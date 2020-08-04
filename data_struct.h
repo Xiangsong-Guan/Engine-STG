@@ -225,7 +225,7 @@ struct StageCharRes
 {
     std::string Char;
     std::vector<std::string> Shooters;
-    std::vector<std::vector<std::string>> Bulletss;
+    std::vector<std::string> Bulletss;
 };
 
 struct STGLevelSetting

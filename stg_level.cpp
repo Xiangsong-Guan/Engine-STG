@@ -220,11 +220,16 @@ void STGLevel::Load(int width, int height, float time_step,
 
         onstage_thinkers[i].Con = this;
         onstage_charactors[i].Con = this;
+        onstage_patterns[i].Con = this;
     }
-    onstage_patterns[0].Con = this;
-    onstage_patterns[1].Con = this;
 
     /* pool reset */
+    our_charactor.clear();
+    our_shooter.clear();
+    our_bullet.clear();
+    my_charactor.clear();
+    my_shooter.clear();
+    my_bullet.clear();
     reset_id();
     all_state.Clear();
 
@@ -243,7 +248,7 @@ void STGLevel::Load(int width, int height, float time_step,
             sc.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_PLAYER);
 
             my_charactor.push_back(std::move(sc));
-            our_charactor.insert({ setting.Charactors[i].Char, my_charactor.size() - 1 });
+            our_charactor.insert({setting.Charactors[i].Char, my_charactor.size() - 1});
             standby[i].MyChar = my_charactor.size() - 1;
         }
         else

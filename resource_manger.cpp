@@ -252,7 +252,6 @@ void ResourceManager::LoadSTGLevel(const std::string &name)
             lua_pop(L_main, 1);
 
             /* Bullet */
-            std::vector<std::string> bsssss;
             if (lua_getfield(L_main, -1, "bullets") != LUA_TTABLE)
             {
                 std::cerr << "Failed to load STG Level: Charactor-" << i + 1
@@ -270,15 +269,15 @@ void ResourceManager::LoadSTGLevel(const std::string &name)
                 }
                 name = lua_tostring(L_main, -1);
                 LoadSTGBullet(name);
-                bsssss.push_back(name);
+                scr.Bulletss.push_back(name);
                 lua_pop(L_main, 1);
             }
             lua_pop(L_main, 1);
-            bsssss.shrink_to_fit();
-            scr.Bulletss.push_back(std::move(bsssss));
+            scr.Bulletss.shrink_to_fit();
 
             lua_pop(L_main, 1);
         }
+        scr.Shooters.shrink_to_fit();
         lua_pop(L_main, 1);
 
         lua_pop(L_main, 1);
@@ -288,6 +287,7 @@ void ResourceManager::LoadSTGLevel(const std::string &name)
     /* Clean the resource stuff from stack. */
     lua_pop(L_main, 2); /* resource table and charactors list */
     /* Store the setting, need for later use. */
+    ls.Charactors.shrink_to_fit();
     stg_levels.emplace(name, std::move(ls));
 
     /* Store the stage function with stg level setting's memory address in resource manger. */
