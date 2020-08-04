@@ -234,13 +234,22 @@ void STGLevel::Load(int width, int height, float time_step,
      * Let stage thread first call to initialize whatever, not here. */
     for (size_t i = 0; i < setting.Charactors.size(); i++)
     {
-        my_charactor[i] = ResourceManager::GetSTGChar(setting.Charactors[i]);
-        my_enter[i] = all_state.MakeChar(my_charactor[i]);
+        if (!our_charactor.contains(setting.Charactors[i].Char))
+        {
+            STGCharactorSetting sc = ResourceManager::GetSTGChar(setting.Charactors[i].Char);
+            /* Tune the filter, here we can tishu. */
+            sc.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_OTHERS_SIDE);
+            sc.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY);
+            sc.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_PLAYER);
 
-        /* Tune the filter, here we can tishu. */
-        my_charactor[i].Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_OTHERS_SIDE);
-        my_charactor[i].Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY);
-        my_charactor[i].Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_PLAYER);
+            my_charactor.push_back(std::move(sc));
+            our_charactor.insert({ setting.Charactors[i].Char, my_charactor.size() - 1 });
+            standby[i].MyChar = my_charactor.size() - 1;
+        }
+        else
+            standby[i].MyChar = our_charactor[setting.Charactors[i].Char];
+
+        standby[i].MyEnter = all_state.MakeChar(my_charactor[standby[i].MyChar]);
     }
 
     /* Get stage thread in position. (coroutine, function already on the top) */
@@ -490,14 +499,14 @@ void STGLevel::FillMind(int id, SCPatternsCode ptn, SCPatternData pd) noexcept
         }
     }
 
-    my_pattern[id] = ptn;
-    my_pattern_data[id] = std::move(pd);
+    standby[id].MyPtn = ptn;
+    standby[id].MyPD = std::move(pd);
 }
 
 /* Prepare thinker for it. Coroutine init call by Lua is done. */
 void STGLevel::Brain(int id, lua_State *co) noexcept
 {
-    my_thinker[id] = co;
+    standby[id].MyThinker = co;
 }
 
 void STGLevel::Debut(int id, float x, float y)
@@ -507,23 +516,23 @@ void STGLevel::Debut(int id, float x, float y)
     bd.position.Set(x * physical_width, y * physical_height);
     b2Body *b = world->CreateBody(&bd);
 
-    if (my_pattern[id] == SCPatternsCode::CONTROLLED)
+    if (standby[id].MyPtn == SCPatternsCode::CONTROLLED)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_thinkers[thinkers_n].InputMaster);
         al_register_event_source(onstage_thinkers[thinkers_n].Recv,
                                  onstage_charactors[charactors_n].KneeJump);
 
-        onstage_thinkers[thinkers_n].Active(real_id, my_thinker[id]);
+        onstage_thinkers[thinkers_n].Active(real_id, standby[id].MyThinker);
         records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
         thinkers_n += 1;
     }
-    else if (my_pattern[id] != SCPatternsCode::STAY)
+    else if (standby[id].MyPtn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_patterns[patterns_n].InputMaster);
 
-        onstage_patterns[patterns_n].Active(real_id, my_pattern[id], my_pattern_data[id], b);
+        onstage_patterns[patterns_n].Active(real_id, standby[id].MyPtn, standby[id].MyPD, b);
         records[real_id][static_cast<int>(STGCompType::PATTERN)] = patterns_n;
         patterns_n += 1;
     }
@@ -531,8 +540,10 @@ void STGLevel::Debut(int id, float x, float y)
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
                              onstage_charactors[charactors_n].RendererMaster);
 
-    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[id], my_enter[id]);
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, my_charactor[id].Texs.VeryFirstTex);
+    onstage_charactors[charactors_n].Enable(real_id, b,
+                                            my_charactor[standby[id].MyChar], standby[id].MyEnter);
+    sprite_renderers[sprite_renderers_n].Show(real_id, b,
+                                              my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
@@ -558,9 +569,10 @@ void STGLevel::Airborne(int id, float x, float y, lua_State *co)
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
                              onstage_charactors[charactors_n].RendererMaster);
 
-    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[id],
-                                            all_state.MakeChar(my_charactor[id]));
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, my_charactor[id].Texs.VeryFirstTex);
+    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[standby[id].MyChar],
+                                            all_state.MakeChar(my_charactor[standby[id].MyChar]));
+    sprite_renderers[sprite_renderers_n].Show(real_id, b,
+                                              my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
@@ -587,9 +599,10 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
                              onstage_charactors[charactors_n].RendererMaster);
 
-    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[id],
-                                            all_state.MakeChar(my_charactor[id]));
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, my_charactor[id].Texs.VeryFirstTex);
+    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[standby[id].MyChar],
+                                            all_state.MakeChar(my_charactor[standby[id].MyChar]));
+    sprite_renderers[sprite_renderers_n].Show(real_id, b,
+                                              my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;

@@ -15,6 +15,8 @@
 #include <allegro5/allegro5.h>
 
 #include <vector>
+#include <string>
+#include <unordered_map>
 
 enum class STGCompType
 {
@@ -28,11 +30,24 @@ enum class STGCompType
     ALL
 };
 
+struct StageCharInfo
+{
+    size_t MyChar;
+    std::vector<size_t> MyShooters;
+    std::vector<size_t> MyAmmoes;
+    lua_State *MyThinker;
+    SCPatternsCode MyPtn;
+    SCPatternData MyPD;
+    SCS *MyEnter;
+};
+
 class STGLevel : public Scene, public STGFlowController
 {
 public:
     /* Store the Player's stg status. */
-    STGCharactorSetting Gamer;
+    STGCharactorSetting GPlayer;
+    std::unordered_map<std::string, STGBulletSetting> GAmmos;
+    std::unordered_map<std::string, STGShooterSetting> GGuns;
 
     /* Constructor/Destructor */
     STGLevel() = default;
@@ -72,15 +87,17 @@ private:
     static constexpr int POSITION_ITERATIONS = 2;
 
     /* Limit */
-    static constexpr int MAX_ENTITIES = 2048u;
+    static constexpr int MAX_ENTITIES = 1048u;
     static constexpr int MAX_ON_STAGE = 256u;
 
     /* Preload things */
-    STGCharactorSetting my_charactor[MAX_ENTITIES];
-    lua_State *my_thinker[MAX_ENTITIES];
-    SCPatternsCode my_pattern[MAX_ENTITIES];
-    SCPatternData my_pattern_data[MAX_ENTITIES];
-    SCS *my_enter[MAX_ENTITIES];
+    std::unordered_map<std::string, size_t> our_charactor;
+    std::unordered_map<std::string, size_t> our_shooter;
+    std::unordered_map<std::string, size_t> our_bullet;
+    std::vector<STGCharactorSetting> my_charactor;
+    std::vector<STGShooterSetting> my_shooter;
+    std::vector<STGBulletSetting> my_bullet;
+    StageCharInfo standby[MAX_ENTITIES];
 
     /* Also directly used in game. */
     STGStateMan all_state;
