@@ -221,12 +221,19 @@ union SCPatternData
  *                                                                                               *
  *************************************************************************************************/
 
+struct StageCharRes
+{
+    std::string Char;
+    std::vector<std::string> Shooters;
+    std::vector<std::vector<std::string>> Bulletss;
+};
+
 struct STGLevelSetting
 {
     std::string Name;
 
     /* About all charactors will on stage. */
-    std::vector<std::string> Charactors;
+    std::vector<StageCharRes> Charactors;
 };
 
 /*************************************************************************************************

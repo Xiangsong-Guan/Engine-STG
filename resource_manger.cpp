@@ -165,7 +165,9 @@ const Anime &ResourceManager::GetAnime(const std::string &name)
 
 void ResourceManager::LoadSTGLevel(const std::string &name)
 {
-    // int good;
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
 
     /* Reloaded check. */
     if (stg_levels.contains(name))
@@ -201,27 +203,103 @@ void ResourceManager::LoadSTGLevel(const std::string &name)
     }
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {
-        if (lua_geti(L_main, -1, i + 1) != LUA_TSTRING)
+        StageCharRes scr;
+        if (lua_geti(L_main, -1, i + 1) != LUA_TTABLE)
+        {
+            std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                      << "is invalid." << std::endl;
+            return;
+        }
+
+        /* Charactor */
+        if (lua_getfield(L_main, -1, "name") != LUA_TSTRING)
         {
             std::cerr << "Failed to load STG Level: Charactor-" << i + 1
                       << "'s resource ref is invalid." << std::endl;
             return;
         }
-        std::string name = lua_tostring(L_main, -1);
-        LoadSTGChar(name);
-        ls.Charactors.push_back(name);
+        scr.Char = lua_tostring(L_main, -1);
+        LoadSTGChar(scr.Char);
         lua_pop(L_main, 1);
+
+        std::string name;
+
+        /* Shooter */
+        if (lua_getfield(L_main, -1, "shooters") != LUA_TTABLE)
+        {
+            std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                      << "'s shooters is not a list." << std::endl;
+            return;
+        }
+        for (int j = 0; j < luaL_len(L_main, -1); j++)
+        {
+            if (lua_geti(L_main, -1, j + 1) != LUA_TTABLE)
+            {
+                std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                          << "'s shooter-" << j + 1 << " is invalid." << std::endl;
+                return;
+            }
+
+            if (lua_getfield(L_main, -1, "name") != LUA_TSTRING)
+            {
+                std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                          << "'s shooter-" << j + 1 << "'s name is invalid." << std::endl;
+                return;
+            }
+            name = lua_tostring(L_main, -1);
+            LoadSTGShooter(name);
+            scr.Shooters.push_back(name);
+            lua_pop(L_main, 1);
+
+            /* Bullet */
+            std::vector<std::string> bsssss;
+            if (lua_getfield(L_main, -1, "bullets") != LUA_TTABLE)
+            {
+                std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                          << "'s shooter-" << j + 1 << "'s bullets is invalid." << std::endl;
+                return;
+            }
+            for (int k = 0; k < luaL_len(L_main, -1); k++)
+            {
+                if (lua_geti(L_main, -1, k + 1) != LUA_TSTRING)
+                {
+                    std::cerr << "Failed to load STG Level: Charactor-" << i + 1
+                              << "'s shooter-" << j + 1 << "'s bullet-" << k + 1
+                              << " is invalid." << std::endl;
+                    return;
+                }
+                name = lua_tostring(L_main, -1);
+                LoadSTGBullet(name);
+                bsssss.push_back(name);
+                lua_pop(L_main, 1);
+            }
+            lua_pop(L_main, 1);
+            bsssss.shrink_to_fit();
+            scr.Bulletss.push_back(std::move(bsssss));
+
+            lua_pop(L_main, 1);
+        }
+        lua_pop(L_main, 1);
+
+        lua_pop(L_main, 1);
+        ls.Charactors.push_back(std::move(scr));
     }
+
     /* Clean the resource stuff from stack. */
     lua_pop(L_main, 2); /* resource table and charactors list */
-
     /* Store the setting, need for later use. */
     stg_levels.emplace(name, std::move(ls));
+
     /* Store the stage function with stg level setting's memory address in resource manger. */
     lua_getfield(L_main, LUA_REGISTRYINDEX, STG_STAGE_FUNCTIONS_KEY);
     lua_pushvalue(L_main, -2);
     lua_setfield(L_main, -2, name.c_str());
     lua_pop(L_main, 2);
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
 }
 
 STGLevelSetting &ResourceManager::GetSTGLevel(const std::string &name)
@@ -231,6 +309,10 @@ STGLevelSetting &ResourceManager::GetSTGLevel(const std::string &name)
 
 lua_State *ResourceManager::GetSTGStageCoroutine(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     lua_State *ret;
 
     lua_getfield(L_main, LUA_REGISTRYINDEX, STG_STAGE_FUNCTIONS_KEY);
@@ -240,11 +322,20 @@ lua_State *ResourceManager::GetSTGStageCoroutine(const std::string &name)
     lua_pop(L_main, 1);
     lua_xmove(L_main, ret, 1);
 
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
+
     return ret;
 }
 
 void ResourceManager::LoadSTGChar(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     /* Repeat Check */
     if (stg_charactors.contains(name))
         return;
@@ -280,6 +371,11 @@ void ResourceManager::LoadSTGChar(const std::string &name)
     stg_charactors[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
                                             ? (b2Shape *)&stg_charactors[name].Phy.C
                                             : (b2Shape *)&stg_charactors[name].Phy.P;
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
 }
 
 STGCharactorSetting &ResourceManager::GetSTGChar(const std::string &name)
@@ -296,6 +392,10 @@ STGCharactorSetting &ResourceManager::GetSTGChar(const std::string &name)
 
 void ResourceManager::LoadSTGBullet(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     /* Repeat Check */
     if (stg_bullets.contains(name))
         return;
@@ -311,7 +411,6 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     STGBulletSetting bs;
     bs.Name = name;
     bs.Phy = load_phyfix(name, &shape_code);
-    bs.Texs = load_stg_texture(name);
 
     /* Bullet damage & speed. */
     lua_getfield(L_main, -1, "damage");
@@ -341,6 +440,11 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     stg_bullets[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
                                          ? (b2Shape *)&stg_bullets[name].Phy.C
                                          : (b2Shape *)&stg_bullets[name].Phy.P;
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
 }
 
 STGBulletSetting &ResourceManager::GetSTGBullet(const std::string &name)
@@ -357,6 +461,10 @@ STGBulletSetting &ResourceManager::GetSTGBullet(const std::string &name)
 
 void ResourceManager::LoadSTGShooter(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     /* Repeat Check */
     if (stg_shooters.contains(name))
         return;
@@ -370,7 +478,6 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
     STGShooterSetting ss;
     ss.Name = name;
-    ss.Texs = load_stg_texture(name);
 
     /* stg para */
     lua_getfield(L_main, -1, "power");
@@ -422,7 +529,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
         if (lua_getfield(L_main, -1, "interval") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid lunchers' interval");
-        l.Interval = lua_tonumber(L_main, -1);
+        l.Interval = std::lroundf(lua_tonumber(L_main, -1) * static_cast<float>(UPDATE_PER_SEC));
         lua_pop(L_main, 1);
 
         if (lua_getfield(L_main, -1, "ammo_slot") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
@@ -430,6 +537,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         l.AmmoSlot = lua_tointeger(L_main, -1);
         lua_pop(L_main, 1);
 
+        lua_pop(L_main, 1);
         ss.Lunchers.push_back(std::move(l));
     }
     lua_pop(L_main, 1);
@@ -437,6 +545,11 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
     lua_pop(L_main, 1);
     stg_shooters.emplace(name, std::move(ss));
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
 }
 
 STGShooterSetting &ResourceManager::GetSTGShooter(const std::string &name)
@@ -447,7 +560,6 @@ STGShooterSetting &ResourceManager::GetSTGShooter(const std::string &name)
 void ResourceManager::LoadSave()
 {
     // For now ...
-    LoadSTGChar("test_player");
 }
 
 void ResourceManager::LoadFont()
@@ -474,6 +586,10 @@ ALLEGRO_FONT *ResourceManager::GetFont(const std::string &name)
 
 PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType *ret_sc)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     PhysicalFixture pf;
 
     pf.Physical = false;
@@ -538,11 +654,21 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType 
     }
 
     lua_pop(L_main, 1);
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
+
     return pf;
 }
 
 STGTexture ResourceManager::load_stg_texture(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     STGTexture st;
 
     /* Texture things */
@@ -652,6 +778,11 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         break;
     }
 
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
+
     return st;
 }
 
@@ -664,6 +795,10 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
 
 KinematicSeq ResourceManager::load_kinematic_phases(const std::string &name)
 {
+#ifdef _DEBUG
+    int _d_top = lua_gettop(L_main);
+#endif
+
     KinematicSeq kps;
 
     if (lua_getfield(L_main, -1, "kinematic_seq") != LUA_TTABLE)
@@ -728,6 +863,13 @@ KinematicSeq ResourceManager::load_kinematic_phases(const std::string &name)
     }
     kps.AngleSeq.shrink_to_fit();
     lua_pop(L_main, 1);
+
+    lua_pop(L_main, 1);
+
+#ifdef _DEBUG
+    if (lua_gettop(L_main) != _d_top)
+        luaL_error(L_main, "unbalance stack");
+#endif
 
     return kps;
 }
