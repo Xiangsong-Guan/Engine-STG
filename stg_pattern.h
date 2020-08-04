@@ -9,20 +9,20 @@
 
 #include <functional>
 
-class STGPattern
+class SCPattern
 {
 public:
     int ID;
 
-    static void InitSTGPattern();
+    static void InitSCPattern();
 
-    STGPattern();
-    STGPattern(const STGPattern &) = delete;
-    STGPattern(STGPattern &&) = delete;
-    STGPattern &operator=(const STGPattern &) = delete;
-    STGPattern &operator=(STGPattern &&) = delete;
-    ~STGPattern();
-    void CPPSuckSwap(STGPattern &) noexcept;
+    SCPattern();
+    SCPattern(const SCPattern &) = delete;
+    SCPattern(SCPattern &&) = delete;
+    SCPattern &operator=(const SCPattern &) = delete;
+    SCPattern &operator=(SCPattern &&) = delete;
+    ~SCPattern();
+    void CPPSuckSwap(SCPattern &) noexcept;
 
     void Active(int id, SCPatternsCode ptn, SCPatternData pd, b2Body *body) noexcept;
     void Update();
@@ -34,9 +34,9 @@ public:
 private:
     b2Body *physics;
     SCPatternData data;
-    std::function<void(STGPattern *)> pattern;
+    std::function<void(SCPattern *)> pattern;
 
-    static std::function<void(STGPattern *)> patterns[static_cast<int>(SCPatternsCode::NUM)];
+    static std::function<void(SCPattern *)> patterns[static_cast<int>(SCPatternsCode::NUM)];
     void move_to();
     void move_last();
     void move_passby();

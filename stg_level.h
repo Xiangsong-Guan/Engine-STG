@@ -90,7 +90,7 @@ private:
     int charactors_n;
     STGThinker onstage_thinkers[MAX_ON_STAGE];
     int thinkers_n;
-    STGPattern onstage_patterns[MAX_ON_STAGE];
+    SCPattern onstage_patterns[MAX_ON_STAGE];
     int patterns_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];
     int sprite_renderers_n;

@@ -278,14 +278,14 @@ void STGLevel::Load(int width, int height, float time_step,
     /* Make body and tune fixture for player */
     bd.position.Set(physical_width * .5f, physical_height * .75f);
     player = world->CreateBody(&bd);
-    Gamer.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
-    Gamer.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER);
-    Gamer.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_ENEMY);
+    GPlayer.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
+    GPlayer.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER);
+    GPlayer.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_ENEMY);
     /* MUST BE 0 */
     int p_id = get_id();
     /* Player on stage. */
-    onstage_charactors[0].Enable(p_id, player, Gamer, all_state.MakeChar(Gamer));
-    sprite_renderers[0].Show(p_id, player, Gamer.Texs.VeryFirstTex);
+    onstage_charactors[0].Enable(p_id, player, GPlayer, all_state.MakeChar(GPlayer));
+    sprite_renderers[0].Show(p_id, player, GPlayer.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, player_watching);
     /* id record */
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;

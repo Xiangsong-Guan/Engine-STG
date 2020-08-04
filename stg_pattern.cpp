@@ -11,19 +11,19 @@
  *                                                                                               *
  *************************************************************************************************/
 
-STGPattern::STGPattern()
+SCPattern::SCPattern()
 {
     InputMaster = new ALLEGRO_EVENT_SOURCE;
     al_init_user_event_source(InputMaster);
 }
 
-STGPattern::~STGPattern()
+SCPattern::~SCPattern()
 {
     al_destroy_user_event_source(InputMaster);
     delete InputMaster;
 }
 
-void STGPattern::CPPSuckSwap(STGPattern &o) noexcept
+void SCPattern::CPPSuckSwap(SCPattern &o) noexcept
 {
     std::swap(this->ID, o.ID);
     std::swap(this->InputMaster, o.InputMaster);
@@ -32,7 +32,7 @@ void STGPattern::CPPSuckSwap(STGPattern &o) noexcept
     std::swap(this->pattern, o.pattern);
 }
 
-void STGPattern::Active(int id, SCPatternsCode ptn, SCPatternData pd, b2Body *body) noexcept
+void SCPattern::Active(int id, SCPatternsCode ptn, SCPatternData pd, b2Body *body) noexcept
 {
     pattern = patterns[static_cast<int>(ptn)];
     data = std::move(pd);
@@ -46,7 +46,7 @@ void STGPattern::Active(int id, SCPatternsCode ptn, SCPatternData pd, b2Body *bo
  *                                                                                               *
  *************************************************************************************************/
 
-void STGPattern::Update()
+void SCPattern::Update()
 {
     pattern(this);
 }
@@ -57,17 +57,17 @@ void STGPattern::Update()
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<void(STGPattern *)> STGPattern::patterns[static_cast<int>(SCPatternsCode::NUM)];
+std::function<void(SCPattern *)> SCPattern::patterns[static_cast<int>(SCPatternsCode::NUM)];
 
-void STGPattern::InitSTGPattern()
+void SCPattern::InitSCPattern()
 {
-    patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&STGPattern::move_last);
-    patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&STGPattern::move_to);
+    patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&SCPattern::move_last);
+    patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&SCPattern::move_to);
     patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] =
-        std::mem_fn(&STGPattern::move_passby);
+        std::mem_fn(&SCPattern::move_passby);
 }
 
-void STGPattern::move_to()
+void SCPattern::move_to()
 {
     b2Vec2 vec = b2Vec2(data.Vec.X, data.Vec.Y) - physics->GetPosition();
 
@@ -83,7 +83,7 @@ void STGPattern::move_to()
         Con->DisablePtn(ID);
 }
 
-void STGPattern::move_last()
+void SCPattern::move_last()
 {
     ALLEGRO_EVENT event;
     event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
@@ -92,7 +92,7 @@ void STGPattern::move_last()
     al_emit_user_event(InputMaster, &event, nullptr);
 }
 
-void STGPattern::move_passby()
+void SCPattern::move_passby()
 {
     b2Vec2 vec =
         b2Vec2(data.Passby.Vec[data.Passby.Where].X, data.Passby.Vec[data.Passby.Where].Y) -
