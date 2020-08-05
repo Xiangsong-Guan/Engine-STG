@@ -38,7 +38,7 @@ struct StageCharInfo
     lua_State *MyThinker;
     SCPatternsCode MyPtn;
     SCPatternData MyPD;
-    SCS *MyEnter;
+    SCSBorn *MyEnter;
 };
 
 class STGLevel : public Scene, public STGFlowController
@@ -82,14 +82,6 @@ public:
     virtual void DisableThr(int id) final;
 
 private:
-    /* Physics sim setting */
-    static constexpr int VELOCITY_ITERATIONS = 6;
-    static constexpr int POSITION_ITERATIONS = 2;
-
-    /* Limit */
-    static constexpr int MAX_ENTITIES = 1048u;
-    static constexpr int MAX_ON_STAGE = 256u;
-
     /* Preload things */
     std::unordered_map<std::string, size_t> our_charactor;
     std::unordered_map<std::string, size_t> our_shooter;

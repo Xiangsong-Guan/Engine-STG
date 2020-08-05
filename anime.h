@@ -13,12 +13,13 @@ private:
     std::vector<ALLEGRO_BITMAP *> frames_;
     int now_;
     int sync_;
-    int duration;
 
 public:
+    /* Duration in anime */
+    int DURATION;
     ALLEGRO_BITMAP *Playing;
 
-    Anime() : now_(-1), sync_(-1), duration(0), Playing(nullptr) {}
+    Anime() : now_(-1), sync_(-1), DURATION(0), Playing(nullptr) {}
     Anime(const Anime &) = default;
     Anime(Anime &&) = default;
     Anime &operator=(const Anime &) = default;
@@ -28,7 +29,7 @@ public:
     Anime(std::vector<ALLEGRO_BITMAP *> &&frames) : frames_(std::move(frames)),
                                                     now_(-1),
                                                     sync_(-1),
-                                                    duration(static_cast<int>(frames_.size())),
+                                                    DURATION(static_cast<int>(frames_.size())),
                                                     Playing(nullptr) {}
 
     inline bool Forward() noexcept
@@ -37,7 +38,7 @@ public:
         if (sync_ != 0)
             return false;
 
-        now_ = (now_ + 1) % duration;
+        now_ = (now_ + 1) % DURATION;
         Playing = frames_[now_];
         return true;
     }
@@ -49,9 +50,10 @@ public:
         Playing = nullptr;
     }
 
+    /* Duration in logic */
     inline int Duration() const noexcept
     {
-        return duration * ANIME_UPDATE_TIMER;
+        return DURATION * ANIME_UPDATE_TIMER;
     }
 };
 

@@ -2,60 +2,70 @@
 
 #include "resource_manger.h"
 
-SCS *STGStateMan::MakeChar(const STGCharactorSetting &setting)
+STGStateMan::STGStateMan()
+{
+    sbp[static_cast<int>(SpriteType::STATIC)] = born_s;
+    sbp[static_cast<int>(SpriteType::ANIMED)] = born_a;
+    sbp[static_cast<int>(SpriteType::NONE)] = born_n;
+    smp[static_cast<int>(SpriteType::STATIC)] = movement_s;
+    smp[static_cast<int>(SpriteType::ANIMED)] = movement_a;
+
+    for (int i = 0; i < MAX_STATE_NUM - 1; i++)
+    {
+        born_s[i] = _born_s + i;
+        born_a[i] = _born_a + i;
+        born_n[i] = _born_n + i;
+        movement_s[i] = _movement_s + i;
+        movement_a[i] = _movement_a + i;
+    }
+}
+
+SCSBorn *STGStateMan::MakeChar(const STGCharactorSetting &setting)
 {
     SCSMovement *m = nullptr;
     SCSBorn *b = nullptr;
 
-    switch (setting.Texs.SpriteBornType)
-    {
-    case SpriteType::STATIC:
-        b = born_s + num_born_s;
-        born_s[num_born_s] =
-            SCSBornStatic(ResourceManager::GetTexture(setting.Texs.SpriteBorn));
-        num_born_s += 1;
-        break;
-    case SpriteType::ANIMED:
-        b = born_a + num_born_a;
-        born_a[num_born_a] =
-            SCSBornAnimed(ResourceManager::GetAnime(setting.Texs.SpriteBorn));
-        num_born_a += 1;
-        break;
-    case SpriteType::NONE:
-        b = born_n + num_born_n;
-        num_born_n += 1;
-        break;
-    }
-    switch (setting.Texs.SpriteMovementType)
-    {
-    case SpriteType::STATIC:
-        m = movement_s + num_movement_s;
-        ALLEGRO_BITMAP *t[static_cast<int>(Movement::NUM)];
-        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            t[i] = ResourceManager::GetTexture(setting.Texs.SpriteMovement[i]);
-        movement_s[num_movement_s] = SCSMovementStatic(t);
-        num_movement_s += 1;
-        break;
-    case SpriteType::ANIMED:
-        m = movement_a + num_movement_a;
-        Anime a[static_cast<int>(Movement::NUM)];
-        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            a[i] = ResourceManager::GetAnime(setting.Texs.SpriteMovement[i]);
-        movement_a[num_movement_a] = SCSMovementAnimed(a);
-        num_movement_a += 1;
-        break;
-    }
+    b = *(sbp[static_cast<int>(setting.Texs.SpriteBornType)] +
+          sbn[static_cast<int>(setting.Texs.SpriteBornType)]);
+    sbn[static_cast<int>(setting.Texs.SpriteBornType)] =
+        (sbn[static_cast<int>(setting.Texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
+    b->Init(setting);
+
+    m = *(smp[static_cast<int>(setting.Texs.SpriteMovementType)] +
+          smn[static_cast<int>(setting.Texs.SpriteMovementType)]);
+    smn[static_cast<int>(setting.Texs.SpriteMovementType)] =
+        (smn[static_cast<int>(setting.Texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
+    m->Init(setting);
 
     b->Next = m;
 
     return b;
 }
 
-void STGStateMan::Clear() noexcept
+SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGCharactorSetting &setting)
 {
-    num_born_a = 0;
-    num_born_s = 0;
-    num_born_n = 0;
-    num_movement_a = 0;
-    num_movement_s = 0;
+    SCSBorn *b;
+    SCSMovement *m;
+
+    b = *(sbp[static_cast<int>(setting.Texs.SpriteBornType)] +
+          sbn[static_cast<int>(setting.Texs.SpriteBornType)]);
+    sbn[static_cast<int>(setting.Texs.SpriteBornType)] =
+        (sbn[static_cast<int>(setting.Texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
+    b->Copy(enter);
+
+    m = *(smp[static_cast<int>(setting.Texs.SpriteMovementType)] +
+          smn[static_cast<int>(setting.Texs.SpriteMovementType)]);
+    smn[static_cast<int>(setting.Texs.SpriteMovementType)] =
+        (smn[static_cast<int>(setting.Texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
+    m->Copy(enter->Next);
+
+    b->Next = m;
+
+    return b;
+}
+
+void STGStateMan::Reset() noexcept
+{
+    std::memset(sbn, 0, sizeof(sbn));
+    std::memset(smn, 0, sizeof(smn));
 }

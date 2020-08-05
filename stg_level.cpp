@@ -23,11 +23,12 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         data->Vec.X = luaL_checknumber(L, pd_idx + 1);
         data->Vec.Y = luaL_checknumber(L, pd_idx + 2);
         break;
+
     case SCPatternsCode::MOVE_PASSBY:
+        data->Passby.Where = 0;
         if (!lua_isboolean(L, pd_idx + 1))
             luaL_typeerror(L, pd_idx + 1, "boolean");
         data->Passby.Loop = lua_toboolean(L, pd_idx + 1);
-        ;
         data->Passby.Num = 0;
         for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
             if (lua_isnumber(L, i))
@@ -49,7 +50,9 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         data->Vec.X = lua_tonumber(L, pd_idx + 1);
         data->Vec.Y = lua_tonumber(L, pd_idx + 2);
         break;
+
     case SCPatternsCode::MOVE_PASSBY:
+        data->Passby.Where = 0;
         data->Passby.Loop = lua_toboolean(L, pd_idx + 1);
         data->Passby.Num = 0;
         for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
@@ -224,20 +227,16 @@ void STGLevel::Load(int width, int height, float time_step,
     }
 
     /* pool reset */
-    our_charactor.clear();
-    our_shooter.clear();
-    our_bullet.clear();
-    my_charactor.clear();
-    my_shooter.clear();
-    my_bullet.clear();
     reset_id();
-    all_state.Clear();
+    all_state.Reset();
 
     /* Preload function just load all the resource, like sprite, sound, anime, etc.
      * Some in game feature, like physics, script coroutine, etc. should be initialize
      * in different time: someone in level load phase, someone in stage runtime.
      * Let stage thread first call to initialize whatever, not here. */
-    for (size_t i = 0; i < setting.Charactors.size(); i++)
+    for (size_t i = 0;
+         i < (setting.Charactors.size() > MAX_ENTITIES ? MAX_ENTITIES : setting.Charactors.size());
+         i++)
     {
         if (!our_charactor.contains(setting.Charactors[i].Char))
         {
@@ -322,6 +321,13 @@ void STGLevel::Unload()
     luaL_unref(L_stage, LUA_REGISTRYINDEX, stage_thread_ref);
 
     delete world;
+
+    our_charactor.clear();
+    our_shooter.clear();
+    our_bullet.clear();
+    my_charactor.clear();
+    my_shooter.clear();
+    my_bullet.clear();
 }
 
 ALLEGRO_EVENT_QUEUE *STGLevel::InputConnectionTerminal() const noexcept
@@ -496,7 +502,6 @@ void STGLevel::FillMind(int id, SCPatternsCode ptn, SCPatternData pd) noexcept
         break;
 
     case SCPatternsCode::MOVE_PASSBY:
-        pd.Passby.Where = 0;
         for (int i = 0; i < pd.Passby.Num; i++)
         {
             pd.Passby.Vec[i].X *= physical_width;
@@ -575,7 +580,8 @@ void STGLevel::Airborne(int id, float x, float y, lua_State *co)
                              onstage_charactors[charactors_n].RendererMaster);
 
     onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[standby[id].MyChar],
-                                            all_state.MakeChar(my_charactor[standby[id].MyChar]));
+                                            all_state.CopyChar(standby[id].MyEnter,
+                                                               my_charactor[standby[id].MyChar]));
     sprite_renderers[sprite_renderers_n].Show(real_id, b,
                                               my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
@@ -596,6 +602,22 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_patterns[patterns_n].InputMaster);
 
+        /* pd process */
+        switch (ptn)
+        {
+        case SCPatternsCode::MOVE_TO:
+            pd.Vec.X *= physical_width;
+            pd.Vec.Y *= physical_height;
+            break;
+
+        case SCPatternsCode::MOVE_PASSBY:
+            for (int i = 0; i < pd.Passby.Num; i++)
+            {
+                pd.Passby.Vec[i].X *= physical_width;
+                pd.Passby.Vec[i].Y *= physical_height;
+            }
+        }
+
         onstage_patterns[patterns_n].Active(real_id, ptn, std::move(pd), b);
         records[real_id][static_cast<int>(STGCompType::PATTERN)] = patterns_n;
         patterns_n += 1;
@@ -605,7 +627,8 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
                              onstage_charactors[charactors_n].RendererMaster);
 
     onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[standby[id].MyChar],
-                                            all_state.MakeChar(my_charactor[standby[id].MyChar]));
+                                            all_state.CopyChar(standby[id].MyEnter,
+                                                               my_charactor[standby[id].MyChar]));
     sprite_renderers[sprite_renderers_n].Show(real_id, b,
                                               my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;

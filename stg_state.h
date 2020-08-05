@@ -5,18 +5,12 @@
 #include "stg_charactor.h"
 #include "anime.h"
 #include "cppsuckdef.h"
+#include "data_struct.h"
+#include "resource_manger.h"
 
 #include <allegro5/allegro5.h>
 
 constexpr int BORN_TIME = UPDATE_PER_SEC; /* 1 sec. */
-
-enum class STGStateType
-{
-    BORN,
-    MOVEMENT,
-
-    NUM
-};
 
 inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE *s)
 {
@@ -35,8 +29,8 @@ inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE *s)
 class SCSMovement : public SCS
 {
 protected:
-    int priorty[static_cast<int>(STGCharCommand::NUM)];
-    STGCharCommand next;
+    int PRIORTY[static_cast<int>(STGCharCommand::NUM)];
+    STGCharCommand next_i;
     int last_time_where;
 
     inline int move_check(const b2Vec2 v) const noexcept
@@ -54,32 +48,28 @@ protected:
     }
 
 public:
-    SCS *After[static_cast<int>(STGCharCommand::NUM)];
+    SCS *Next[static_cast<int>(STGCharCommand::NUM)];
 
     SCSMovement()
     {
-        next = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
-        priorty[static_cast<int>(STGCharCommand::UP)] = 0;
-        priorty[static_cast<int>(STGCharCommand::DOWN)] = 0;
-        priorty[static_cast<int>(STGCharCommand::LEFT)] = 0;
-        priorty[static_cast<int>(STGCharCommand::RIGHT)] = 0;
-        priorty[static_cast<int>(STGCharCommand::STG_FIRE)] = 1;
-        priorty[static_cast<int>(STGCharCommand::STG_CEASE)] = 0;
-        priorty[static_cast<int>(STGCharCommand::STG_CHANGE)] = 2;
-        priorty[static_cast<int>(STGCharCommand::STG_SYNC)] = 3;
-        priorty[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_REQUEST)] = 4;
-        priorty[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_RESPONE)] = 4;
-        priorty[static_cast<int>(STGCharCommand::DISABLE)] = 5;
-        priorty[static_cast<int>(STGCharCommand::RESPAWN)] = 5;
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            After[i] = nullptr;
+        PRIORTY[static_cast<int>(STGCharCommand::UP)] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::DOWN)] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::LEFT)] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::RIGHT)] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_FIRE)] = 1;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_CEASE)] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_CHANGE)] = 2;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_SYNC)] = 3;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_REQUEST)] = 4;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_RESPONE)] = 4;
+        PRIORTY[static_cast<int>(STGCharCommand::DISABLE)] = 5;
+        PRIORTY[static_cast<int>(STGCharCommand::RESPAWN)] = 5;
     }
 
     virtual bool CheckInput(STGCharCommand cmd) noexcept final
     {
-        if (priorty[static_cast<int>(cmd)] > priorty[static_cast<int>(next)])
-            next = cmd;
+        if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[static_cast<int>(next_i)])
+            next_i = cmd;
         return true;
     }
 };
@@ -90,18 +80,32 @@ public:
     ALLEGRO_BITMAP *Texture[static_cast<int>(Movement::NUM)];
 
     SCSMovementStatic() : SCSMovement() {}
-    SCSMovementStatic(ALLEGRO_BITMAP *t[static_cast<int>(Movement::NUM)]) : SCSMovement()
+
+    virtual void Init(const STGCharactorSetting &setting) final
     {
+        next_i = STGCharCommand::STG_CEASE;
+        last_time_where = -1;
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Texture[i] = t[i];
+            Texture[i] = ResourceManager::GetTexture(setting.Texs.SpriteMovement[i]);
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
+    }
+
+    virtual void Copy(const SCS *o) final
+    {
+        next_i = STGCharCommand::STG_CEASE;
+        last_time_where = -1;
+        std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
     }
 
     virtual void Action(STGCharactor *sc) final
     {
-        if (After[static_cast<int>(next)])
+        if (Next[static_cast<int>(next_i)])
         {
             last_time_where = -1;
-            After[static_cast<int>(next)]->Action(sc);
+            Next[static_cast<int>(next_i)]->Action(sc);
         }
         else
         {
@@ -119,18 +123,36 @@ public:
     Anime Animation[static_cast<int>(Movement::NUM)];
 
     SCSMovementAnimed() : SCSMovement() {}
-    SCSMovementAnimed(Anime a[static_cast<int>(Movement::NUM)]) : SCSMovement()
+
+    virtual void Init(const STGCharactorSetting &setting) final
     {
+        next_i = STGCharCommand::STG_CEASE;
+        last_time_where = -1;
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Animation[i] = std::move(a[i]);
+            Animation[i] = ResourceManager::GetAnime(setting.Texs.SpriteMovement[i]);
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
+    }
+
+    virtual void Copy(const SCS *o) final
+    {
+        next_i = STGCharCommand::STG_CEASE;
+        last_time_where = -1;
+        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
+        {
+            Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
+            Animation[i].Reset();
+        }
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
     }
 
     virtual void Action(STGCharactor *sc) final
     {
-        if (After[static_cast<int>(next)])
+        if (Next[static_cast<int>(next_i)])
         {
             last_time_where = -1;
-            After[static_cast<int>(next)]->Action(sc);
+            Next[static_cast<int>(next_i)]->Action(sc);
         }
         else
         {
@@ -158,7 +180,7 @@ public:
 class SCSBorn : public SCS
 {
 protected:
-    bool filter[static_cast<int>(STGCharCommand::NUM)];
+    bool FILTER[static_cast<int>(STGCharCommand::NUM)];
 
 public:
     int Duration;
@@ -166,20 +188,20 @@ public:
 
     SCSMovement *Next;
 
-    SCSBorn() : Timer(0), Duration(BORN_TIME), Next(nullptr)
+    SCSBorn()
     {
         for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            filter[i] = false;
-        filter[static_cast<int>(STGCharCommand::UP)] = true;
-        filter[static_cast<int>(STGCharCommand::DOWN)] = true;
-        filter[static_cast<int>(STGCharCommand::LEFT)] = true;
-        filter[static_cast<int>(STGCharCommand::RIGHT)] = true;
-        filter[static_cast<int>(STGCharCommand::MOVE_XY)] = true;
+            FILTER[i] = false;
+        FILTER[static_cast<int>(STGCharCommand::UP)] = true;
+        FILTER[static_cast<int>(STGCharCommand::DOWN)] = true;
+        FILTER[static_cast<int>(STGCharCommand::LEFT)] = true;
+        FILTER[static_cast<int>(STGCharCommand::RIGHT)] = true;
+        FILTER[static_cast<int>(STGCharCommand::MOVE_XY)] = true;
     }
 
     virtual bool CheckInput(STGCharCommand cmd) noexcept final
     {
-        return filter[static_cast<int>(cmd)];
+        return FILTER[static_cast<int>(cmd)];
     }
 };
 
@@ -189,10 +211,24 @@ public:
     Anime Animation;
 
     SCSBornAnimed() : SCSBorn() {}
-    SCSBornAnimed(const Anime &a) : SCSBorn(), Animation(a)
+
+    virtual void Init(const STGCharactorSetting &setting) final
     {
+        Animation = ResourceManager::GetAnime(setting.Texs.SpriteBorn);
         /* Born time should be same with born animation time */
         Duration = Animation.Duration();
+        Next = nullptr;
+        Timer = 0;
+    }
+
+    virtual void Copy(const SCS *o) final
+    {
+        Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
+        Animation.Reset();
+        /* Born time should be same with born animation time */
+        Duration = Animation.Duration();
+        Next = nullptr;
+        Timer = 0;
     }
 
     virtual void Action(STGCharactor *sc) final
@@ -219,6 +255,20 @@ class SCSBornNoTexture : public SCSBorn
 public:
     SCSBornNoTexture() : SCSBorn() {}
 
+    virtual void Init(const STGCharactorSetting &setting) final
+    {
+        Duration = BORN_TIME;
+        Next = nullptr;
+        Timer = 0;
+    }
+
+    virtual void Copy(const SCS *o) final
+    {
+        Duration = BORN_TIME;
+        Next = nullptr;
+        Timer = 0;
+    }
+
     virtual void Action(STGCharactor *sc) final
     {
         Timer += 1;
@@ -238,7 +288,22 @@ public:
     ALLEGRO_BITMAP *Texture;
 
     SCSBornStatic() : SCSBorn() {}
-    SCSBornStatic(ALLEGRO_BITMAP *t) : SCSBorn(), Texture(t) {}
+
+    virtual void Init(const STGCharactorSetting &setting) final
+    {
+        Texture = ResourceManager::GetTexture(setting.Texs.SpriteBorn);
+        Next = nullptr;
+        Duration = BORN_TIME;
+        Timer = 0;
+    }
+
+    virtual void Copy(const SCS *o) final
+    {
+        Texture = dynamic_cast<const SCSBornStatic *>(o)->Texture;
+        Duration = BORN_TIME;
+        Next = nullptr;
+        Timer = 0;
+    }
 
     virtual void Action(STGCharactor *sc) final
     {
