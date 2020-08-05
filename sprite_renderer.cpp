@@ -98,5 +98,5 @@ void SpriteRenderer::InitRndrCmd()
 
 void SpriteRenderer::change_texture(const ALLEGRO_EVENT *e) noexcept
 {
-    Sprite = (ALLEGRO_BITMAP *)e->user.data2;
+    Sprite = reinterpret_cast<ALLEGRO_BITMAP *>(e->user.data2);
 }

@@ -369,8 +369,8 @@ void ResourceManager::LoadSTGChar(const std::string &name)
 
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
     stg_charactors[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
-                                            ? (b2Shape *)&stg_charactors[name].Phy.C
-                                            : (b2Shape *)&stg_charactors[name].Phy.P;
+                                            ? static_cast<b2Shape *>(&stg_charactors[name].Phy.C)
+                                            : static_cast<b2Shape *>(&stg_charactors[name].Phy.P);
 
 #ifdef _DEBUG
     if (lua_gettop(L_main) != _d_top)
@@ -438,8 +438,8 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
 
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
     stg_bullets[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
-                                         ? (b2Shape *)&stg_bullets[name].Phy.C
-                                         : (b2Shape *)&stg_bullets[name].Phy.P;
+                                         ? static_cast<b2Shape *>(&stg_bullets[name].Phy.C)
+                                         : static_cast<b2Shape *>(&stg_bullets[name].Phy.P);
 
 #ifdef _DEBUG
     if (lua_gettop(L_main) != _d_top)
