@@ -647,7 +647,7 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType 
                           << "invalid size!\n";
                 return pf;
             }
-            pf.P.SetAsBox(x, y, b2Vec2(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1)), 0.f);
+            pf.P.SetAsBox(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1), b2Vec2(x, y), 0.f);
             lua_pop(L_main, 3);
             break;
         }

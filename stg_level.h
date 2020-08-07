@@ -9,6 +9,11 @@
 #include "stg_thinker.h"
 #include "stg_pattern.h"
 #include "stg_state_man.h"
+#include "contact_listener.h"
+
+#ifdef STG_DEBUG_PHY_DRAW
+#include "physical_draw.h"
+#endif
 
 #include <lua.hpp>
 #include <box2d/box2d.h>
@@ -113,6 +118,9 @@ private:
     float time_step;
 
     /* Physical things. */
+#ifdef STG_DEBUG_PHY_DRAW
+    STGDebugContactListener d_contact_listener;
+#endif
     b2World *world;
     b2BodyDef bd; /* Used for create char's physic in staging. */
     b2Body *player;
@@ -130,6 +138,10 @@ private:
     int get_id() noexcept;
     void return_id(int id) noexcept;
     void reset_id() noexcept;
+
+#ifdef STG_DEBUG_PHY_DRAW
+    PhysicalDraw p_draw;
+#endif
 };
 
 #endif

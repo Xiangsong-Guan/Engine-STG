@@ -216,6 +216,12 @@ void STGLevel::Load(int width, int height, float time_step,
     bound[3] = physical_width + STG_FIELD_BOUND_BUFFER;
     world = new b2World(b2Vec2(0.f, 0.f));
 
+#ifdef STG_DEBUG_PHY_DRAW
+    p_draw.Init(PIXIL_PRE_M * scale);
+    world->SetDebugDraw(&p_draw);
+    world->SetContactListener(&d_contact_listener);
+#endif
+
     /* Set right thing for comps */
     for (int i = 0; i < MAX_ON_STAGE; i++)
     {
@@ -431,11 +437,16 @@ void STGLevel::Update()
 
 void STGLevel::Render(float forward_time)
 {
+#ifndef STG_JUST_DRAW_PHY
     /* draw to off-window frame */
     for (int i = 0; i < sprite_renderers_n; i++)
         sprite_renderers[i].Draw(forward_time);
+#endif
 
-    /* post process */
+#ifdef STG_DEBUG_PHY_DRAW
+    world->DrawDebugData();
+    p_draw.DrawContact(d_contact_listener.ContactPairs);
+#endif
 }
 
 /*************************************************************************************************
