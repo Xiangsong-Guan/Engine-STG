@@ -65,8 +65,13 @@ public:
         PRIORTY[static_cast<int>(STGCharCommand::DISABLE)] = 5;
         PRIORTY[static_cast<int>(STGCharCommand::RESPAWN)] = 5;
     }
+    SCSMovement(const SCSMovement &) = delete;
+    SCSMovement(SCSMovement &&) = delete;
+    SCSMovement &operator=(const SCSMovement &) = delete;
+    SCSMovement &operator=(SCSMovement &&) = delete;
+    virtual ~SCSMovement() = default;
 
-    virtual bool CheckInput(STGCharCommand cmd) noexcept final
+    bool CheckInput(STGCharCommand cmd) noexcept final
     {
         if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[static_cast<int>(next_i)])
             next_i = cmd;
@@ -79,9 +84,14 @@ class SCSMovementStatic : public SCSMovement
 public:
     ALLEGRO_BITMAP *Texture[static_cast<int>(Movement::NUM)];
 
-    SCSMovementStatic() : SCSMovement() {}
+    SCSMovementStatic() = default;
+    SCSMovementStatic(const SCSMovementStatic &) = delete;
+    SCSMovementStatic(SCSMovementStatic &&) = delete;
+    SCSMovementStatic &operator=(const SCSMovementStatic &) = delete;
+    SCSMovementStatic &operator=(SCSMovementStatic &&) = delete;
+    ~SCSMovementStatic() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    void Init(const STGCharactorSetting &setting) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
@@ -91,7 +101,7 @@ public:
             Next[i] = nullptr;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCS *o) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
@@ -100,7 +110,7 @@ public:
             Next[i] = nullptr;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         if (Next[static_cast<int>(next_i)])
         {
@@ -122,9 +132,14 @@ class SCSMovementAnimed : public SCSMovement
 public:
     Anime Animation[static_cast<int>(Movement::NUM)];
 
-    SCSMovementAnimed() : SCSMovement() {}
+    SCSMovementAnimed() = default;
+    SCSMovementAnimed(const SCSMovementAnimed &) = delete;
+    SCSMovementAnimed(SCSMovementAnimed &&) = delete;
+    SCSMovementAnimed &operator=(const SCSMovementAnimed &) = delete;
+    SCSMovementAnimed &operator=(SCSMovementAnimed &&) = delete;
+    ~SCSMovementAnimed() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    void Init(const STGCharactorSetting &setting) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
@@ -134,7 +149,7 @@ public:
             Next[i] = nullptr;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCS *o) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
@@ -147,7 +162,7 @@ public:
             Next[i] = nullptr;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         if (Next[static_cast<int>(next_i)])
         {
@@ -198,8 +213,13 @@ public:
         FILTER[static_cast<int>(STGCharCommand::RIGHT)] = true;
         FILTER[static_cast<int>(STGCharCommand::MOVE_XY)] = true;
     }
+    SCSBorn(const SCSBorn &) = delete;
+    SCSBorn(SCSBorn &&) = delete;
+    SCSBorn &operator=(const SCSBorn &) = delete;
+    SCSBorn &operator=(SCSBorn &&) = delete;
+    virtual ~SCSBorn() = default;
 
-    virtual bool CheckInput(STGCharCommand cmd) noexcept final
+    bool CheckInput(STGCharCommand cmd) noexcept final
     {
         return FILTER[static_cast<int>(cmd)];
     }
@@ -210,9 +230,14 @@ class SCSBornAnimed : public SCSBorn
 public:
     Anime Animation;
 
-    SCSBornAnimed() : SCSBorn() {}
+    SCSBornAnimed() = default;
+    SCSBornAnimed(const SCSBornAnimed &) = delete;
+    SCSBornAnimed(SCSBornAnimed &&) = delete;
+    SCSBornAnimed &operator=(const SCSBornAnimed &) = delete;
+    SCSBornAnimed &operator=(SCSBornAnimed &&) = delete;
+    ~SCSBornAnimed() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    void Init(const STGCharactorSetting &setting) final
     {
         Animation = ResourceManager::GetAnime(setting.Texs.SpriteBorn);
         /* Born time should be same with born animation time */
@@ -221,7 +246,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCS *o) final
     {
         Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
         Animation.Reset();
@@ -231,7 +256,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer <= Duration)
@@ -253,23 +278,28 @@ public:
 class SCSBornNoTexture : public SCSBorn
 {
 public:
-    SCSBornNoTexture() : SCSBorn() {}
+    SCSBornNoTexture() = default;
+    SCSBornNoTexture(const SCSBornNoTexture &) = delete;
+    SCSBornNoTexture(SCSBornNoTexture &&) = delete;
+    SCSBornNoTexture &operator=(const SCSBornNoTexture &) = delete;
+    SCSBornNoTexture &operator=(SCSBornNoTexture &&) = delete;
+    ~SCSBornNoTexture() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    void Init(const STGCharactorSetting &setting) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCS *o) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer < Duration)
@@ -287,9 +317,14 @@ class SCSBornStatic : public SCSBorn
 public:
     ALLEGRO_BITMAP *Texture;
 
-    SCSBornStatic() : SCSBorn() {}
+    SCSBornStatic() = default;
+    SCSBornStatic(const SCSBornStatic &) = delete;
+    SCSBornStatic(SCSBornStatic &&) = delete;
+    SCSBornStatic &operator=(const SCSBornStatic &) = delete;
+    SCSBornStatic &operator=(SCSBornStatic &&) = delete;
+    ~SCSBornStatic() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    void Init(const STGCharactorSetting &setting) final
     {
         Texture = ResourceManager::GetTexture(setting.Texs.SpriteBorn);
         Next = nullptr;
@@ -297,7 +332,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCS *o) final
     {
         Texture = dynamic_cast<const SCSBornStatic *>(o)->Texture;
         Duration = BORN_TIME;
@@ -305,7 +340,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer == Duration)
@@ -331,9 +366,9 @@ public:
 //     SCSShooting &operator=(SCSShooting &&) = delete;
 //     ~SCSShooting() = default;
 
-//     virtual void Action(STGCharactor *sc) final;
-//     virtual void Enter(STGCharactor *sc) final;
-//     virtual void Leave(STGCharactor *sc) final;
+//     void Action(STGCharactor *sc) final;
+//     void Enter(STGCharactor *sc) final;
+//     void Leave(STGCharactor *sc) final;
 // };
 
 // class SCSSync : public SCS
@@ -346,9 +381,9 @@ public:
 //     SCSSync &operator=(SCSSync &&) = delete;
 //     ~SCSSync() = default;
 
-//     virtual void Action(STGCharactor *sc) final;
-//     virtual void Enter(STGCharactor *sc) final;
-//     virtual void Leave(STGCharactor *sc) final;
+//     void Action(STGCharactor *sc) final;
+//     void Enter(STGCharactor *sc) final;
+//     void Leave(STGCharactor *sc) final;
 // };
 
 // class SCSFSync : public SCS
@@ -361,9 +396,9 @@ public:
 //     SCSFSync &operator=(SCSFSync &&) = delete;
 //     ~SCSFSync() = default;
 
-//     virtual void Action(STGCharactor *sc) final;
-//     virtual void Enter(STGCharactor *sc) final;
-//     virtual void Leave(STGCharactor *sc) final;
+//     void Action(STGCharactor *sc) final;
+//     void Enter(STGCharactor *sc) final;
+//     void Leave(STGCharactor *sc) final;
 // };
 
 // class SCSShift : public SCS
@@ -376,9 +411,9 @@ public:
 //     SCSShift &operator=(SCSShift &&) = delete;
 //     ~SCSShift() = default;
 
-//     virtual void Action(STGCharactor *sc) final;
-//     virtual void Enter(STGCharactor *sc) final;
-//     virtual void Leave(STGCharactor *sc) final;
+//     void Action(STGCharactor *sc) final;
+//     void Enter(STGCharactor *sc) final;
+//     void Leave(STGCharactor *sc) final;
 // };
 
 // class SCSDisbaled : public SCS
@@ -391,9 +426,9 @@ public:
 //     SCSDisbaled &operator=(SCSDisbaled &&) = delete;
 //     ~SCSDisbaled() = default;
 
-//     virtual void Action(STGCharactor *sc) final;
-//     virtual void Enter(STGCharactor *sc) final;
-//     virtual void Leave(STGCharactor *sc) final;
+//     void Action(STGCharactor *sc) final;
+//     void Enter(STGCharactor *sc) final;
+//     void Leave(STGCharactor *sc) final;
 // };
 
 #endif

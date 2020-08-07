@@ -77,14 +77,14 @@ public:
     /* Stage flow control API */
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
     void Brain(int char_id, lua_State *co) noexcept;
-    virtual void Debut(int char_id, float x, float y) final;
-    virtual void Airborne(int char_id, float x, float y, lua_State *co) final;
-    virtual void Airborne(int char_id, float x, float y,
-                          SCPatternsCode ptn, SCPatternData pd) final;
-    virtual void Pause() const final;
-    virtual void DisableAll(int id) final;
-    virtual void DisablePtn(int id) final;
-    virtual void DisableThr(int id) final;
+    void Debut(int char_id, float x, float y) final;
+    void Airborne(int char_id, float x, float y, lua_State *co) final;
+    void Airborne(int char_id, float x, float y,
+                  SCPatternsCode ptn, SCPatternData pd) final;
+    void Pause() const final;
+    void DisableAll(int id) final;
+    void DisablePtn(int id) final;
+    void DisableThr(int id) final;
 
 private:
     /* Preload things */

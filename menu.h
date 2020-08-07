@@ -42,8 +42,8 @@ public:
     void Attach() noexcept;
     void Detach() noexcept;
 
-    virtual void Update() final;
-    virtual void Render(float forward_time) final;
+    void Update() final;
+    void Render(float forward_time) final;
 
 private:
     static constexpr int MAX_MENU_ITEM = 64u;

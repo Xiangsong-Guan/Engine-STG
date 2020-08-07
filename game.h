@@ -51,12 +51,12 @@ public:
     void Render(float forward_time);
 
     /* command things */
-    virtual void Esc() final;
-    virtual void LinkStart() final;
-    virtual void LinkEnd() noexcept final;
-    virtual void STGPause() final;
-    virtual void STGResume() final;
-    virtual void STGReturn(bool from_level) final;
+    void Esc() final;
+    void LinkStart() final;
+    void LinkEnd() noexcept final;
+    void STGPause() final;
+    void STGResume() final;
+    void STGReturn(bool from_level) final;
 
 private:
     STGInput stg_input;

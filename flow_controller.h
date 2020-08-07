@@ -8,6 +8,13 @@
 class STGFlowController
 {
 public:
+    STGFlowController() = default;
+    STGFlowController(const STGFlowController &) = delete;
+    STGFlowController(STGFlowController &&) = delete;
+    STGFlowController &operator=(const STGFlowController &) = delete;
+    STGFlowController &operator=(STGFlowController &&) = delete;
+    virtual ~STGFlowController() = default;
+
     virtual void Debut(int char_id, float x, float y) = 0;
     virtual void Airborne(int char_id, float x, float y, lua_State *co) = 0;
     virtual void Airborne(int char_id, float x, float y,

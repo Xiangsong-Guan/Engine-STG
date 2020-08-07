@@ -16,6 +16,13 @@ class STGCharactor;
 class SCS
 {
 public:
+    SCS() = default;
+    SCS(const SCS &) = delete;
+    SCS(SCS &&) = delete;
+    SCS &operator=(const SCS &) = delete;
+    SCS &operator=(SCS &&) = delete;
+    virtual ~SCS() = default;
+
     virtual void Init(const STGCharactorSetting &setting) = 0;
     virtual void Copy(const SCS *o) = 0;
     virtual void Action(STGCharactor *sc) = 0;
