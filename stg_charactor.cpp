@@ -65,7 +65,7 @@ void STGCharactor::Enable(int id, b2Body *body, const STGCharactorSetting &setti
     /* Prepare the enter state */
     SPending = enter;
 
-    speed = 5.f;
+    speed = setting.DefaultSpeed;
 }
 
 /*************************************************************************************************

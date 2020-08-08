@@ -179,6 +179,7 @@ struct STGCharactorSetting
 {
     std::string Name;
 
+    int DefaultSpeed;
     PhysicalFixture Phy;
     STGTexture Texs;
 };

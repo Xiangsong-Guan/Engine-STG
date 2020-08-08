@@ -361,6 +361,16 @@ void ResourceManager::LoadSTGChar(const std::string &name)
     cs.Phy = load_phyfix(name, &shape_code);
     cs.Texs = load_stg_texture(name);
 
+    /* Default STG status */
+    if (lua_getfield(L_main, -1, "default_speed") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
+    {
+        std::cerr << "Failed to load STG Char " << name << ": "
+                  << "invalid default speed!\n";
+        return;
+    }
+    cs.DefaultSpeed = lua_tointeger(L_main, -1);
+    lua_pop(L_main, 1);
+
     /* All charactors is sensor. */
     cs.Phy.FD.isSensor = true;
 
