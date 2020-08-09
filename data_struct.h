@@ -2,6 +2,7 @@
 #define GAME_DATA_STRUCT_H
 
 #include "game_event.h"
+#include "anime.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -102,7 +103,8 @@ enum class AccelerateType
 
 struct KinematicPhase
 {
-    float V;
+    float VV;
+    float VR;
     int PhaseTime;   /* frame */
     float TransTime; /* sec. */
     AccelerateType AT;
@@ -110,10 +112,11 @@ struct KinematicPhase
 
 struct KinematicSeq
 {
+    bool Track;
     bool Loop;
+    bool Stay;
 
-    std::vector<KinematicPhase> SpeedSeq;
-    std::vector<KinematicPhase> AngleSeq;
+    std::vector<KinematicPhase> Seq;
 };
 
 /*************************************************************************************************
@@ -128,20 +131,37 @@ struct STGBulletSetting
 
     PhysicalFixture Phy;
 
-    STGTexture Texs;
+    Anime BTex;
+    ALLEGRO_BITMAP *ITex;
+    Anime DTex;
 
     int Damage;
     float Speed;
 
-    bool Track;
-    KinematicSeq KinematicPhases;
+    KinematicSeq KS;
 };
 
 /*************************************************************************************************
  *                                                                                               *
- *                               STG Bullet Setting & Pattern                                    *
+ *                             STG SHooter Setting & Pattern                                     *
+ *                   Unlike bullet: Pattern is not bind with Shooter!                            *
  *                                                                                               *
  *************************************************************************************************/
+
+enum class SSPatternsCode
+{
+    CONTROLLED,
+    STAY,
+    TOTAL_TURN,
+
+    NUM
+};
+
+union SSPatternData
+{
+    float TurnSpeed;
+    int ControlFunRef;
+};
 
 struct Luncher
 {
@@ -156,16 +176,13 @@ struct STGShooterSetting
 {
     std::string Name;
 
-    STGTexture Texs;
-
-    int AmmoSlotsNum;
+    size_t AmmoSlotsNum;
     int Power;
-    int Speed;
+    float Speed;
 
     std::vector<Luncher> Lunchers;
 
-    bool Track;
-    KinematicSeq KinematicPhases;
+    SSPatternsCode Pattern;
 };
 
 /*************************************************************************************************
@@ -179,7 +196,7 @@ struct STGCharactorSetting
 {
     std::string Name;
 
-    int DefaultSpeed;
+    float DefaultSpeed;
     PhysicalFixture Phy;
     STGTexture Texs;
 };

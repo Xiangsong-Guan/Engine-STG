@@ -14,9 +14,6 @@
 class ResourceManager
 {
 private:
-    /* The key of stg stage threads table. */
-    static const char *STG_STAGE_FUNCTIONS_KEY;
-
     /* Some file path and ext. */
     static std::string path_to_art;
     static std::string path_to_stg_shooter;
@@ -41,9 +38,13 @@ private:
     /* aux function */
     static PhysicalFixture load_phyfix(const std::string &name, ShapeType *ret_sc);
     static STGTexture load_stg_texture(const std::string &name);
-    static KinematicSeq load_kinematic_phases(const std::string &name);
+    static KinematicSeq load_kinematic_seq(const std::string &name);
 
 public:
+    /* The key of stg stage threads table. */
+    static const char *STG_STAGE_FUNCTIONS_KEY;
+    static const char *STG_SHOOT_FUNCTIONS_KEY;
+
     /* It is static */
     ResourceManager() = delete;
     ResourceManager(const ResourceManager &) = delete;
@@ -64,7 +65,6 @@ public:
     /* STG Level */
     static void LoadSTGLevel(const std::string &name);
     static STGLevelSetting &GetSTGLevel(const std::string &name);
-    static lua_State *GetSTGStageCoroutine(const std::string &name);
     /* STG Char */
     static void LoadSTGChar(const std::string &name);
     static STGCharactorSetting &GetSTGChar(const std::string &name);
@@ -82,6 +82,7 @@ public:
     static ALLEGRO_FONT *GetFont(const std::string &name);
 
     /* other functions */
+    static lua_State *GetCoroutine(const char *type, const std::string &name);
     // static void Clear();
 };
 

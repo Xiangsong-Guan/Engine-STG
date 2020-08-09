@@ -61,22 +61,22 @@ std::unordered_map<std::string, std::function<void(Menu *)>> Menu::menu_cmds;
 
 void Menu::test_start() const
 {
-    con->LinkStart();
+    GameCon->LinkStart();
 }
 
 void Menu::test_end() const
 {
-    con->LinkEnd();
+    GameCon->LinkEnd();
 }
 
 void Menu::stg_resume() const
 {
-    con->STGResume();
+    GameCon->STGResume();
 }
 
 void Menu::stg_return() const
 {
-    con->STGReturn(false);
+    GameCon->STGReturn(false);
 }
 
 void Menu::InitMenuStaff()
@@ -98,7 +98,7 @@ void Menu::InitMenuStaff()
  *                                                                                               *
  *************************************************************************************************/
 
-Menu::Menu() : item_n(0), cursor(0), con(nullptr)
+Menu::Menu() : item_n(0), cursor(0), GameCon(nullptr)
 {
     Recv = al_create_event_queue();
     if (!Recv)
@@ -114,7 +114,7 @@ Menu::~Menu()
 }
 
 void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string> &funcs,
-                 GameFlowController *c, int width, int height)
+                 int width, int height)
 {
     item_n = 0;
     btn_n = 0;
@@ -135,7 +135,6 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
         item_n += 1;
     }
 
-    con = c;
     Width = width;
     Height = height;
 }

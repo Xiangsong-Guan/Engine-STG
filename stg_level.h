@@ -29,6 +29,7 @@ enum class STGCompType
     RENDER,
     THINKER,
     PATTERN,
+    SHOOTER,
 
     NUM,
 
@@ -49,6 +50,8 @@ struct StageCharInfo
 class STGLevel : public Scene, public STGFlowController
 {
 public:
+    GameFlowController *GameCon;
+
     /* Store the Player's stg status. */
     STGCharactorSetting GPlayer;
     std::unordered_map<std::string, STGBulletSetting> GAmmos;
@@ -63,8 +66,7 @@ public:
     ~STGLevel() = default;
 
     /* Self constructor */
-    void Load(int width, int height, float time_step,
-              const STGLevelSetting &setting, GameFlowController *c);
+    void Load(int width, int height, float time_step, const STGLevelSetting &setting);
     void Unload();
 
     /* GameLoop */
@@ -128,8 +130,6 @@ private:
     /* Lua Things. */
     lua_State *L_stage;
     int stage_thread_ref;
-
-    GameFlowController *con;
 
     /* ID System */
     int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];

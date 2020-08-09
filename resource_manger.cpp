@@ -31,6 +31,7 @@ std::string ResourceManager::path_to_stg_level = "stg_level/";
 /* Initialize Lua State. Can use this function read initialize setting? */
 lua_State *ResourceManager::L_main = nullptr;
 const char *ResourceManager::STG_STAGE_FUNCTIONS_KEY = "STG_STAGE_FUNCTIONS";
+const char *ResourceManager::STG_SHOOT_FUNCTIONS_KEY = "STG_SHOOT_FUNCTIONS";
 static int simple_lmod_loader(lua_State *L)
 {
     luaL_dofile(L, lua_tostring(L, 1));
@@ -307,7 +308,7 @@ STGLevelSetting &ResourceManager::GetSTGLevel(const std::string &name)
     return stg_levels.at(name);
 }
 
-lua_State *ResourceManager::GetSTGStageCoroutine(const std::string &name)
+lua_State *ResourceManager::GetCoroutine(const char *type, const std::string &name)
 {
 #ifdef _DEBUG
     int _d_top = lua_gettop(L_main);
@@ -315,8 +316,9 @@ lua_State *ResourceManager::GetSTGStageCoroutine(const std::string &name)
 
     lua_State *ret;
 
-    lua_getfield(L_main, LUA_REGISTRYINDEX, STG_STAGE_FUNCTIONS_KEY);
-    lua_getfield(L_main, -1, name.c_str());
+    lua_getfield(L_main, LUA_REGISTRYINDEX, type);
+    if (lua_getfield(L_main, -1, name.c_str()) != LUA_TFUNCTION)
+        throw "no such lua function";
     lua_remove(L_main, -2);
     ret = lua_newthread(L_main);
     lua_pop(L_main, 1);
@@ -362,13 +364,13 @@ void ResourceManager::LoadSTGChar(const std::string &name)
     cs.Texs = load_stg_texture(name);
 
     /* Default STG status */
-    if (lua_getfield(L_main, -1, "default_speed") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
+    if (lua_getfield(L_main, -1, "default_speed") != LUA_TNUMBER)
     {
         std::cerr << "Failed to load STG Char " << name << ": "
                   << "invalid default speed!\n";
         return;
     }
-    cs.DefaultSpeed = lua_tointeger(L_main, -1);
+    cs.DefaultSpeed = lua_tonumber(L_main, -1);
     lua_pop(L_main, 1);
 
     /* All charactors is sensor. */
@@ -433,15 +435,8 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     bs.Speed = lua_tonumber(L_main, -1);
     lua_pop(L_main, 1);
 
-    /* Bullet track? */
-    if (lua_getfield(L_main, -1, "track") != LUA_TBOOLEAN)
-        INVALID_BULLET(name, "invalid track!");
-    bs.Track = lua_toboolean(L_main, -1);
-    lua_pop(L_main, 1);
-
     /* Bullet patterns */
-    if (!bs.Track)
-        bs.KinematicPhases = load_kinematic_phases(name);
+    bs.KS = load_kinematic_seq(name);
 
     lua_pop(L_main, 1);
     stg_bullets.emplace(name, std::move(bs));
@@ -504,15 +499,21 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     ss.AmmoSlotsNum = lua_tonumber(L_main, -1);
     lua_pop(L_main, 1);
 
-    /* track? */
-    if (lua_getfield(L_main, -1, "track") != LUA_TBOOLEAN)
-        INVALID_SHOOTER(name, "invalid track!");
-    ss.Track = lua_toboolean(L_main, -1);
+    /* patterns */
+    if (lua_getfield(L_main, -1, "pattern") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
+        INVALID_SHOOTER(name, "invalid pattern!");
+    ss.Pattern = static_cast<SSPatternsCode>(lua_tointeger(L_main, -1));
     lua_pop(L_main, 1);
 
-    /* patterns */
-    if (!ss.Track)
-        ss.KinematicPhases = load_kinematic_phases(name);
+    if (ss.Pattern == SSPatternsCode::CONTROLLED)
+    {
+        if (lua_getfield(L_main, -1, "update") != LUA_TFUNCTION)
+            INVALID_SHOOTER(name, "invalid update function!")
+        lua_getfield(L_main, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
+        lua_pushvalue(L_main, -2);
+        lua_setfield(L_main, -2, name.c_str());
+        lua_pop(L_main, 2);
+    }
 
     /* lunchers */
     if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE)
@@ -803,16 +804,31 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         return KinematicSeq();                                            \
     }
 
-KinematicSeq ResourceManager::load_kinematic_phases(const std::string &name)
+KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
 {
 #ifdef _DEBUG
     int _d_top = lua_gettop(L_main);
 #endif
 
     KinematicSeq kps;
+    kps.Stay = false;
 
     if (lua_getfield(L_main, -1, "kinematic_seq") != LUA_TTABLE)
-        INVALID_KINEMATIC_PHASES(name, "invalid kinematic define!");
+    {
+        kps.Stay = true;
+        return kps;
+    }
+
+    /* track? */
+    if (lua_getfield(L_main, -1, "track") != LUA_TBOOLEAN)
+        INVALID_SHOOTER(name, "invalid track!");
+    kps.Track = lua_toboolean(L_main, -1);
+    lua_pop(L_main, 1);
+    if (kps.Track)
+    {
+        lua_pop(L_main, 1);
+        return kps;
+    }
 
     /* LOOP? */
     if (lua_getfield(L_main, -1, "loop") != LUA_TBOOLEAN)
@@ -821,7 +837,7 @@ KinematicSeq ResourceManager::load_kinematic_phases(const std::string &name)
     lua_pop(L_main, 1);
 
     /* Speed change. */
-    if (lua_getfield(L_main, -1, "speed") != LUA_TTABLE)
+    if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE)
         INVALID_KINEMATIC_PHASES(name, "invalid speed seq define!");
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {
@@ -829,49 +845,25 @@ KinematicSeq ResourceManager::load_kinematic_phases(const std::string &name)
             INVALID_KINEMATIC_PHASES(name, "invalid speed seq define!");
 
         if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
-            INVALID_KINEMATIC_PHASES(name, "invalid speed V!");
+            INVALID_KINEMATIC_PHASES(name, "invalid speed Vv!");
         if (lua_geti(L_main, -2, 2) != LUA_TNUMBER)
-            INVALID_KINEMATIC_PHASES(name, "invalid speed time!");
+            INVALID_KINEMATIC_PHASES(name, "invalid speed Va!");
         if (lua_geti(L_main, -3, 3) != LUA_TNUMBER)
+            INVALID_KINEMATIC_PHASES(name, "invalid speed time!");
+        if (lua_geti(L_main, -4, 4) != LUA_TNUMBER)
             INVALID_KINEMATIC_PHASES(name, "invalid speed dur!");
-        if (lua_geti(L_main, -4, 4) != LUA_TNUMBER || !lua_isinteger(L_main, -1))
+        if (lua_geti(L_main, -5, 5) != LUA_TNUMBER || !lua_isinteger(L_main, -1))
             INVALID_KINEMATIC_PHASES(name, "invalid speed at!");
 
-        kps.SpeedSeq.push_back({static_cast<float>(lua_tonumber(L_main, -4)),
-                                std::lroundf(lua_tonumber(L_main, -3) *
-                                             static_cast<float>(UPDATE_PER_SEC)),
-                                static_cast<float>(lua_tonumber(L_main, -2)),
-                                static_cast<AccelerateType>(lua_tointeger(L_main, -1))});
-        lua_pop(L_main, 5);
+        kps.Seq.push_back({static_cast<float>(lua_tonumber(L_main, -5)),
+                           static_cast<float>(lua_tonumber(L_main, -4)),
+                           std::lroundf(lua_tonumber(L_main, -3) *
+                                        static_cast<float>(UPDATE_PER_SEC)),
+                           static_cast<float>(lua_tonumber(L_main, -2)),
+                           static_cast<AccelerateType>(lua_tointeger(L_main, -1))});
+        lua_pop(L_main, 6);
     }
-    kps.SpeedSeq.shrink_to_fit();
-    lua_pop(L_main, 1);
-
-    /* Angle change */
-    if (lua_getfield(L_main, -1, "angle") != LUA_TTABLE)
-        INVALID_KINEMATIC_PHASES(name, "invalid angle seq define!");
-    for (int i = 0; i < luaL_len(L_main, -1); i++)
-    {
-        if (lua_geti(L_main, -1, i + 1) != LUA_TTABLE)
-            INVALID_KINEMATIC_PHASES(name, "invalid angle seq define!");
-
-        if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
-            INVALID_KINEMATIC_PHASES(name, "invalid V!");
-        if (lua_geti(L_main, -2, 2) != LUA_TNUMBER)
-            INVALID_KINEMATIC_PHASES(name, "invalid time!");
-        if (lua_geti(L_main, -3, 3) != LUA_TNUMBER)
-            INVALID_KINEMATIC_PHASES(name, "invalid dur!");
-        if (lua_geti(L_main, -4, 4) != LUA_TNUMBER || !lua_isinteger(L_main, -1))
-            INVALID_KINEMATIC_PHASES(name, "invalid at!");
-
-        kps.AngleSeq.push_back({static_cast<float>(lua_tonumber(L_main, -4)),
-                                std::lroundf(lua_tonumber(L_main, -3) *
-                                             static_cast<float>(UPDATE_PER_SEC)),
-                                static_cast<float>(lua_tonumber(L_main, -2)),
-                                static_cast<AccelerateType>(lua_tointeger(L_main, -1))});
-        lua_pop(L_main, 5);
-    }
-    kps.AngleSeq.shrink_to_fit();
+    kps.Seq.shrink_to_fit();
     lua_pop(L_main, 1);
 
     lua_pop(L_main, 1);

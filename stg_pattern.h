@@ -32,7 +32,7 @@ public:
     STGFlowController *Con;
 
 private:
-    b2Body *physics;
+    const b2Body *physics;
     SCPatternData data;
     std::function<void(SCPattern *)> pattern;
 
