@@ -18,6 +18,11 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
     *ptn = static_cast<SCPatternsCode>(luaL_checkinteger(L, pd_idx));
     switch (*ptn)
     {
+    case SCPatternsCode::CONTROLLED:
+        luaL_checktype(L, pd_idx + 1, LUA_TTHREAD);
+        data->AI = lua_tothread(L, pd_idx + 1);
+        break;
+
     case SCPatternsCode::MOVE_TO:
     case SCPatternsCode::MOVE_LAST:
         data->Vec.X = luaL_checknumber(L, pd_idx + 1);
@@ -26,8 +31,7 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
 
     case SCPatternsCode::MOVE_PASSBY:
         data->Passby.Where = 0;
-        if (!lua_isboolean(L, pd_idx + 1))
-            luaL_typeerror(L, pd_idx + 1, "boolean");
+        luaL_checktype(L, pd_idx + 1, LUA_TBOOLEAN);
         data->Passby.Loop = lua_toboolean(L, pd_idx + 1);
         data->Passby.Num = 0;
         for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
@@ -45,6 +49,10 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
     *ptn = static_cast<SCPatternsCode>(lua_tointeger(L, pd_idx));
     switch (*ptn)
     {
+    case SCPatternsCode::CONTROLLED:
+        data->AI = lua_tothread(L, pd_idx + 1);
+        break;
+
     case SCPatternsCode::MOVE_TO:
     case SCPatternsCode::MOVE_LAST:
         data->Vec.X = lua_tonumber(L, pd_idx + 1);
@@ -70,31 +78,9 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
 }
 
 /* Tell game to further load a charactor. It must debut at sometime. 
- * 1=level, 2=char_id, 3=coroutine
- * no return */
-static int further_load_thinker(lua_State *L)
-{
-    int id;
-    STGLevel *level;
-
-#ifdef STG_LUA_API_ARG_CHECK
-    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-    id = luaL_checkinteger(L, 2) - 1;
-    luaL_checktype(L, 3, LUA_TTHREAD);
-#else
-    id = lua_tointeger(L, 2) - 1;
-#endif
-    level = static_cast<STGLevel *>(lua_touserdata(L, 1));
-
-    level->Brain(id, lua_tothread(L, 3));
-
-    return 0;
-}
-
-/* Tell game to further load a charactor. It must debut at sometime. 
  * 1=level, 2=char_id, 3=pattern, 4...=pd
  * no return */
-static int further_load_pattern(lua_State *L)
+static int further_load(lua_State *L)
 {
     int id;
     SCPatternsCode ptn;
@@ -110,7 +96,6 @@ static int further_load_pattern(lua_State *L)
     level = static_cast<STGLevel *>(lua_touserdata(L, 1));
 
     load_pattern(L, 3, &ptn, &pd);
-
     level->FillMind(id, ptn, std::move(pd));
 
     return 0;
@@ -165,20 +150,14 @@ static int airborne(lua_State *L)
 #endif
     level = static_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    if (!lua_isthread(L, 5))
-    {
-        load_pattern(L, 5, &ptn, &pd);
-        level->Airborne(id, x, y, ptn, std::move(pd));
-    }
-    else
-        level->Airborne(id, x, y, lua_tothread(L, 5));
+    load_pattern(L, 5, &ptn, &pd);
+    level->Airborne(id, x, y, ptn, std::move(pd));
 
     return 0;
 }
 
 static const luaL_Reg level_con[] = {
-    {"further_load_thinker", further_load_thinker},
-    {"further_load_pattern", further_load_pattern},
+    {"further_load", further_load},
     {"debut", debut},
     {"airborne", airborne},
     {NULL, NULL}};
@@ -189,8 +168,7 @@ static const luaL_Reg level_con[] = {
  *                                                                                               *
  *************************************************************************************************/
 
-void STGLevel::Load(int width, int height, float time_step,
-                    const STGLevelSetting &setting, GameFlowController *c)
+void STGLevel::Load(int width, int height, float time_step, const STGLevelSetting &setting)
 {
     /* Body define can be share, all charactors is kinematic. */
     bd.type = b2_kinematicBody;
@@ -204,16 +182,11 @@ void STGLevel::Load(int width, int height, float time_step,
                           SCREEN_WIDTH / SCREEN_HEIGHT
                       ? static_cast<float>(height) / static_cast<float>(SCREEN_HEIGHT)
                       : static_cast<float>(width) / static_cast<float>(SCREEN_WIDTH);
-    physical_width = static_cast<float>(width) / (PIXIL_PRE_M * scale);
-    physical_height = static_cast<float>(height) / (PIXIL_PRE_M * scale);
-    con = c;
-    this->width = width;
-    this->height = height;
     this->time_step = time_step;
     bound[0] = 0.f - STG_FIELD_BOUND_BUFFER;
-    bound[1] = physical_height + STG_FIELD_BOUND_BUFFER;
+    bound[1] = PHYSICAL_HEIGHT + STG_FIELD_BOUND_BUFFER;
     bound[2] = 0.f - STG_FIELD_BOUND_BUFFER;
-    bound[3] = physical_width + STG_FIELD_BOUND_BUFFER;
+    bound[3] = PHYSICAL_WIDTH + STG_FIELD_BOUND_BUFFER;
     world = new b2World(b2Vec2(0.f, 0.f));
 
 #ifdef STG_DEBUG_PHY_DRAW
@@ -229,7 +202,6 @@ void STGLevel::Load(int width, int height, float time_step,
 
         onstage_thinkers[i].Con = this;
         onstage_charactors[i].Con = this;
-        onstage_patterns[i].Con = this;
     }
 
     /* pool reset */
@@ -263,7 +235,7 @@ void STGLevel::Load(int width, int height, float time_step,
     }
 
     /* Get stage thread in position. (coroutine, function already on the top) */
-    L_stage = ResourceManager::GetSTGStageCoroutine(setting.Name);
+    L_stage = ResourceManager::GetCoroutine(ResourceManager::STG_STAGE_FUNCTIONS_KEY, setting.Name);
     /* Save thread in Lua, or it will be collected. */
     lua_pushthread(L_stage);
     stage_thread_ref = luaL_ref(L_stage, LUA_REGISTRYINDEX);
@@ -295,7 +267,7 @@ void STGLevel::Load(int width, int height, float time_step,
     al_register_event_source(sprite_renderers[0].Recv, onstage_charactors[0].RendererMaster);
     al_register_event_source(onstage_thinkers[0].Recv, onstage_charactors[0].KneeJump);
     /* Make body and tune fixture for player */
-    bd.position.Set(physical_width * .5f, physical_height * .75f);
+    bd.position.Set(PHYSICAL_WIDTH * .5f, PHYSICAL_HEIGHT * .75f);
     player = world->CreateBody(&bd);
     GPlayer.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
     GPlayer.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER);
@@ -303,9 +275,11 @@ void STGLevel::Load(int width, int height, float time_step,
     /* MUST BE 0 */
     int p_id = get_id();
     /* Player on stage. */
+    SCPatternData pd;
+    pd.AI = player_watching;
     onstage_charactors[0].Enable(p_id, player, GPlayer, all_state.MakeChar(GPlayer));
     sprite_renderers[0].Show(p_id, player, GPlayer.Texs.VeryFirstTex);
-    onstage_thinkers[0].Active(p_id, player_watching);
+    onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
     /* id record */
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
     records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
@@ -314,7 +288,6 @@ void STGLevel::Load(int width, int height, float time_step,
     charactors_n = 1;
     thinkers_n = 1;
     sprite_renderers_n = 1;
-    patterns_n = 0;
 }
 
 /* ONLY call by outside. */
@@ -353,21 +326,18 @@ void STGLevel::Update()
 {
     /* Thinking... Disable can be cancel here. */
     /* Disable process invoked by thinker (I think I am dead...). Thinker will notify charactor,
-     * charactor will notify render... All these comps will tell level to disable themselves. */
-    for (int i = thinkers_n - 1; i >= 0; i--)
-        onstage_thinkers[i].Think();
-
-    /* Simple pattern do not recieve feedback from charactor, that means they do no thinking or 
+     * charactor will notify render... All these comps will tell level to disable themselves.
+     * Simple pattern do not recieve feedback from charactor, that means they do no thinking or 
      * do reaction. Just do it. */
-    for (int i = patterns_n - 1; i >= 0; i--)
-        onstage_patterns[i].Update();
+    for (int i = 0; i < thinkers_n; i++)
+        onstage_thinkers[i].Think();
 
     /* Disabel happnned here. Disable state will be set when dead, but not action instantly.
      * Because disable state by "collision", "not in screen" and "stage". The state action will be
      * executed in next loop. So before that, thinker can save. */
     /* Charactors logic, command execute, state update, anime fresh.
      * Stgcharactor just store state and have a hit function for colloision to call. */
-    for (int i = charactors_n - 1; i >= 0; i--)
+    for (int i = 0; i < charactors_n; i++)
     {
         b2Vec2 p = onstage_charactors[i].Physics->GetPosition();
         if (p.y > bound[0] && p.y < bound[1] && p.x > bound[2] && p.x < bound[3])
@@ -398,9 +368,9 @@ void STGLevel::Update()
         pv.x = -pp.x / time_step;
         player->SetLinearVelocity(pv);
     }
-    else if (dx > physical_width)
+    else if (dx > PHYSICAL_WIDTH)
     {
-        pv.x = (physical_width - pp.x) / time_step;
+        pv.x = (PHYSICAL_WIDTH - pp.x) / time_step;
         player->SetLinearVelocity(pv);
     }
     if (dy < 0.f)
@@ -408,9 +378,9 @@ void STGLevel::Update()
         pv.y = -pp.y / time_step;
         player->SetLinearVelocity(pv);
     }
-    else if (dy > physical_height)
+    else if (dy > PHYSICAL_HEIGHT)
     {
-        pv.y = (physical_height - pp.y) / time_step;
+        pv.y = (PHYSICAL_HEIGHT - pp.y) / time_step;
         player->SetLinearVelocity(pv);
     }
 
@@ -432,7 +402,32 @@ void STGLevel::Update()
 #endif
     /* STG game over, just notify game. */
     if (good != LUA_YIELD)
-        con->STGReturn(true);
+        GameCon->STGReturn(true);
+
+    /* Memory management */
+    for (int i = 0; i < disabled_n; i++)
+    {
+        int flaw = disabled[i];
+        switch (disabled_t[i])
+        {
+        case STGCompType::CHARACTOR:
+            onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
+            records[onstage_charactors[flaw].ID][static_cast<int>(STGCompType::CHARACTOR)] = flaw;
+            charactors_n -= 1;
+            break;
+        case STGCompType::RENDER:
+            sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
+            records[sprite_renderers[flaw].ID][static_cast<int>(STGCompType::RENDER)] = flaw;
+            sprite_renderers_n -= 1;
+            break;
+        case STGCompType::THINKER:
+            onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
+            records[onstage_thinkers[flaw].ID][static_cast<int>(STGCompType::THINKER)] = flaw;
+            thinkers_n -= 1;
+            break;
+        }
+    }
+    disabled_n = 0;
 }
 
 void STGLevel::Render(float forward_time)
@@ -456,7 +451,7 @@ void STGLevel::Render(float forward_time)
  *************************************************************************************************/
 
 /* Some pool control. */
-int STGLevel::get_id() noexcept
+inline int STGLevel::get_id() noexcept
 {
     for (int i = record_hint; i < MAX_ON_STAGE; i++)
     {
@@ -480,18 +475,17 @@ int STGLevel::get_id() noexcept
     }
 
     std::cerr << "Too many things on stage!\n";
-    std::abort();
-    return -1;
+    return 0;
 }
 
-void STGLevel::reset_id() noexcept
+inline void STGLevel::reset_id() noexcept
 {
     std::memset(used_record, 0, sizeof(used_record));
     std::memset(records, -1, sizeof(records));
     record_hint = 0;
 }
 
-void STGLevel::return_id(int id) noexcept
+inline void STGLevel::return_id(int id) noexcept
 {
     used_record[id] = false;
 }
@@ -502,60 +496,50 @@ void STGLevel::return_id(int id) noexcept
  *                                                                                               *
  *************************************************************************************************/
 
-/* Prepare pattern for it. */
-void STGLevel::FillMind(int id, SCPatternsCode ptn, SCPatternData pd) noexcept
+inline void STGLevel::process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept
 {
     switch (ptn)
     {
     case SCPatternsCode::MOVE_TO:
-        pd.Vec.X *= physical_width;
-        pd.Vec.Y *= physical_height;
+        pd.Vec.X *= PHYSICAL_WIDTH;
+        pd.Vec.Y *= PHYSICAL_HEIGHT;
         break;
 
     case SCPatternsCode::MOVE_PASSBY:
         for (int i = 0; i < pd.Passby.Num; i++)
         {
-            pd.Passby.Vec[i].X *= physical_width;
-            pd.Passby.Vec[i].Y *= physical_height;
+            pd.Passby.Vec[i].X *= PHYSICAL_WIDTH;
+            pd.Passby.Vec[i].Y *= PHYSICAL_HEIGHT;
         }
     }
-
-    standby[id].MyPtn = ptn;
-    standby[id].MyPD = std::move(pd);
 }
 
-/* Prepare thinker for it. Coroutine init call by Lua is done. */
-void STGLevel::Brain(int id, lua_State *co) noexcept
+/* Prepare pattern for it. */
+void STGLevel::FillMind(int id, SCPatternsCode ptn, SCPatternData pd) noexcept
 {
-    standby[id].MyThinker = co;
+    process_pattern_data(ptn, pd);
+    standby[id].MyPtn = ptn;
+    standby[id].MyPD = std::move(pd);
 }
 
 void STGLevel::Debut(int id, float x, float y)
 {
     int real_id = get_id();
 
-    bd.position.Set(x * physical_width, y * physical_height);
+    bd.position.Set(x * PHYSICAL_WIDTH, y * PHYSICAL_HEIGHT);
     b2Body *b = world->CreateBody(&bd);
 
-    if (standby[id].MyPtn == SCPatternsCode::CONTROLLED)
+    if (standby[id].MyPtn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_thinkers[thinkers_n].InputMaster);
         al_register_event_source(onstage_thinkers[thinkers_n].Recv,
                                  onstage_charactors[charactors_n].KneeJump);
 
-        onstage_thinkers[thinkers_n].Active(real_id, standby[id].MyThinker);
+        onstage_thinkers[thinkers_n].Active(real_id, standby[id].MyPtn, standby[id].MyPD, b);
+
         records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
         thinkers_n += 1;
-    }
-    else if (standby[id].MyPtn != SCPatternsCode::STAY)
-    {
-        al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
-                                 onstage_patterns[patterns_n].InputMaster);
-
-        onstage_patterns[patterns_n].Active(real_id, standby[id].MyPtn, standby[id].MyPD, b);
-        records[real_id][static_cast<int>(STGCompType::PATTERN)] = patterns_n;
-        patterns_n += 1;
     }
 
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
@@ -571,67 +555,25 @@ void STGLevel::Debut(int id, float x, float y)
     sprite_renderers_n += 1;
 }
 
-void STGLevel::Airborne(int id, float x, float y, lua_State *co)
-{
-    int real_id = get_id();
-
-    bd.position.Set(x * physical_width, y * physical_height);
-    b2Body *b = world->CreateBody(&bd);
-
-    al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
-                             onstage_thinkers[thinkers_n].InputMaster);
-    al_register_event_source(onstage_thinkers[thinkers_n].Recv,
-                             onstage_charactors[charactors_n].KneeJump);
-
-    onstage_thinkers[thinkers_n].Active(real_id, co);
-    records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
-    thinkers_n += 1;
-
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
-                             onstage_charactors[charactors_n].RendererMaster);
-
-    onstage_charactors[charactors_n].Enable(real_id, b, my_charactor[standby[id].MyChar],
-                                            all_state.CopyChar(standby[id].MyEnter,
-                                                               my_charactor[standby[id].MyChar]));
-    sprite_renderers[sprite_renderers_n].Show(real_id, b,
-                                              my_charactor[standby[id].MyChar].Texs.VeryFirstTex);
-    records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
-    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
-    charactors_n += 1;
-    sprite_renderers_n += 1;
-}
-
 void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternData pd)
 {
     int real_id = get_id();
 
-    bd.position.Set(x * physical_width, y * physical_height);
+    bd.position.Set(x * PHYSICAL_WIDTH, y * PHYSICAL_HEIGHT);
     b2Body *b = world->CreateBody(&bd);
 
     if (ptn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
-                                 onstage_patterns[patterns_n].InputMaster);
+                                 onstage_thinkers[thinkers_n].InputMaster);
+        al_register_event_source(onstage_thinkers[thinkers_n].Recv,
+                                 onstage_charactors[charactors_n].KneeJump);
 
-        /* pd process */
-        switch (ptn)
-        {
-        case SCPatternsCode::MOVE_TO:
-            pd.Vec.X *= physical_width;
-            pd.Vec.Y *= physical_height;
-            break;
+        process_pattern_data(ptn, pd);
 
-        case SCPatternsCode::MOVE_PASSBY:
-            for (int i = 0; i < pd.Passby.Num; i++)
-            {
-                pd.Passby.Vec[i].X *= physical_width;
-                pd.Passby.Vec[i].Y *= physical_height;
-            }
-        }
-
-        onstage_patterns[patterns_n].Active(real_id, ptn, std::move(pd), b);
-        records[real_id][static_cast<int>(STGCompType::PATTERN)] = patterns_n;
-        patterns_n += 1;
+        onstage_thinkers[thinkers_n].Active(real_id, ptn, std::move(pd), b);
+        records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
+        thinkers_n += 1;
     }
 
     al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
@@ -651,53 +593,40 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
 void STGLevel::Pause() const
 {
     /* Notify the Game, Game will stop update everything. */
-    con->STGPause();
+    GameCon->STGPause();
 }
 
+/* No charactor, no everything. */
 void STGLevel::DisableAll(int id)
 {
-    int flaw = records[id][static_cast<int>(STGCompType::CHARACTOR)];
+    int flaw;
 
-    world->DestroyBody(
-        onstage_charactors[flaw].Physics);
+    flaw = records[id][static_cast<int>(STGCompType::CHARACTOR)];
 
-    if (records[id][static_cast<int>(STGCompType::THINKER)] > -1)
-        DisableThr(id);
-    if (records[id][static_cast<int>(STGCompType::PATTERN)] > -1)
-        DisablePtn(id);
+    world->DestroyBody(onstage_charactors[flaw].Physics);
 
-    if (records[id][static_cast<int>(STGCompType::RENDER)] > -1)
+    disabled[disabled_n] = flaw;
+    disabled_t[disabled_n] = STGCompType::CHARACTOR;
+    disabled_n += 1;
+
+    flaw = records[id][static_cast<int>(STGCompType::RENDER)];
+    if (flaw > -1)
+    {
         al_unregister_event_source(
             sprite_renderers[records[id][static_cast<int>(STGCompType::RENDER)]].Recv,
             onstage_charactors[flaw].RendererMaster);
 
-    onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
-    records[onstage_charactors[flaw].ID][static_cast<int>(STGCompType::CHARACTOR)] = flaw;
-    charactors_n -= 1;
+        disabled[disabled_n] = flaw;
+        disabled_t[disabled_n] = STGCompType::RENDER;
+        disabled_n += 1;
+    }
 
-    flaw = records[id][static_cast<int>(STGCompType::RENDER)];
-    sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
-    records[sprite_renderers[flaw].ID][static_cast<int>(STGCompType::RENDER)] = flaw;
-    sprite_renderers_n -= 1;
+    if (records[id][static_cast<int>(STGCompType::THINKER)] > -1)
+        DisableThr(id);
 
     records[id][static_cast<int>(STGCompType::CHARACTOR)] = -1;
     records[id][static_cast<int>(STGCompType::RENDER)] = -1;
     return_id(id);
-}
-
-void STGLevel::DisablePtn(int id)
-{
-    int flaw = records[id][static_cast<int>(STGCompType::PATTERN)];
-
-    al_unregister_event_source(
-        onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].InputTerminal,
-        onstage_patterns[flaw].InputMaster);
-
-    onstage_patterns[flaw].CPPSuckSwap(onstage_patterns[patterns_n - 1]);
-    records[onstage_patterns[flaw].ID][static_cast<int>(STGCompType::PATTERN)] = flaw;
-    patterns_n -= 1;
-
-    records[id][static_cast<int>(STGCompType::PATTERN)] = -1;
 }
 
 void STGLevel::DisableThr(int id)
@@ -711,9 +640,9 @@ void STGLevel::DisableThr(int id)
         onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].InputTerminal,
         onstage_thinkers[flaw].InputMaster);
 
-    onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
-    records[onstage_thinkers[flaw].ID][static_cast<int>(STGCompType::THINKER)] = flaw;
-    thinkers_n -= 1;
+    disabled[disabled_n] = flaw;
+    disabled_t[disabled_n] = STGCompType::THINKER;
+    disabled_n += 1;
 
     records[id][static_cast<int>(STGCompType::THINKER)] = -1;
 }

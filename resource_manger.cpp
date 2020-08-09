@@ -821,7 +821,7 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
 
     /* track? */
     if (lua_getfield(L_main, -1, "track") != LUA_TBOOLEAN)
-        INVALID_SHOOTER(name, "invalid track!");
+        INVALID_KINEMATIC_PHASES(name, "invalid track!");
     kps.Track = lua_toboolean(L_main, -1);
     lua_pop(L_main, 1);
     if (kps.Track)

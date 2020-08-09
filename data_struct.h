@@ -4,6 +4,7 @@
 #include "game_event.h"
 #include "anime.h"
 
+#include <lua.hpp>
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_font.h>
@@ -214,6 +215,8 @@ enum class SCPatternsCode
 
 union SCPatternData
 {
+    lua_State *AI;
+
     struct
     {
         float X;

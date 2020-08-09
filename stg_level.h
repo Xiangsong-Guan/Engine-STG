@@ -7,7 +7,6 @@
 #include "sprite_renderer.h"
 #include "stg_charactor.h"
 #include "stg_thinker.h"
-#include "stg_pattern.h"
 #include "stg_state_man.h"
 #include "contact_listener.h"
 
@@ -28,7 +27,6 @@ enum class STGCompType
     CHARACTOR,
     RENDER,
     THINKER,
-    PATTERN,
     SHOOTER,
 
     NUM,
@@ -41,7 +39,6 @@ struct StageCharInfo
     size_t MyChar;
     std::vector<size_t> MyShooters;
     std::vector<size_t> MyAmmoes;
-    lua_State *MyThinker;
     SCPatternsCode MyPtn;
     SCPatternData MyPD;
     SCSBorn *MyEnter;
@@ -78,14 +75,11 @@ public:
 
     /* Stage flow control API */
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
-    void Brain(int char_id, lua_State *co) noexcept;
     virtual void Debut(int char_id, float x, float y) final;
-    virtual void Airborne(int char_id, float x, float y, lua_State *co) final;
     virtual void Airborne(int char_id, float x, float y,
                           SCPatternsCode ptn, SCPatternData pd) final;
     virtual void Pause() const final;
     virtual void DisableAll(int id) final;
-    virtual void DisablePtn(int id) final;
     virtual void DisableThr(int id) final;
 
 private:
@@ -106,16 +100,12 @@ private:
     int charactors_n;
     STGThinker onstage_thinkers[MAX_ON_STAGE];
     int thinkers_n;
-    SCPattern onstage_patterns[MAX_ON_STAGE];
-    int patterns_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];
     int sprite_renderers_n;
 
     /* Battle field */
     /* STG Field Buffer Area */
     static constexpr float STG_FIELD_BOUND_BUFFER = 5.f;
-    int width, height;
-    float physical_width, physical_height;
     float bound[4];
     float time_step;
 
@@ -135,9 +125,17 @@ private:
     int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];
     bool used_record[MAX_ON_STAGE];
     int record_hint;
-    int get_id() noexcept;
-    void return_id(int id) noexcept;
-    void reset_id() noexcept;
+    inline int get_id() noexcept;
+    inline void return_id(int id) noexcept;
+    inline void reset_id() noexcept;
+
+    /* Memory management */
+    int disabled[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    STGCompType disabled_t[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    int disabled_n;
+
+    /* AUX Function */
+    inline void process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept;
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw p_draw;
