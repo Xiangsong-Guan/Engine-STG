@@ -43,6 +43,7 @@ void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
     std::swap(this->physics, o.physics);
     std::swap(this->data, o.data);
     std::swap(this->pattern, o.pattern);
+    std::swap(this->where, o.where);
 }
 
 void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Body *body) noexcept
@@ -51,6 +52,7 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     data = std::move(pd);
     physics = body;
     ID = id;
+    where = 0;
 }
 
 /*************************************************************************************************
@@ -176,14 +178,13 @@ void STGThinker::controlled()
 
 void STGThinker::move_to()
 {
-    b2Vec2 vec = b2Vec2(data.Vec.X, data.Vec.Y) - physics->GetPosition();
+    vec4u = data.Vec - physics->GetPosition();
 
-    if (vec.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
-        event.user.data2 = std::lroundf(vec.x * 1000.f);
-        event.user.data3 = std::lroundf(vec.y * 1000.f);
+        event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
     else
@@ -194,31 +195,27 @@ void STGThinker::move_last()
 {
     ALLEGRO_EVENT event;
     event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
-    event.user.data2 = std::lroundf(data.Vec.X * 1000.f);
-    event.user.data3 = std::lroundf(data.Vec.Y * 1000.f);
+    event.user.data2 = reinterpret_cast<intptr_t>(&data.Vec);
     al_emit_user_event(InputMaster, &event, nullptr);
 }
 
 void STGThinker::move_passby()
 {
-    b2Vec2 vec =
-        b2Vec2(data.Passby.Vec[data.Passby.Where].X, data.Passby.Vec[data.Passby.Where].Y) -
-        physics->GetPosition();
+    vec4u = data.Passby.Vec[where] - physics->GetPosition();
 
-    if (vec.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
-        event.user.data2 = std::lroundf(vec.x * 1000.f);
-        event.user.data3 = std::lroundf(vec.y * 1000.f);
+        event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
     else
     {
-        data.Passby.Where += 1;
-        if (data.Passby.Where == data.Passby.Num)
+        where += 1;
+        if (where == data.Passby.Num)
             if (data.Passby.Loop)
-                data.Passby.Where = 0;
+                where = 0;
             else
                 Con->DisableThr(ID);
     }

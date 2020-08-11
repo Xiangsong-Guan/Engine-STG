@@ -40,6 +40,8 @@ public:
 private:
     const b2Body *physics;
 
+    int where;
+    b2Vec2 vec4u;
     SCPatternData data;
     std::function<void(STGThinker *)> pattern;
 

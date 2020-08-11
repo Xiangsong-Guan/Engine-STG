@@ -81,12 +81,12 @@ public:
 
     SCSMovementStatic() : SCSMovement() {}
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    virtual void Init(const STGTexture &texs) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Texture[i] = ResourceManager::GetTexture(setting.Texs.SpriteMovement[i]);
+            Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
         for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
             Next[i] = nullptr;
     }
@@ -124,12 +124,12 @@ public:
 
     SCSMovementAnimed() : SCSMovement() {}
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    virtual void Init(const STGTexture &texs) final
     {
         next_i = STGCharCommand::STG_CEASE;
         last_time_where = -1;
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Animation[i] = ResourceManager::GetAnime(setting.Texs.SpriteMovement[i]);
+            Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
         for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
             Next[i] = nullptr;
     }
@@ -212,9 +212,9 @@ public:
 
     SCSBornAnimed() : SCSBorn() {}
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    virtual void Init(const STGTexture &texs) final
     {
-        Animation = ResourceManager::GetAnime(setting.Texs.SpriteBorn);
+        Animation = ResourceManager::GetAnime(texs.SpriteBorn);
         /* Born time should be same with born animation time */
         Duration = Animation.Duration();
         Next = nullptr;
@@ -255,7 +255,7 @@ class SCSBornNoTexture : public SCSBorn
 public:
     SCSBornNoTexture() : SCSBorn() {}
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    virtual void Init(const STGTexture &texs) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
@@ -289,9 +289,9 @@ public:
 
     SCSBornStatic() : SCSBorn() {}
 
-    virtual void Init(const STGCharactorSetting &setting) final
+    virtual void Init(const STGTexture &texs) final
     {
-        Texture = ResourceManager::GetTexture(setting.Texs.SpriteBorn);
+        Texture = ResourceManager::GetTexture(texs.SpriteBorn);
         Next = nullptr;
         Duration = BORN_TIME;
         Timer = 0;
