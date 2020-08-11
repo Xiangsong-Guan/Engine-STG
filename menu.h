@@ -48,7 +48,7 @@ public:
     virtual void Render(float forward_time) final;
 
 private:
-    static constexpr int MAX_MENU_ITEM = 64;
+    static constexpr int MAX_MENU_ITEM = 32;
 
     int Width, Height;
 

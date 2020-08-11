@@ -159,6 +159,8 @@ enum class SSPatternsCode
     CONTROLLED,
     STAY,
     TOTAL_TURN,
+    SPLIT_TRUN,
+    TRACK,
 
     NUM
 };
@@ -183,7 +185,7 @@ struct Luncher
     int AmmoSlot;
 };
 
-constexpr int MAX_LUNCHERS_NUM = 12;
+constexpr int MAX_LUNCHERS_NUM = 8;
 
 struct STGShooterSetting
 {

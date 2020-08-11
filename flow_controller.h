@@ -5,6 +5,8 @@
 
 #include <lua.hpp>
 
+class STGShooter;
+
 class STGFlowController
 {
 public:
@@ -14,6 +16,8 @@ public:
     virtual void Pause() const = 0;
     virtual void DisableAll(int id) = 0;
     virtual void DisableThr(int id) = 0;
+    virtual void EnableSht(int id, STGShooter *ss) = 0;
+    virtual void DisableSht(int id, STGShooter *ss) = 0;
 };
 
 class GameFlowController
