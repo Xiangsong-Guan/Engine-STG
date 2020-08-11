@@ -29,17 +29,6 @@ public:
         this->physcale = ps;
     }
 
-    void DrawContact(std::vector<std::pair<b2Fixture *, b2Fixture *>> &cp)
-    {
-        const b2Color red = b2Color(1.f, 0.f, 0.f);
-        for (const auto &e : cp)
-        {
-            DrawPoint(e.first->GetBody()->GetPosition(), 1.f, red);
-            DrawPoint(e.second->GetBody()->GetPosition(), 1.f, red);
-        }
-        cp.clear();
-    }
-
     void DrawPolygon(const b2Vec2 *vertices, int32 vertexCount, const b2Color &color) final
     {
         float v[b2_maxPolygonVertices][2];
