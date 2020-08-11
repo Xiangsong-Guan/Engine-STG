@@ -36,7 +36,7 @@ private:
     static std::unordered_map<std::string, ALLEGRO_FONT *> fonts;
 
     /* aux function */
-    static PhysicalFixture load_phyfix(const std::string &name, ShapeType *ret_sc);
+    static PhysicalFixture load_phyfix(const std::string &name);
     static STGTexture load_stg_texture(const std::string &name);
     static KinematicSeq load_kinematic_seq(const std::string &name);
 

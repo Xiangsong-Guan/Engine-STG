@@ -357,32 +357,16 @@ void ResourceManager::LoadSTGChar(const std::string &name)
         return;
     }
 
-    ShapeType shape_code;
     STGCharactorSetting cs;
     cs.Name = name;
-    cs.Phy = load_phyfix(name, &shape_code);
+    cs.Phy = load_phyfix(name);
     cs.Texs = load_stg_texture(name);
-
-    /* Default STG status */
-    if (lua_getfield(L_main, -1, "default_speed") != LUA_TNUMBER)
-    {
-        std::cerr << "Failed to load STG Char " << name << ": "
-                  << "invalid default speed!\n";
-        return;
-    }
-    cs.DefaultSpeed = lua_tonumber(L_main, -1);
-    lua_pop(L_main, 1);
 
     /* All charactors is sensor. */
     cs.Phy.FD.isSensor = true;
 
     lua_pop(L_main, 1);
     stg_charactors.emplace(name, std::move(cs));
-
-    /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-    stg_charactors[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
-                                            ? static_cast<b2Shape *>(&stg_charactors[name].Phy.C)
-                                            : static_cast<b2Shape *>(&stg_charactors[name].Phy.P);
 
 #ifdef _DEBUG
     if (lua_gettop(L_main) != _d_top)
@@ -419,10 +403,10 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     if (!lua_istable(L_main, -1))
         INVALID_BULLET(name, "Lua return not valid!");
 
-    ShapeType shape_code;
     STGBulletSetting bs;
     bs.Name = name;
-    bs.Phy = load_phyfix(name, &shape_code);
+    bs.Phy = load_phyfix(name);
+    bs.Phy.FD.friction = 0.f;
 
     /* Bullet damage & speed. */
     lua_getfield(L_main, -1, "damage");
@@ -440,11 +424,6 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
 
     lua_pop(L_main, 1);
     stg_bullets.emplace(name, std::move(bs));
-
-    /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-    stg_bullets[name].Phy.FD.shape = shape_code == ShapeType::CIRCLE
-                                         ? static_cast<b2Shape *>(&stg_bullets[name].Phy.C)
-                                         : static_cast<b2Shape *>(&stg_bullets[name].Phy.P);
 
 #ifdef _DEBUG
     if (lua_gettop(L_main) != _d_top)
@@ -507,52 +486,55 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
     if (ss.Pattern == SSPatternsCode::CONTROLLED)
     {
-        if (lua_getfield(L_main, -1, "update") != LUA_TFUNCTION)
+        if (lua_getfield(L_main, -1, "data") != LUA_TFUNCTION)
             INVALID_SHOOTER(name, "invalid update function!")
         lua_getfield(L_main, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
         lua_pushvalue(L_main, -2);
         lua_setfield(L_main, -2, name.c_str());
         lua_pop(L_main, 2);
     }
+    else
+        switch (ss.Pattern)
+        {
+        default:
+            break;
+        }
 
     /* lunchers */
-    if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE)
+    if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
         INVALID_SHOOTER(name, "invalid lunchers");
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {
         if (lua_geti(L_main, -1, i + 1) != LUA_TTABLE)
             INVALID_SHOOTER(name, "invalid lunchers");
 
-        Luncher l;
-
         if (lua_getfield(L_main, -1, "d_pos") != LUA_TTABLE)
             INVALID_SHOOTER(name, "invalid lunchers");
         if (lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid lunchers' d_pos");
-        l.DPosX = lua_tonumber(L_main, -2);
-        l.DPosY = lua_tonumber(L_main, -1);
+        ss.Lunchers[i].DAttitude.Pos.x = lua_tonumber(L_main, -2);
+        ss.Lunchers[i].DAttitude.Pos.y = lua_tonumber(L_main, -1);
         lua_pop(L_main, 3);
 
         if (lua_getfield(L_main, -1, "d_angle") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid lunchers' d_angle");
-        l.DAngle = lua_tonumber(L_main, -1);
+        ss.Lunchers[i].DAttitude.Angle = lua_tonumber(L_main, -1);
         lua_pop(L_main, 1);
 
         if (lua_getfield(L_main, -1, "interval") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid lunchers' interval");
-        l.Interval = std::lroundf(lua_tonumber(L_main, -1) * static_cast<float>(UPDATE_PER_SEC));
+        ss.Lunchers[i].Interval = std::lroundf(lua_tonumber(L_main, -1) * static_cast<float>(UPDATE_PER_SEC));
         lua_pop(L_main, 1);
 
         if (lua_getfield(L_main, -1, "ammo_slot") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
             INVALID_SHOOTER(name, "invalid lunchers' ammo_slot");
-        l.AmmoSlot = lua_tointeger(L_main, -1);
+        ss.Lunchers[i].AmmoSlot = lua_tointeger(L_main, -1) - 1;
         lua_pop(L_main, 1);
 
         lua_pop(L_main, 1);
-        ss.Lunchers.push_back(std::move(l));
     }
+    ss.LuncherSize = luaL_len(L_main, -1);
     lua_pop(L_main, 1);
-    ss.Lunchers.shrink_to_fit();
 
     lua_pop(L_main, 1);
     stg_shooters.emplace(name, std::move(ss));
@@ -595,7 +577,7 @@ ALLEGRO_FONT *ResourceManager::GetFont(const std::string &name)
     return fonts.at(name);
 }
 
-PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType *ret_sc)
+PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
 {
 #ifdef _DEBUG
     int _d_top = lua_gettop(L_main);
@@ -612,7 +594,7 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType 
 
         /* Get shape */
         lua_getfield(L_main, -1, "shape");
-        *ret_sc = static_cast<ShapeType>(lua_tointegerx(L_main, -1, &good));
+        pf.Shape = static_cast<ShapeType>(lua_tointegerx(L_main, -1, &good));
         if (!good)
         {
             std::cerr << "Failed to load fixture for " << name << ": "
@@ -638,7 +620,7 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name, ShapeType 
                       << "invalid size!\n";
             return pf;
         }
-        switch (*ret_sc)
+        switch (pf.Shape)
         {
         case ShapeType::CIRCLE:
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
@@ -815,6 +797,7 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
 
     if (lua_getfield(L_main, -1, "kinematic_seq") != LUA_TTABLE)
     {
+        lua_pop(L_main, 1);
         kps.Stay = true;
         return kps;
     }
@@ -837,12 +820,12 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
     lua_pop(L_main, 1);
 
     /* Speed change. */
-    if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE)
-        INVALID_KINEMATIC_PHASES(name, "invalid speed seq define!");
+    if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_KINEMATIC_PHASE_NUM)
+        INVALID_KINEMATIC_PHASES(name, "invalid speed seq!");
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {
         if (lua_geti(L_main, -1, i + 1) != LUA_TTABLE)
-            INVALID_KINEMATIC_PHASES(name, "invalid speed seq define!");
+            INVALID_KINEMATIC_PHASES(name, "invalid speed seq!");
 
         if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
             INVALID_KINEMATIC_PHASES(name, "invalid speed Vv!");
@@ -855,15 +838,14 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
         if (lua_geti(L_main, -5, 5) != LUA_TNUMBER || !lua_isinteger(L_main, -1))
             INVALID_KINEMATIC_PHASES(name, "invalid speed at!");
 
-        kps.Seq.push_back({static_cast<float>(lua_tonumber(L_main, -5)),
-                           static_cast<float>(lua_tonumber(L_main, -4)),
-                           std::lroundf(lua_tonumber(L_main, -3) *
-                                        static_cast<float>(UPDATE_PER_SEC)),
-                           static_cast<float>(lua_tonumber(L_main, -2)),
-                           static_cast<AccelerateType>(lua_tointeger(L_main, -1))});
+        kps.Seq[i] = {static_cast<float>(lua_tonumber(L_main, -5)),
+                      static_cast<float>(lua_tonumber(L_main, -4)),
+                      std::lroundf(lua_tonumber(L_main, -3) * static_cast<float>(UPDATE_PER_SEC)),
+                      static_cast<float>(lua_tonumber(L_main, -2)),
+                      static_cast<AccelerateType>(lua_tointeger(L_main, -1))};
         lua_pop(L_main, 6);
     }
-    kps.Seq.shrink_to_fit();
+    kps.SqeSize = luaL_len(L_main, -1);
     lua_pop(L_main, 1);
 
     lua_pop(L_main, 1);

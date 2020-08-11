@@ -58,9 +58,11 @@ struct PhysicalFixture
 {
     /* Physical */
     bool Physical;
+    b2FixtureDef FD;
+    ShapeType Shape;
+
     b2CircleShape C;
     b2PolygonShape P;
-    b2FixtureDef FD;
 };
 
 /*************************************************************************************************
@@ -111,13 +113,16 @@ struct KinematicPhase
     AccelerateType AT;
 };
 
+constexpr int MAX_KINEMATIC_PHASE_NUM = 8;
+
 struct KinematicSeq
 {
     bool Track;
     bool Loop;
     bool Stay;
 
-    std::vector<KinematicPhase> Seq;
+    int SqeSize;
+    KinematicPhase Seq[MAX_KINEMATIC_PHASE_NUM];
 };
 
 /*************************************************************************************************
@@ -162,28 +167,37 @@ union SSPatternData
 {
     float TurnSpeed;
     int ControlFunRef;
+    lua_State *AI;
+};
+
+struct Attitude
+{
+    b2Vec2 Pos;
+    float Angle;
 };
 
 struct Luncher
 {
-    float DAngle;
-    float DPosX;
-    float DPosY;
+    Attitude DAttitude;
     int Interval;
     int AmmoSlot;
 };
+
+constexpr int MAX_LUNCHERS_NUM = 12;
 
 struct STGShooterSetting
 {
     std::string Name;
 
-    size_t AmmoSlotsNum;
+    int AmmoSlotsNum;
     int Power;
     float Speed;
 
-    std::vector<Luncher> Lunchers;
+    int LuncherSize;
+    Luncher Lunchers[MAX_LUNCHERS_NUM];
 
     SSPatternsCode Pattern;
+    SSPatternData Data;
 };
 
 /*************************************************************************************************
@@ -197,7 +211,6 @@ struct STGCharactorSetting
 {
     std::string Name;
 
-    float DefaultSpeed;
     PhysicalFixture Phy;
     STGTexture Texs;
 };
@@ -215,22 +228,16 @@ enum class SCPatternsCode
 
 union SCPatternData
 {
+    /// Default constructor does nothing (for performance).
+    SCPatternData() {}
+
     lua_State *AI;
 
-    struct
-    {
-        float X;
-        float Y;
-    } Vec;
+    b2Vec2 Vec;
 
     struct
     {
-        struct
-        {
-            float X;
-            float Y;
-        } Vec[4];
-        int Where;
+        b2Vec2 Vec[4];
         int Num;
         bool Loop;
     } Passby;
