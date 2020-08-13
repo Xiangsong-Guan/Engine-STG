@@ -16,7 +16,6 @@ STGShooter &STGShooter::operator=(const STGShooter &o)
 {
     std::memcpy(bound, o.bound, sizeof(bound));
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
-    my_atti = {b2Vec2_zero, 0.f};
     Name = o.Name;
     power = o.power;
     speed = o.speed;
@@ -68,7 +67,6 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
 {
     std::memcpy(bound, b, sizeof(bound));
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
-    my_atti = {b2Vec2_zero, 0.f};
     Name = setting.Name;
     power = setting.Power;
     speed = setting.Speed;
@@ -120,14 +118,22 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
     }
 }
 
-STGShooter *STGShooter::Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm) noexcept
+STGShooter *STGShooter::Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm, const b2Body *tg) noexcept
 {
     ID = id;
     world = w;
+    target = tg;
     physical = body;
     render_master = rm;
 
     return Shift;
+}
+
+/* Player are special, need get target from world. */
+void STGShooter::MyDearPlayer() noexcept
+{
+    if (ID == 0 && code == SSPatternsCode::TRACK)
+        pattern = std::mem_fn(&STGShooter::track_enemy);
 }
 
 STGShooter *STGShooter::Update()
@@ -170,6 +176,20 @@ STGShooter *STGShooter::Update()
     return Next;
 }
 
+inline void STGShooter::luncher_track() noexcept
+{
+    const b2Vec2 front = b2Vec2(0.f, -1.f);
+
+    /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
+    b2Vec2 world_diff = target->GetPosition() - (physical->GetPosition() + my_xf.p);
+    world_diff.Normalize();
+
+    my_xf.q.c = b2Dot(world_diff, front);
+    my_xf.q.s = -b2Cross(world_diff, front);
+
+    recalc_lunchers_attitude_cache();
+}
+
 inline void STGShooter::update_phy(int s)
 {
 }
@@ -178,12 +198,21 @@ inline void STGShooter::update_my_attitude() noexcept
 {
 }
 
-inline void STGShooter::update_luncher_attitude(int s) noexcept
+inline void STGShooter::update_lunchers_attitude() noexcept
 {
 }
 
-inline void STGShooter::update_attitude(Attitude &a, const KinematicPhase &k) noexcept
+/* Using transform mul, low priority. */
+inline void STGShooter::recalc_lunchers_attitude_cache() noexcept
 {
+    const float my_angle = my_xf.q.GetAngle();
+    const b2Vec2 front = b2Vec2(0.f, -1.f);
+    for (int i = 0; i < luncher_n; i++)
+    {
+        lunchers_clc_angle[i] = my_angle + lunchers[i].DAttitude.Angle;
+        lunchers_clc_pos[i] = b2Mul(my_xf, lunchers[i].DAttitude.Pos);
+        lunchers_clc_dir[i] = b2Mul(b2Rot(lunchers_clc_angle[i]), front);
+    }
 }
 
 inline void STGShooter::fire(int s)
@@ -191,14 +220,14 @@ inline void STGShooter::fire(int s)
     int ams = lunchers[s].AmmoSlot;
 
     /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
-    bd.position = physical->GetPosition() + my_atti.Pos + lunchers[s].DAttitude.Pos;
+    bd.position = physical->GetPosition() + lunchers_clc_pos[s];
     /* Charactor will never rot, no need to plus charactor's angle. */
-    bd.angle = my_atti.Angle + lunchers[s].DAttitude.Angle;
+    bd.angle = lunchers_clc_angle[s];
 
     b2Body *b = world->CreateBody(&bd);
     b->CreateFixture(&bullets[ams].Phy.FD);
 
-    b2Vec2 imp = b->GetWorldVector(b2Vec2(0.f, -bullets[ams].Speed * b->GetMass()));
+    b2Vec2 imp = (bullets[ams].Speed * b->GetMass()) * lunchers_clc_dir[s];
     b->ApplyLinearImpulseToCenter(imp, true);
 
     if (bullets[ams].KS.Stay)
@@ -266,6 +295,7 @@ void STGShooter::InitSSPattern()
     patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&STGShooter::total_turn);
     patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&STGShooter::controlled);
     patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&STGShooter::stay);
+    patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&STGShooter::track_player);
 }
 
 void STGShooter::controlled()
@@ -283,4 +313,22 @@ void STGShooter::stay()
 
 void STGShooter::total_turn()
 {
+}
+
+void STGShooter::split_trun()
+{
+}
+
+void STGShooter::track_enemy()
+{
+    target = Con->TrackEnemy();
+    if (target != nullptr)
+        luncher_track();
+    stay();
+}
+
+void STGShooter::track_player()
+{
+    luncher_track();
+    stay();
 }

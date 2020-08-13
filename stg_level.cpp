@@ -199,6 +199,8 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 #ifdef STG_DEBUG_PHY_DRAW
     p_draw.Init(PIXIL_PRE_M * scale);
     world->SetDebugDraw(&p_draw);
+#endif
+#ifdef _DEBUG
     world->SetContactListener(&d_contact_listener);
 #endif
 
@@ -233,7 +235,9 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
         bss.push(std::move(bs));
     }
     many_shooters[shooters_n].Load(bound, ResourceManager::GetSTGShooter(SPlayer.Shooters[0]), bss);
+    many_shooters[shooters_n].MyDearPlayer();
     many_shooters[shooters_n + 1].Load(bound, ResourceManager::GetSTGShooter(SPlayer.Shooters[1]), bss);
+    many_shooters[shooters_n + 1].MyDearPlayer();
     many_shooters[shooters_n].Shift = &many_shooters[shooters_n + 1];
     many_shooters[shooters_n + 1].Shift = &many_shooters[shooters_n];
     shooters_n += 2;
@@ -329,8 +333,8 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
     /* Player always just has two shooters, and they are loop. */
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster);
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster, nullptr);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster, nullptr);
     /* id record */
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
     records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
@@ -498,6 +502,28 @@ void STGLevel::Render(float forward_time)
 #endif
 }
 
+const b2Body *STGLevel::TrackEnemy()
+{
+    const b2Vec2 pp = player->GetPosition();
+    const b2Body *ret = nullptr;
+    float closest_distance_sq = 2000.f * 2000.f; /* Most box2d can do efficiency. */
+
+    for (int i = 1; i < charactors_n; i++)
+        /* When charactor is actully dying, she will still need body to represent her untill disable animation done.
+         * While fixture will be destroyed when dead. So use this to determine if charactor can be collision to make damage. */
+        if (onstage_charactors[i].Physics->GetFixtureList() != nullptr)
+        {
+            float dis_sq = (onstage_charactors[i].Physics->GetPosition() - pp).LengthSquared();
+            if (dis_sq < closest_distance_sq)
+            {
+                ret = onstage_charactors[i].Physics;
+                closest_distance_sq = dis_sq;
+            }
+        }
+
+    return ret;
+}
+
 /*************************************************************************************************
  *                                                                                               *
  *                                                   Pool                                        *
@@ -615,7 +641,7 @@ void STGLevel::Debut(int id, float x, float y)
     {
         STGShooter *sp = standby[id].MyShooters;
         do
-            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster, player);
         while (sp != standby[id].MyShooters);
     }
 
@@ -659,7 +685,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         my_shooters = copy_shooters(standby[id].MyShooters);
         STGShooter *sp = my_shooters;
         do
-            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster, player);
         while (sp != my_shooters);
     }
 

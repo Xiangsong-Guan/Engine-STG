@@ -78,6 +78,8 @@ public:
     void EnableSht(int id, STGShooter *ss) noexcept final;
     void DisableSht(int id, STGShooter *ss) noexcept final;
 
+    const b2Body *TrackEnemy() final;
+
 private:
     /* Also directly used in game. */
     STGStateMan all_state;
@@ -103,7 +105,7 @@ private:
     float time_step;
 
     /* Physical things. */
-#ifdef STG_DEBUG_PHY_DRAW
+#ifdef _DEBUG
     STGDebugContactListener d_contact_listener;
 #endif
     b2World *world;

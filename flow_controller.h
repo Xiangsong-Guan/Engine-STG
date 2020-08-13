@@ -18,6 +18,8 @@ public:
     virtual void DisableThr(int id) = 0;
     virtual void EnableSht(int id, STGShooter *ss) = 0;
     virtual void DisableSht(int id, STGShooter *ss) = 0;
+
+    virtual const b2Body *TrackEnemy() = 0;
 };
 
 class GameFlowController

@@ -48,7 +48,8 @@ public:
     ~STGShooter() = default;
 
     void Load(const float b[4], const STGShooterSetting &setting, std::queue<STGBulletSetting> &bss);
-    STGShooter *Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm) noexcept;
+    STGShooter *Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm, const b2Body *tg) noexcept;
+    void MyDearPlayer() noexcept;
     STGShooter *Update();
 
     void Fire() noexcept;
@@ -69,8 +70,12 @@ public:
     inline STGShooter *DrawDebugData()
     {
         b2Color yellow = b2Color(1.f, 1.f, 0.f);
+        if (code == SSPatternsCode::TRACK)
+            DebugDraw->DrawSegment(physical->GetPosition() + my_xf.p,
+                                   physical->GetPosition() + my_xf.p + (50.f * lunchers_clc_dir[0]), yellow);
         for (int s = 0; s < luncher_n; s++)
-            DebugDraw->DrawSolidCircle(physical->GetPosition() + my_atti.Pos + lunchers[s].DAttitude.Pos, .2f, b2Vec2(0.f, -1.f), yellow);
+            /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
+            DebugDraw->DrawSolidCircle(physical->GetPosition() + lunchers_clc_pos[s], .2f, lunchers_clc_dir[s], yellow);
         return Next;
     }
 #endif
@@ -90,14 +95,18 @@ private:
     bool formation;
 
     const b2Body *physical;
+    const b2Body *target;
     b2World *world;
     ALLEGRO_EVENT_SOURCE *render_master;
 
-    /* Update per movement */
+    /* Update per movement (only used to update lunchers' attitude)
+     * local rot in charactor's local coodinate, not in world. */
     b2Transform my_xf;
-    Attitude my_atti;
+    /* Cache the lunchers' charactor-local-coodinate attitude, save some calculation for fire. */
+    b2Vec2 lunchers_clc_dir[MAX_LUNCHER_NUM];
+    b2Vec2 lunchers_clc_pos[MAX_LUNCHER_NUM];
+    float lunchers_clc_angle[MAX_LUNCHER_NUM];
 
-    /* Update per movement */
     long long timer;
     Luncher lunchers[MAX_LUNCHER_NUM];
     int luncher_n;
@@ -119,11 +128,15 @@ private:
     void controlled();
     void stay();
     void total_turn();
+    void split_trun();
+    void track_enemy();
+    void track_player();
 
     inline void update_phy(int s);
+    inline void luncher_track() noexcept;
     inline void update_my_attitude() noexcept;
-    inline void update_luncher_attitude(int s) noexcept;
-    inline void update_attitude(Attitude &a, const KinematicPhase &k) noexcept;
+    inline void update_lunchers_attitude() noexcept;
+    inline void recalc_lunchers_attitude_cache() noexcept;
     inline void fire(int s);
 };
 
