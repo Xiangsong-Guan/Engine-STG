@@ -54,8 +54,8 @@ public:
 
     void Fire() noexcept;
     void Cease() noexcept;
-    void ShiftOut() noexcept;
-    float ShiftIn() noexcept;
+    bool ShiftOut() noexcept;
+    float ShiftIn(bool firing) noexcept;
     void Sync();
     void FSync();
     void Destroy();
@@ -102,12 +102,13 @@ private:
     /* Update per movement (only used to update lunchers' attitude)
      * local rot in charactor's local coodinate, not in world. */
     b2Transform my_xf;
+    float my_angle;
     /* Cache the lunchers' charactor-local-coodinate attitude, save some calculation for fire. */
     b2Vec2 lunchers_clc_dir[MAX_LUNCHER_NUM];
     b2Vec2 lunchers_clc_pos[MAX_LUNCHER_NUM];
     float lunchers_clc_angle[MAX_LUNCHER_NUM];
 
-    long long timer;
+    int timer;
     Luncher lunchers[MAX_LUNCHER_NUM];
     int luncher_n;
 
@@ -128,7 +129,7 @@ private:
     void controlled();
     void stay();
     void total_turn();
-    void split_trun();
+    void split_turn();
     void track_enemy();
     void track_player();
 
@@ -136,7 +137,7 @@ private:
     inline void luncher_track() noexcept;
     inline void update_my_attitude() noexcept;
     inline void update_lunchers_attitude() noexcept;
-    inline void recalc_lunchers_attitude_cache() noexcept;
+    inline void recalc_lunchers_attitude_cache(int s) noexcept;
     inline void fire(int s);
 };
 

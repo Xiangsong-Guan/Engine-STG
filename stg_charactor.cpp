@@ -62,7 +62,7 @@ void STGCharactor::Enable(int id, b2Body *body, STGShooter *sht, SCS *enter)
     SPending = enter;
     shooter = sht;
     if (shooter != nullptr)
-        speed = shooter->ShiftIn();
+        speed = shooter->ShiftIn(false);
 }
 
 /*************************************************************************************************
@@ -149,7 +149,13 @@ void STGCharactor::cease(const ALLEGRO_EVENT *e)
 
 void STGCharactor::shift(const ALLEGRO_EVENT *e)
 {
-    puts("Player shift!!");
+    if (shooter != nullptr)
+    {
+        bool firing = shooter->ShiftOut();
+
+        shooter = shooter->Shift;
+        speed = shooter->ShiftIn(firing);
+    }
 }
 
 void STGCharactor::sync(const ALLEGRO_EVENT *e)

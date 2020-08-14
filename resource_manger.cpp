@@ -484,21 +484,37 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     ss.Pattern = static_cast<SSPatternsCode>(lua_tointeger(L_main, -1));
     lua_pop(L_main, 1);
 
-    if (ss.Pattern == SSPatternsCode::CONTROLLED)
+    switch (ss.Pattern)
     {
+    case SSPatternsCode::CONTROLLED:
         if (lua_getfield(L_main, -1, "data") != LUA_TFUNCTION)
             INVALID_SHOOTER(name, "invalid update function!")
         lua_getfield(L_main, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
         lua_pushvalue(L_main, -2);
         lua_setfield(L_main, -2, name.c_str());
         lua_pop(L_main, 2);
-    }
-    else
-        switch (ss.Pattern)
+        break;
+
+    case SSPatternsCode::TOTAL_TURN:
+        if (lua_getfield(L_main, -1, "data") != LUA_TNUMBER)
+            INVALID_SHOOTER(name, "invalid total turn speed!")
+        ss.Data.TurnSpeed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+        lua_pop(L_main, 1);
+        break;
+
+    case SSPatternsCode::SPLIT_TURN:
+        if (lua_getfield(L_main, -1, "data") != LUA_TTABLE)
+            INVALID_SHOOTER(name, "invalid split turn speeds!")
+        for (int i = 0; i < std::min(MAX_LUNCHERS_NUM, static_cast<int>(luaL_len(L_main, -1))); i++)
         {
-        default:
-            break;
+            if (lua_geti(L_main, -1, i + 1) != LUA_TNUMBER)
+                INVALID_SHOOTER(name, "invalid split turn speeds!");
+            ss.Data.TurnSpeeds[i] = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+            lua_pop(L_main, 1);
         }
+        lua_pop(L_main, 1);
+        break;
+    }
 
     /* lunchers */
     if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)

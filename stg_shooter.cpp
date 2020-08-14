@@ -16,12 +16,16 @@ STGShooter &STGShooter::operator=(const STGShooter &o)
 {
     std::memcpy(bound, o.bound, sizeof(bound));
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
+    my_angle = 0.f;
     Name = o.Name;
     power = o.power;
     speed = o.speed;
     ammo_slot_n = o.ammo_slot_n;
     luncher_n = o.luncher_n;
 
+    std::memcpy(lunchers_clc_angle, o.lunchers_clc_angle, sizeof(lunchers_clc_angle));
+    std::memcpy(lunchers_clc_pos, o.lunchers_clc_pos, sizeof(lunchers_clc_pos));
+    std::memcpy(lunchers_clc_dir, o.lunchers_clc_dir, sizeof(lunchers_clc_dir));
     std::memcpy(lunchers, o.lunchers, sizeof(Luncher) * luncher_n);
     std::memcpy(bullets, o.bullets, sizeof(Bullet) * ammo_slot_n);
     for (int s = 0; s < ammo_slot_n; s++)
@@ -67,14 +71,21 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
 {
     std::memcpy(bound, b, sizeof(bound));
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
+    my_angle = 0.f;
     Name = setting.Name;
     power = setting.Power;
     speed = setting.Speed;
     ammo_slot_n = setting.AmmoSlotsNum;
     luncher_n = setting.LuncherSize;
 
+    const b2Vec2 front = b2Vec2(0.f, -1.f);
     for (int s = 0; s < luncher_n; s++)
+    {
         lunchers[s] = setting.Lunchers[s];
+        lunchers_clc_angle[s] = lunchers[s].DAttitude.Angle;
+        lunchers_clc_pos[s] = lunchers[s].DAttitude.Pos;
+        lunchers_clc_dir[s] = b2Mul(b2Rot(lunchers_clc_angle[s]), front);
+    }
 
     for (int s = 0; s < ammo_slot_n; s++)
     {
@@ -138,9 +149,8 @@ void STGShooter::MyDearPlayer() noexcept
 
 STGShooter *STGShooter::Update()
 {
-    /* Do pattern or lua for luncher. No fire no movement. */
-    if (firing)
-        pattern(this);
+    /* Do pattern or lua for luncher. */
+    pattern(this);
 
     for (int s = d_bullet_n - 1; s >= 0; s--)
     {
@@ -187,7 +197,7 @@ inline void STGShooter::luncher_track() noexcept
     my_xf.q.c = b2Dot(world_diff, front);
     my_xf.q.s = -b2Cross(world_diff, front);
 
-    recalc_lunchers_attitude_cache();
+    my_angle = my_xf.q.GetAngle();
 }
 
 inline void STGShooter::update_phy(int s)
@@ -203,16 +213,12 @@ inline void STGShooter::update_lunchers_attitude() noexcept
 }
 
 /* Using transform mul, low priority. */
-inline void STGShooter::recalc_lunchers_attitude_cache() noexcept
+inline void STGShooter::recalc_lunchers_attitude_cache(int s) noexcept
 {
-    const float my_angle = my_xf.q.GetAngle();
     const b2Vec2 front = b2Vec2(0.f, -1.f);
-    for (int i = 0; i < luncher_n; i++)
-    {
-        lunchers_clc_angle[i] = my_angle + lunchers[i].DAttitude.Angle;
-        lunchers_clc_pos[i] = b2Mul(my_xf, lunchers[i].DAttitude.Pos);
-        lunchers_clc_dir[i] = b2Mul(b2Rot(lunchers_clc_angle[i]), front);
-    }
+    lunchers_clc_angle[s] = my_angle + lunchers[s].DAttitude.Angle;
+    lunchers_clc_pos[s] = b2Mul(my_xf, lunchers[s].DAttitude.Pos);
+    lunchers_clc_dir[s] = b2Mul(b2Rot(lunchers_clc_angle[s]), front);
 }
 
 inline void STGShooter::fire(int s)
@@ -258,16 +264,20 @@ void STGShooter::Cease() noexcept
     firing = false;
 }
 
-float STGShooter::ShiftIn() noexcept
+float STGShooter::ShiftIn(bool is_firing) noexcept
 {
+    firing = is_firing;
     formation = true;
     Con->EnableSht(ID, this);
     return speed;
 }
 
-void STGShooter::ShiftOut() noexcept
+bool STGShooter::ShiftOut() noexcept
 {
+    bool ret = firing;
+    firing = false;
     formation = false;
+    return ret;
 }
 
 void STGShooter::Sync()
@@ -292,10 +302,11 @@ std::function<void(STGShooter *)> STGShooter::patterns[static_cast<int>(SSPatter
 
 void STGShooter::InitSSPattern()
 {
-    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&STGShooter::total_turn);
     patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&STGShooter::controlled);
     patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&STGShooter::stay);
     patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&STGShooter::track_player);
+    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&STGShooter::total_turn);
+    patterns[static_cast<int>(SSPatternsCode::SPLIT_TURN)] = std::mem_fn(&STGShooter::split_turn);
 }
 
 void STGShooter::controlled()
@@ -304,31 +315,101 @@ void STGShooter::controlled()
 
 void STGShooter::stay()
 {
-    timer += 1;
-
-    for (int s = 0; s < luncher_n; s++)
-        if (timer % lunchers[s].Interval == 0)
-            fire(s);
+    if (firing)
+    {
+        timer += 1;
+        for (int s = 0; s < luncher_n; s++)
+            if (timer % lunchers[s].Interval == 0)
+                fire(s);
+    }
+    else
+        timer = -1;
 }
 
 void STGShooter::total_turn()
 {
+    my_angle += data.TurnSpeed;
+
+    if (firing)
+    {
+        my_xf.q.Set(my_angle);
+
+        timer += 1;
+        for (int s = 0; s < luncher_n; s++)
+            if (timer % lunchers[s].Interval == 0)
+            {
+                recalc_lunchers_attitude_cache(s);
+                fire(s);
+            }
+    }
+    else
+        timer = -1;
 }
 
-void STGShooter::split_trun()
+void STGShooter::split_turn()
 {
+    for (int s = 0; s < luncher_n; s++)
+        lunchers[s].DAttitude.Angle += data.TurnSpeeds[s];
+
+    if (firing)
+    {
+        timer += 1;
+
+        for (int s = 0; s < luncher_n; s++)
+            if (timer % lunchers[s].Interval == 0)
+            {
+                recalc_lunchers_attitude_cache(s);
+                fire(s);
+            }
+    }
+    else
+        timer = -1;
 }
 
 void STGShooter::track_enemy()
 {
-    target = Con->TrackEnemy();
-    if (target != nullptr)
-        luncher_track();
-    stay();
+    if (firing)
+    {
+        bool imada = true;
+
+        timer += 1;
+        for (int s = 0; s < luncher_n; s++)
+            if (timer % lunchers[s].Interval == 0)
+            {
+                if (imada)
+                {
+                    target = Con->TrackEnemy();
+                    if (target != nullptr)
+                        luncher_track();
+                    imada = false;
+                }
+                recalc_lunchers_attitude_cache(s);
+                fire(s);
+            }
+    }
+    else
+        timer = -1;
 }
 
 void STGShooter::track_player()
 {
-    luncher_track();
-    stay();
+    if (firing)
+    {
+        bool imada = true;
+
+        timer += 1;
+        for (int s = 0; s < luncher_n; s++)
+            if (timer % lunchers[s].Interval == 0)
+            {
+                if (imada)
+                {
+                    luncher_track();
+                    imada = false;
+                }
+                recalc_lunchers_attitude_cache(s);
+                fire(s);
+            }
+    }
+    else
+        timer = -1;
 }

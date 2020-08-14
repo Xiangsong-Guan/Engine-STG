@@ -154,12 +154,14 @@ struct STGBulletSetting
  *                                                                                               *
  *************************************************************************************************/
 
+constexpr int MAX_LUNCHERS_NUM = 8;
+
 enum class SSPatternsCode
 {
     CONTROLLED,
     STAY,
     TOTAL_TURN,
-    SPLIT_TRUN,
+    SPLIT_TURN,
     TRACK,
 
     NUM
@@ -168,7 +170,7 @@ enum class SSPatternsCode
 union SSPatternData
 {
     float TurnSpeed;
-    int ControlFunRef;
+    float TurnSpeeds[MAX_LUNCHERS_NUM];
     lua_State *AI;
 };
 
@@ -184,8 +186,6 @@ struct Luncher
     int Interval;
     int AmmoSlot;
 };
-
-constexpr int MAX_LUNCHERS_NUM = 8;
 
 struct STGShooterSetting
 {
