@@ -67,6 +67,12 @@ private:
     Menu title;
     Menu stg_menu;
 
+#ifdef STG_PERFORMENCE_SHOW
+    TextRenderer update_cost, uc_ms;
+    TextRenderer render_cost, rc_ms;
+    TextRenderer fps, fps_ms;
+#endif
+
     Scene *s_now;
     InputProcessor *i_now;
 

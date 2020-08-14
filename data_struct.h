@@ -274,7 +274,7 @@ struct STGLevelSetting
 
 struct TextItem
 {
-    std::u8string Text;
+    std::string Text;
     ALLEGRO_FONT *Font;
     float X;
     float Y;
