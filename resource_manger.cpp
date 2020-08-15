@@ -570,6 +570,9 @@ STGShooterSetting &ResourceManager::GetSTGShooter(const std::string &name)
 void ResourceManager::LoadSave()
 {
     // For now ...
+    LoadSTGChar("test_player");
+    LoadSTGShooter("test_shooter");
+    LoadSTGShooter("test_shooter_slow");
 }
 
 void ResourceManager::LoadFont()
@@ -684,8 +687,16 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     /* Texture things */
     if (lua_getfield(L_main, -1, "sprites") != LUA_TSTRING)
     {
-        std::cerr << "Failed to load STG texture ofr " << name << ": "
-                  << "invalid sprite!\n";
+        lua_pop(L_main, 1);
+        st.VeryFirstTex = nullptr;
+        st.SpriteBornType = SpriteType::NONE;
+        st.SpriteShootingType = SpriteType::NONE;
+        st.SpriteShiftType = SpriteType::NONE;
+        st.SpriteSyncType = SpriteType::NONE;
+        st.SpriteFSyncType = SpriteType::NONE;
+        st.SpriteHitType = SpriteType::NONE;
+        st.SpriteDisableType = SpriteType::NONE;
+        st.SpriteMovementType = SpriteType::NONE;
         return st;
     }
     std::string art_name = std::string(lua_tostring(L_main, -1));

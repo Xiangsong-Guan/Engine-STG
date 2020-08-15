@@ -9,6 +9,7 @@ STGStateMan::STGStateMan()
     sbp[static_cast<int>(SpriteType::NONE)] = born_n;
     smp[static_cast<int>(SpriteType::STATIC)] = movement_s;
     smp[static_cast<int>(SpriteType::ANIMED)] = movement_a;
+    smp[static_cast<int>(SpriteType::NONE)] = movement_n;
 
     for (int i = 0; i < MAX_STATE_NUM - 1; i++)
     {
@@ -17,6 +18,7 @@ STGStateMan::STGStateMan()
         born_n[i] = _born_n + i;
         movement_s[i] = _movement_s + i;
         movement_a[i] = _movement_a + i;
+        movement_n[i] = _movement_n + i;
     }
 }
 

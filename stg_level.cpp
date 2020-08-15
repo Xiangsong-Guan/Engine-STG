@@ -633,6 +633,7 @@ void STGLevel::Debut(int id, float x, float y)
     if (standby[id].MyChar.Phy.Physical)
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
+    /* Thinker */
     if (standby[id].MyPtn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
@@ -646,6 +647,7 @@ void STGLevel::Debut(int id, float x, float y)
         thinkers_n += 1;
     }
 
+    /* Shooter */
     if (standby[id].MyShooters != nullptr)
     {
         STGShooter *sp = standby[id].MyShooters;
@@ -654,14 +656,18 @@ void STGLevel::Debut(int id, float x, float y)
         while (sp != standby[id].MyShooters);
     }
 
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+    /* Renderer */
+    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    {
+        sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        sprite_renderers_n += 1;
+    }
 
     onstage_charactors[charactors_n].Enable(real_id, b, standby[id].MyShooters, standby[id].MyEnter);
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
-    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
-    sprite_renderers_n += 1;
 }
 
 void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternData pd)
@@ -674,6 +680,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     if (standby[id].MyChar.Phy.Physical)
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
+    /* Thinker */
     if (ptn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
@@ -688,6 +695,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         thinkers_n += 1;
     }
 
+    /* Shooter */
     STGShooter *my_shooters = nullptr;
     if (standby[id].MyShooters != nullptr)
     {
@@ -698,16 +706,20 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         while (sp != my_shooters);
     }
 
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
-                             onstage_charactors[charactors_n].RendererMaster);
+    /* Renderer */
+    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    {
+        sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        sprite_renderers_n += 1;
+    }
 
+    /* Charactor, on stage things must contain characotrs (expect bullet). */
     onstage_charactors[charactors_n].Enable(real_id, b, my_shooters,
                                             all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr));
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
-    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
-    sprite_renderers_n += 1;
 }
 
 void STGLevel::Pause() const
