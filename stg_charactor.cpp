@@ -137,19 +137,16 @@ void STGCharactor::right(const ALLEGRO_EVENT *e) noexcept
 
 void STGCharactor::shoot(const ALLEGRO_EVENT *e)
 {
-    if (shooter != nullptr)
-        shooter->Fire();
+    shooter->Fire();
 }
 
 void STGCharactor::cease(const ALLEGRO_EVENT *e)
 {
-    if (shooter != nullptr)
-        shooter->Cease();
+    shooter->Cease();
 }
 
 void STGCharactor::shift(const ALLEGRO_EVENT *e)
 {
-    if (shooter != nullptr)
     {
         bool firing = shooter->ShiftOut();
 

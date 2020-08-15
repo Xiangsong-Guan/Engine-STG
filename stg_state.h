@@ -47,6 +47,21 @@ protected:
         return where;
     }
 
+    inline void init(bool no_shooter) noexcept
+    {
+        next_i = STGCharCommand::UP;
+        last_time_where = -1;
+
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
+
+        if (no_shooter)
+        {
+            PRIORTY[static_cast<int>(STGCharCommand::STG_FIRE)] = -1;
+            PRIORTY[static_cast<int>(STGCharCommand::STG_CEASE)] = -1;
+        }
+    }
+
 public:
     SCS *Next[static_cast<int>(STGCharCommand::NUM)];
 
@@ -66,12 +81,15 @@ public:
         PRIORTY[static_cast<int>(STGCharCommand::RESPAWN)] = 5;
     }
 
-    virtual bool CheckInput(STGCharCommand cmd) noexcept final
+    bool CheckInput(STGCharCommand cmd) noexcept final
     {
         if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[static_cast<int>(next_i)])
             next_i = cmd;
-        return true;
+        return PRIORTY[static_cast<int>(cmd)] >= 0;
     }
+
+    virtual void Init(const STGTexture &texs, bool no_shooter) = 0;
+    virtual void Copy(const SCSMovement *o, bool no_shooter) = 0;
 };
 
 class SCSMovementStatic : public SCSMovement
@@ -79,28 +97,20 @@ class SCSMovementStatic : public SCSMovement
 public:
     ALLEGRO_BITMAP *Texture[static_cast<int>(Movement::NUM)];
 
-    SCSMovementStatic() : SCSMovement() {}
-
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCSMovement *o, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         if (Next[static_cast<int>(next_i)])
         {
@@ -122,32 +132,24 @@ class SCSMovementAnimed : public SCSMovement
 public:
     Anime Animation[static_cast<int>(Movement::NUM)];
 
-    SCSMovementAnimed() : SCSMovement() {}
-
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCSMovement *o, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
         {
             Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
             Animation[i].Reset();
         }
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         if (Next[static_cast<int>(next_i)])
         {
@@ -203,6 +205,9 @@ public:
     {
         return FILTER[static_cast<int>(cmd)];
     }
+
+    virtual void Init(const STGTexture &texs) = 0;
+    virtual void Copy(const SCSBorn *o) = 0;
 };
 
 class SCSBornAnimed : public SCSBorn
@@ -210,9 +215,7 @@ class SCSBornAnimed : public SCSBorn
 public:
     Anime Animation;
 
-    SCSBornAnimed() : SCSBorn() {}
-
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs) final
     {
         Animation = ResourceManager::GetAnime(texs.SpriteBorn);
         /* Born time should be same with born animation time */
@@ -221,7 +224,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
         Animation.Reset();
@@ -231,7 +234,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer <= Duration)
@@ -253,23 +256,21 @@ public:
 class SCSBornNoTexture : public SCSBorn
 {
 public:
-    SCSBornNoTexture() : SCSBorn() {}
-
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer < Duration)
@@ -287,9 +288,7 @@ class SCSBornStatic : public SCSBorn
 public:
     ALLEGRO_BITMAP *Texture;
 
-    SCSBornStatic() : SCSBorn() {}
-
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs) final
     {
         Texture = ResourceManager::GetTexture(texs.SpriteBorn);
         Next = nullptr;
@@ -297,7 +296,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Texture = dynamic_cast<const SCSBornStatic *>(o)->Texture;
         Duration = BORN_TIME;
@@ -305,7 +304,7 @@ public:
         Timer = 0;
     }
 
-    virtual void Action(STGCharactor *sc) final
+    void Action(STGCharactor *sc) final
     {
         Timer += 1;
         if (Timer == Duration)

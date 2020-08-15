@@ -17,8 +17,6 @@ class STGCharactor;
 class SCS
 {
 public:
-    virtual void Init(const STGTexture &texs) = 0;
-    virtual void Copy(const SCS *o) = 0;
     virtual void Action(STGCharactor *sc) = 0;
     virtual bool CheckInput(STGCharCommand cmd) = 0;
 };

@@ -20,7 +20,7 @@ STGStateMan::STGStateMan()
     }
 }
 
-SCSBorn *STGStateMan::MakeChar(const STGTexture &texs)
+SCSBorn *STGStateMan::MakeChar(const STGTexture &texs, bool no_shooter)
 {
     SCSMovement *m = nullptr;
     SCSBorn *b = nullptr;
@@ -35,14 +35,14 @@ SCSBorn *STGStateMan::MakeChar(const STGTexture &texs)
           smn[static_cast<int>(texs.SpriteMovementType)]);
     smn[static_cast<int>(texs.SpriteMovementType)] =
         (smn[static_cast<int>(texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
-    m->Init(texs);
+    m->Init(texs, no_shooter);
 
     b->Next = m;
 
     return b;
 }
 
-SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGTexture &texs)
+SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGTexture &texs, bool no_shooter)
 {
     SCSBorn *b;
     SCSMovement *m;
@@ -57,7 +57,7 @@ SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGTexture &texs)
           smn[static_cast<int>(texs.SpriteMovementType)]);
     smn[static_cast<int>(texs.SpriteMovementType)] =
         (smn[static_cast<int>(texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
-    m->Copy(enter->Next);
+    m->Copy(enter->Next, no_shooter);
 
     b->Next = m;
 

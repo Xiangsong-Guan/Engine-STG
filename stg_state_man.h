@@ -17,8 +17,8 @@ public:
     ~STGStateMan() = default;
 
     /* Make Char in STG, Char is so Gan. */
-    SCSBorn *MakeChar(const STGTexture &texs);
-    SCSBorn *CopyChar(const SCSBorn *enter, const STGTexture &texs);
+    SCSBorn *MakeChar(const STGTexture &texs, bool no_shooter);
+    SCSBorn *CopyChar(const SCSBorn *enter, const STGTexture &texs, bool no_shooter);
 
     void Reset() noexcept;
 

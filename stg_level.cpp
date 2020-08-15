@@ -215,9 +215,9 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     all_state.Reset();
 
     /* Preload player */
+    int player_shooters_n = 0;
     GPlayer.MyChar = ResourceManager::GetSTGChar(SPlayer.Char);
     GPlayer.MyShooters = many_shooters;
-    GPlayer.MyEnter = all_state.MakeChar(GPlayer.MyChar.Texs);
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
     GPlayer.MyChar.Phy.FD.shape = GPlayer.MyChar.Phy.Shape == ShapeType::CIRCLE
                                       ? static_cast<b2Shape *>(&GPlayer.MyChar.Phy.C)
@@ -234,13 +234,21 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
         bs.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::C_ENEMY);
         bss.push(std::move(bs));
     }
-    many_shooters[shooters_n].Load(bound, ResourceManager::GetSTGShooter(SPlayer.Shooters[0]), bss);
-    many_shooters[shooters_n].MyDearPlayer();
-    many_shooters[shooters_n + 1].Load(bound, ResourceManager::GetSTGShooter(SPlayer.Shooters[1]), bss);
-    many_shooters[shooters_n + 1].MyDearPlayer();
-    many_shooters[shooters_n].Shift = &many_shooters[shooters_n + 1];
-    many_shooters[shooters_n + 1].Shift = &many_shooters[shooters_n];
-    shooters_n += 2;
+    for (const auto &sn : SPlayer.Shooters)
+    {
+        many_shooters[shooters_n + player_shooters_n].Load(bound, ResourceManager::GetSTGShooter(sn), bss);
+        many_shooters[shooters_n + player_shooters_n].MyDearPlayer();
+        many_shooters[shooters_n + player_shooters_n].Shift = &many_shooters[shooters_n + player_shooters_n + 1];
+        player_shooters_n += 1;
+    }
+    if (player_shooters_n > 0)
+    {
+        GPlayer.MyShooters = &many_shooters[shooters_n];
+        /* Shooters shift in a circle. */
+        many_shooters[shooters_n + player_shooters_n - 1].Shift = &many_shooters[shooters_n];
+    }
+    shooters_n += player_shooters_n;
+    GPlayer.MyEnter = all_state.MakeChar(GPlayer.MyChar.Texs, player_shooters_n < 1);
 
     /* Preload function just load all the resource, like sprite, sound, anime, etc.
      * Some in game feature, like physics, script coroutine, etc. should be initialize
@@ -280,12 +288,13 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
         if (my_shooters_n > 0)
         {
             standby[i].MyShooters = &many_shooters[shooters_n];
+            /* Shooters shift in a circle. */
             many_shooters[shooters_n + my_shooters_n - 1].Shift = &many_shooters[shooters_n];
         }
         shooters_n += my_shooters_n;
 
         /* Make state */
-        standby[i].MyEnter = all_state.MakeChar(standby[i].MyChar.Texs);
+        standby[i].MyEnter = all_state.MakeChar(standby[i].MyChar.Texs, my_shooters_n < 1);
     }
 
     /* Get stage thread in position. (coroutine, function already on the top) */
@@ -693,7 +702,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
                              onstage_charactors[charactors_n].RendererMaster);
 
     onstage_charactors[charactors_n].Enable(real_id, b, my_shooters,
-                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs));
+                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr));
     sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
