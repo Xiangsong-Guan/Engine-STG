@@ -30,6 +30,8 @@ public:
 
     ALLEGRO_EVENT_QUEUE *Recv;
 
+    GameFlowController *GameCon;
+
     Menu();
     Menu(const Menu &) = delete;
     Menu(Menu &&) = delete;
@@ -38,7 +40,7 @@ public:
     ~Menu();
 
     void Setup(const std::vector<TextItem> &items, const std::vector<std::string> &funcs,
-               GameFlowController *c, int width, int height);
+               int width, int height);
     void Attach() noexcept;
     void Detach() noexcept;
 
@@ -46,7 +48,7 @@ public:
     void Render(float forward_time) final;
 
 private:
-    static constexpr int MAX_MENU_ITEM = 64u;
+    static constexpr int MAX_MENU_ITEM = 32;
 
     int Width, Height;
 
@@ -54,8 +56,6 @@ private:
     TextRenderer items_text[MAX_MENU_ITEM];
     int item_n, btn_n;
     int cursor;
-
-    GameFlowController *con;
 
     /* Menu input commands */
     static std::array<std::function<void(Menu *)>, static_cast<size_t>(InputAction::NUM)> commands;

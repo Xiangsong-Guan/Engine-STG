@@ -2,7 +2,9 @@
 #define GAME_DATA_STRUCT_H
 
 #include "game_event.h"
+#include "anime.h"
 
+#include <lua.hpp>
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_font.h>
@@ -56,9 +58,11 @@ struct PhysicalFixture
 {
     /* Physical */
     bool Physical;
+    b2FixtureDef FD;
+    ShapeType Shape;
+
     b2CircleShape C;
     b2PolygonShape P;
-    b2FixtureDef FD;
 };
 
 /*************************************************************************************************
@@ -86,6 +90,7 @@ struct STGTexture
     std::string SpriteDisable;
     SpriteType SpriteDisableType;
 
+    bool FullMovementSprites;
     ALLEGRO_BITMAP *VeryFirstTex;
 };
 
@@ -102,18 +107,23 @@ enum class AccelerateType
 
 struct KinematicPhase
 {
-    float V;
+    float VV;
+    float VR;
     int PhaseTime;   /* frame */
     float TransTime; /* sec. */
     AccelerateType AT;
 };
 
+constexpr int MAX_KINEMATIC_PHASE_NUM = 8;
+
 struct KinematicSeq
 {
+    bool Track;
     bool Loop;
+    bool Stay;
 
-    std::vector<KinematicPhase> SpeedSeq;
-    std::vector<KinematicPhase> AngleSeq;
+    int SqeSize;
+    KinematicPhase Seq[MAX_KINEMATIC_PHASE_NUM];
 };
 
 /*************************************************************************************************
@@ -133,21 +143,45 @@ struct STGBulletSetting
     int Damage;
     float Speed;
 
-    bool Track;
-    KinematicSeq KinematicPhases;
+    KinematicSeq KS;
 };
 
 /*************************************************************************************************
  *                                                                                               *
- *                               STG Bullet Setting & Pattern                                    *
+ *                             STG SHooter Setting & Pattern                                     *
+ *                   Unlike bullet: Pattern is not bind with Shooter!                            *
  *                                                                                               *
  *************************************************************************************************/
 
+constexpr int MAX_LUNCHERS_NUM = 8;
+
+enum class SSPatternsCode
+{
+    CONTROLLED,
+    STAY,
+    TOTAL_TURN,
+    SPLIT_TURN,
+    TRACK,
+
+    NUM
+};
+
+union SSPatternData
+{
+    float TurnSpeed;
+    float TurnSpeeds[MAX_LUNCHERS_NUM];
+    lua_State *AI;
+};
+
+struct Attitude
+{
+    b2Vec2 Pos;
+    float Angle;
+};
+
 struct Luncher
 {
-    float DAngle;
-    float DPosX;
-    float DPosY;
+    Attitude DAttitude;
     int Interval;
     int AmmoSlot;
 };
@@ -156,16 +190,15 @@ struct STGShooterSetting
 {
     std::string Name;
 
-    STGTexture Texs;
-
     int AmmoSlotsNum;
     int Power;
-    int Speed;
+    float Speed;
 
-    std::vector<Luncher> Lunchers;
+    int LuncherSize;
+    Luncher Lunchers[MAX_LUNCHERS_NUM];
 
-    bool Track;
-    KinematicSeq KinematicPhases;
+    SSPatternsCode Pattern;
+    SSPatternData Data;
 };
 
 /*************************************************************************************************
@@ -196,20 +229,16 @@ enum class SCPatternsCode
 
 union SCPatternData
 {
-    struct
-    {
-        float X;
-        float Y;
-    } Vec;
+    /// Default constructor does nothing (for performance).
+    SCPatternData() {}
+
+    lua_State *AI;
+
+    b2Vec2 Vec;
 
     struct
     {
-        struct
-        {
-            float X;
-            float Y;
-        } Vec[4];
-        int Where;
+        b2Vec2 Vec[4];
         int Num;
         bool Loop;
     } Passby;
@@ -244,7 +273,7 @@ struct STGLevelSetting
 
 struct TextItem
 {
-    std::u8string Text;
+    std::string Text;
     ALLEGRO_FONT *Font;
     float X;
     float Y;

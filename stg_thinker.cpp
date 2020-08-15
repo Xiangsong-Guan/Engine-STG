@@ -1,6 +1,9 @@
 #include "stg_thinker.h"
 
 #include "game_event.h"
+#include "cppsuckdef.h"
+
+#include <lua.hpp>
 
 #include <iostream>
 
@@ -37,13 +40,19 @@ void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
     std::swap(this->ID, o.ID);
     std::swap(this->InputMaster, o.InputMaster);
     std::swap(this->Recv, o.Recv);
-    std::swap(this->ai, o.ai);
+    std::swap(this->physics, o.physics);
+    std::swap(this->data, o.data);
+    std::swap(this->pattern, o.pattern);
+    std::swap(this->where, o.where);
 }
 
-void STGThinker::Active(int id, lua_State *co) noexcept
+void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Body *body) noexcept
 {
+    pattern = patterns[static_cast<int>(ptn)];
+    data = std::move(pd);
+    physics = body;
     ID = id;
-    ai = co;
+    where = 0;
 }
 
 /*************************************************************************************************
@@ -54,32 +63,7 @@ void STGThinker::Active(int id, lua_State *co) noexcept
 
 void STGThinker::Think()
 {
-    int good;
-    int event_bit = 0b0;
-    int rn = 0;
-    ALLEGRO_EVENT event;
-
-    /* Pass porxy firstly. */
-    lua_pushlightuserdata(ai, this);
-
-    /* Pass STG char events */
-    while (al_get_next_event(Recv, &event))
-    {
-        // ...
-    }
-
-    /* AI online. If AI return, means dead. */
-    good = lua_resume(ai, nullptr, 1, &rn);
-
-#ifdef STG_LUA_API_ARG_CHECK
-    if (good != LUA_OK && good != LUA_YIELD)
-        std::cerr << "STG thinker lua error: " << lua_tostring(ai, -1) << std::endl;
-    else if (rn != 0)
-        std::cerr << "STG thinker lua return something stupid!\n";
-#endif
-
-    if (good != LUA_YIELD)
-        Con->DisableThr(ID);
+    pattern(this);
 }
 
 /*************************************************************************************************
@@ -141,5 +125,98 @@ void STGThinker::Move(int dir)
     {
         event.user.data1 = static_cast<intptr_t>(STGCharCommand::RIGHT);
         al_emit_user_event(InputMaster, &event, nullptr);
+    }
+}
+
+/*************************************************************************************************
+ *                                                                                               *
+ *                                 Simple Thinking Patterns                                      *
+ *                                                                                               *
+ *************************************************************************************************/
+
+std::function<void(STGThinker *)> STGThinker::patterns[static_cast<int>(SCPatternsCode::NUM)];
+
+void STGThinker::InitSCPattern()
+{
+    patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&STGThinker::move_last);
+    patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&STGThinker::move_to);
+    patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] =
+        std::mem_fn(&STGThinker::move_passby);
+    patterns[static_cast<int>(SCPatternsCode::CONTROLLED)] = std::mem_fn(&STGThinker::controlled);
+    /* Pattern "STAY" will not has thinker obj. */
+}
+
+void STGThinker::controlled()
+{
+    int good;
+    int event_bit = 0b0;
+    int rn = 0;
+    ALLEGRO_EVENT event;
+
+    /* Pass porxy firstly. */
+    lua_pushlightuserdata(data.AI, this);
+
+    /* Pass STG char events */
+    while (al_get_next_event(Recv, &event))
+    {
+        // ...
+    }
+
+    /* AI online. If AI return, means dead. */
+    good = lua_resume(data.AI, nullptr, 1, &rn);
+
+#ifdef STG_LUA_API_ARG_CHECK
+    if (good != LUA_OK && good != LUA_YIELD)
+        std::cerr << "STG thinker lua error: " << lua_tostring(data.AI, -1) << std::endl;
+    else if (rn != 0)
+        std::cerr << "STG thinker lua return something stupid!\n";
+#endif
+
+    if (good != LUA_YIELD)
+        Con->DisableThr(ID);
+}
+
+void STGThinker::move_to()
+{
+    vec4u = data.Vec - physics->GetPosition();
+
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    {
+        ALLEGRO_EVENT event;
+        event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+        event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
+        al_emit_user_event(InputMaster, &event, nullptr);
+    }
+    else
+        Con->DisableThr(ID);
+}
+
+void STGThinker::move_last()
+{
+    ALLEGRO_EVENT event;
+    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data2 = reinterpret_cast<intptr_t>(&data.Vec);
+    al_emit_user_event(InputMaster, &event, nullptr);
+}
+
+void STGThinker::move_passby()
+{
+    vec4u = data.Passby.Vec[where] - physics->GetPosition();
+
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    {
+        ALLEGRO_EVENT event;
+        event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+        event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
+        al_emit_user_event(InputMaster, &event, nullptr);
+    }
+    else
+    {
+        where += 1;
+        if (where == data.Passby.Num)
+            if (data.Passby.Loop)
+                where = 0;
+            else
+                Con->DisableThr(ID);
     }
 }

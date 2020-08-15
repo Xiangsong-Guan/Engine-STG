@@ -50,22 +50,19 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 }
 
 /* Do something when char is loaded. */
-void STGCharactor::Enable(int id, b2Body *body, const STGCharactorSetting &setting, SCS *enter)
+void STGCharactor::Enable(int id, b2Body *body, STGShooter *sht, SCS *enter)
 {
     ID = id;
-
-    /* Attach fixture, so char can be collsion. */
     Physics = body;
-    if (setting.Phy.Physical)
-        Physics->CreateFixture(&setting.Phy.FD);
 
     /* Setting userdata. Userdata must update every swap in loop array. */
     body->SetUserData(this);
 
-    /* Prepare the enter state */
+    /* Prepare the enter state & shooter */
     SPending = enter;
-
-    speed = 5.f;
+    shooter = sht;
+    if (shooter != nullptr)
+        speed = shooter->ShiftIn(false);
 }
 
 /*************************************************************************************************
@@ -140,17 +137,22 @@ void STGCharactor::right(const ALLEGRO_EVENT *e) noexcept
 
 void STGCharactor::shoot(const ALLEGRO_EVENT *e)
 {
-    puts("Player shooting!");
+    shooter->Fire();
 }
 
 void STGCharactor::cease(const ALLEGRO_EVENT *e)
 {
-    puts("Player cease!!");
+    shooter->Cease();
 }
 
 void STGCharactor::shift(const ALLEGRO_EVENT *e)
 {
-    puts("Player shift!!");
+    {
+        bool firing = shooter->ShiftOut();
+
+        shooter = shooter->Shift;
+        speed = shooter->ShiftIn(firing);
+    }
 }
 
 void STGCharactor::sync(const ALLEGRO_EVENT *e)
@@ -160,6 +162,5 @@ void STGCharactor::sync(const ALLEGRO_EVENT *e)
 
 void STGCharactor::move_xy(const ALLEGRO_EVENT *e) noexcept
 {
-    Velocity.x = static_cast<float>(e->user.data2);
-    Velocity.y = static_cast<float>(e->user.data3);
+    Velocity = *reinterpret_cast<b2Vec2 *>(e->user.data2);
 }

@@ -7,9 +7,9 @@
 #include "sprite_renderer.h"
 #include "stg_charactor.h"
 #include "stg_thinker.h"
-#include "stg_pattern.h"
 #include "stg_state_man.h"
 #include "contact_listener.h"
+#include "stg_shooter.h"
 
 #ifdef STG_DEBUG_PHY_DRAW
 #include "physical_draw.h"
@@ -19,16 +19,12 @@
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 
-#include <vector>
-#include <string>
-#include <unordered_map>
-
 enum class STGCompType
 {
     CHARACTOR,
     RENDER,
     THINKER,
-    PATTERN,
+    SHOOTER,
 
     NUM,
 
@@ -37,25 +33,24 @@ enum class STGCompType
 
 struct StageCharInfo
 {
-    size_t MyChar;
-    std::vector<size_t> MyShooters;
-    std::vector<size_t> MyAmmoes;
-    lua_State *MyThinker;
-    SCPatternsCode MyPtn;
-    SCPatternData MyPD;
-    SCSBorn *MyEnter;
+    STGCharactorSetting MyChar; /* same in airborne */
+    STGShooter *MyShooters;     /* copy in airborne */
+    SCPatternsCode MyPtn;       /* change in airborne */
+    SCPatternData MyPD;         /* change in airborne */
+    SCSBorn *MyEnter;           /* copy in airborne */
 };
 
 class STGLevel : public Scene, public STGFlowController
 {
 public:
+    GameFlowController *GameCon;
+
     /* Store the Player's stg status. */
-    STGCharactorSetting GPlayer;
-    std::unordered_map<std::string, STGBulletSetting> GAmmos;
-    std::unordered_map<std::string, STGShooterSetting> GGuns;
+    StageCharRes SPlayer;
+    StageCharInfo GPlayer;
 
     /* Constructor/Destructor */
-    STGLevel() = default;
+    STGLevel();
     STGLevel(const STGLevel &) = delete;
     STGLevel(STGLevel &&) = delete;
     STGLevel &operator=(const STGLevel &) = delete;
@@ -63,8 +58,7 @@ public:
     ~STGLevel() = default;
 
     /* Self constructor */
-    void Load(int width, int height, float time_step,
-              const STGLevelSetting &setting, GameFlowController *c);
+    void Load(int width, int height, float time_step, const STGLevelSetting &setting);
     void Unload();
 
     /* GameLoop */
@@ -76,49 +70,42 @@ public:
 
     /* Stage flow control API */
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
-    void Brain(int char_id, lua_State *co) noexcept;
     void Debut(int char_id, float x, float y) final;
-    void Airborne(int char_id, float x, float y, lua_State *co) final;
-    void Airborne(int char_id, float x, float y,
-                  SCPatternsCode ptn, SCPatternData pd) final;
+    void Airborne(int char_id, float x, float y, SCPatternsCode ptn, SCPatternData pd) final;
     void Pause() const final;
     void DisableAll(int id) final;
-    void DisablePtn(int id) final;
     void DisableThr(int id) final;
+    void EnableSht(int id, STGShooter *ss) noexcept final;
+    void DisableSht(int id, STGShooter *ss) noexcept final;
+
+    const b2Body *TrackEnemy() final;
 
 private:
-    /* Preload things */
-    std::unordered_map<std::string, size_t> our_charactor;
-    std::unordered_map<std::string, size_t> our_shooter;
-    std::unordered_map<std::string, size_t> our_bullet;
-    std::vector<STGCharactorSetting> my_charactor;
-    std::vector<STGShooterSetting> my_shooter;
-    std::vector<STGBulletSetting> my_bullet;
-    StageCharInfo standby[MAX_ENTITIES];
-
     /* Also directly used in game. */
     STGStateMan all_state;
 
     /* Update things */
-    STGCharactor onstage_charactors[MAX_ON_STAGE];
-    int charactors_n;
     STGThinker onstage_thinkers[MAX_ON_STAGE];
     int thinkers_n;
-    SCPattern onstage_patterns[MAX_ON_STAGE];
-    int patterns_n;
+    STGCharactor onstage_charactors[MAX_ON_STAGE];
+    int charactors_n;
+    STGShooter many_shooters[MAX_ENTITIES * 2];
+    STGShooter *shooters_p;
+    int shooters_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];
     int sprite_renderers_n;
+
+    /* Preload things */
+    StageCharInfo standby[MAX_ENTITIES];
 
     /* Battle field */
     /* STG Field Buffer Area */
     static constexpr float STG_FIELD_BOUND_BUFFER = 5.f;
-    int width, height;
-    float physical_width, physical_height;
     float bound[4];
     float time_step;
 
     /* Physical things. */
-#ifdef STG_DEBUG_PHY_DRAW
+#ifdef _DEBUG
     STGDebugContactListener d_contact_listener;
 #endif
     b2World *world;
@@ -129,15 +116,22 @@ private:
     lua_State *L_stage;
     int stage_thread_ref;
 
-    GameFlowController *con;
-
     /* ID System */
     int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];
     bool used_record[MAX_ON_STAGE];
     int record_hint;
-    int get_id() noexcept;
-    void return_id(int id) noexcept;
-    void reset_id() noexcept;
+    inline int get_id() noexcept;
+    inline void return_id(int id) noexcept;
+    inline void reset_id() noexcept;
+
+    /* Memory management */
+    int disabled[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    STGCompType disabled_t[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    int disabled_n;
+
+    /* AUX Function */
+    inline void process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept;
+    STGShooter *copy_shooters(const STGShooter *first);
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw p_draw;

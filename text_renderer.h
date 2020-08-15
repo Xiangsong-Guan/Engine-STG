@@ -28,6 +28,11 @@ public:
     void Draw() const;
     void SetWH(int w, int h) noexcept;
     void SetText(TextItem t) noexcept;
+    
+    void ChangeText(float f);
+    void ChangeText(int i);
+
+    float GetWidth() const;
 };
 
 #endif

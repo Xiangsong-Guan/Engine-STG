@@ -3,7 +3,7 @@
 
 #include <box2d/box2d.h>
 
-#include <vector>
+#include <iostream>
 
 class STGDebugContactListener : public b2ContactListener
 {
@@ -15,11 +15,10 @@ public:
     STGDebugContactListener &operator=(STGDebugContactListener &&) = delete;
     ~STGDebugContactListener() = default;
 
-    std::vector<std::pair<b2Fixture *, b2Fixture *>> ContactPairs;
-
     void BeginContact(b2Contact *c) final
     {
-        ContactPairs.emplace_back(c->GetFixtureA(), c->GetFixtureB());
+        std::cout << "BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOM";
+        std::cout << std::endl;
     }
 };
 

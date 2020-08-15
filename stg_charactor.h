@@ -4,6 +4,7 @@
 #include "data_struct.h"
 #include "game_event.h"
 #include "flow_controller.h"
+#include "stg_shooter.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -23,8 +24,6 @@ public:
     SCS &operator=(SCS &&) = delete;
     virtual ~SCS() = default;
 
-    virtual void Init(const STGCharactorSetting &setting) = 0;
-    virtual void Copy(const SCS *o) = 0;
     virtual void Action(STGCharactor *sc) = 0;
     virtual bool CheckInput(STGCharCommand cmd) = 0;
 };
@@ -53,13 +52,14 @@ public:
     ~STGCharactor();
     void CPPSuckSwap(STGCharactor &) noexcept;
 
-    void Enable(int id, b2Body *body, const STGCharactorSetting &setting, SCS *enter);
+    void Enable(int id, b2Body *body, STGShooter *sht, SCS *enter);
     void Update();
 
     static void InitInputCmd();
 
 private:
     float speed;
+    STGShooter *shooter;
 
     static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
                       static_cast<int>(STGCharCommand::NUM)>

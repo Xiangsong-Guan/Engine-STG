@@ -5,6 +5,8 @@
 
 #include <lua.hpp>
 
+class STGShooter;
+
 class STGFlowController
 {
 public:
@@ -16,13 +18,15 @@ public:
     virtual ~STGFlowController() = default;
 
     virtual void Debut(int char_id, float x, float y) = 0;
-    virtual void Airborne(int char_id, float x, float y, lua_State *co) = 0;
     virtual void Airborne(int char_id, float x, float y,
                           SCPatternsCode ptn, SCPatternData pd) = 0;
     virtual void Pause() const = 0;
     virtual void DisableAll(int id) = 0;
-    virtual void DisablePtn(int id) = 0;
     virtual void DisableThr(int id) = 0;
+    virtual void EnableSht(int id, STGShooter *ss) = 0;
+    virtual void DisableSht(int id, STGShooter *ss) = 0;
+
+    virtual const b2Body *TrackEnemy() = 0;
 };
 
 class GameFlowController

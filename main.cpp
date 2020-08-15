@@ -25,6 +25,10 @@ int main(int argc, char **argv)
     al_set_new_display_flags(ALLEGRO_FULLSCREEN_WINDOW);
     disp = al_create_display(SCREEN_WIDTH, SCREEN_HEIGHT);
     MustInit(disp, "display");
+#ifdef _DEBUG
+    al_set_display_flag(disp, ALLEGRO_FULLSCREEN_WINDOW, false);
+    al_resize_display(disp, 1280, 720);
+#endif
     /* Allegro uses pre-multi-alpha for blending, so usual blender (below) not work well,
      * make sure texture is pre-multi-alpha (which is default), below blender is 
      * used for non-pre-multi */

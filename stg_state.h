@@ -32,6 +32,7 @@ protected:
     int PRIORTY[static_cast<int>(STGCharCommand::NUM)];
     STGCharCommand next_i;
     int last_time_where;
+    bool full;
 
     inline int move_check(const b2Vec2 v) const noexcept
     {
@@ -45,6 +46,21 @@ protected:
         else if (v.y < -.1f)
             where += static_cast<int>(Movement::TO_UP);
         return where;
+    }
+
+    inline void init(bool no_shooter) noexcept
+    {
+        next_i = STGCharCommand::UP;
+        last_time_where = -1;
+
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+            Next[i] = nullptr;
+
+        if (no_shooter)
+        {
+            PRIORTY[static_cast<int>(STGCharCommand::STG_FIRE)] = -1;
+            PRIORTY[static_cast<int>(STGCharCommand::STG_CEASE)] = -1;
+        }
     }
 
 public:
@@ -75,7 +91,15 @@ public:
     {
         if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[static_cast<int>(next_i)])
             next_i = cmd;
-        return true;
+        return PRIORTY[static_cast<int>(cmd)] >= 0;
+    }
+
+    virtual void Init(const STGTexture &texs, bool no_shooter) = 0;
+    virtual void Copy(const SCSMovement *o, bool no_shooter) = 0;
+
+    inline bool IsFull() const noexcept
+    {
+        return full;
     }
 };
 
@@ -91,23 +115,19 @@ public:
     SCSMovementStatic &operator=(SCSMovementStatic &&) = delete;
     ~SCSMovementStatic() = default;
 
-    void Init(const STGCharactorSetting &setting) final
+    void Init(const STGTexture &texs, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Texture[i] = ResourceManager::GetTexture(setting.Texs.SpriteMovement[i]);
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
+            Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
+        full = texs.FullMovementSprites;
     }
 
-    void Copy(const SCS *o) final
+    void Copy(const SCSMovement *o, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
+        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -121,7 +141,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where)
+            if (last_time_where != where && full)
                 change_texture(Texture[last_time_where = where], sc->RendererMaster);
         }
     }
@@ -139,27 +159,23 @@ public:
     SCSMovementAnimed &operator=(SCSMovementAnimed &&) = delete;
     ~SCSMovementAnimed() = default;
 
-    void Init(const STGCharactorSetting &setting) final
+    void Init(const STGTexture &texs, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
-            Animation[i] = ResourceManager::GetAnime(setting.Texs.SpriteMovement[i]);
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
+            Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
+        full = texs.FullMovementSprites;
     }
 
-    void Copy(const SCS *o) final
+    void Copy(const SCSMovement *o, bool no_shooter) final
     {
-        next_i = STGCharCommand::STG_CEASE;
-        last_time_where = -1;
+        init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
         {
             Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
             Animation[i].Reset();
         }
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
-            Next[i] = nullptr;
+        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -173,7 +189,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where)
+            if (last_time_where != where && full)
             {
                 Animation[last_time_where].Reset();
                 Animation[where].Forward();
@@ -223,6 +239,9 @@ public:
     {
         return FILTER[static_cast<int>(cmd)];
     }
+
+    virtual void Init(const STGTexture &texs) = 0;
+    virtual void Copy(const SCSBorn *o) = 0;
 };
 
 class SCSBornAnimed : public SCSBorn
@@ -237,16 +256,16 @@ public:
     SCSBornAnimed &operator=(SCSBornAnimed &&) = delete;
     ~SCSBornAnimed() = default;
 
-    void Init(const STGCharactorSetting &setting) final
+    void Init(const STGTexture &texs) final
     {
-        Animation = ResourceManager::GetAnime(setting.Texs.SpriteBorn);
+        Animation = ResourceManager::GetAnime(texs.SpriteBorn);
         /* Born time should be same with born animation time */
         Duration = Animation.Duration();
         Next = nullptr;
         Timer = 0;
     }
 
-    void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
         Animation.Reset();
@@ -285,14 +304,14 @@ public:
     SCSBornNoTexture &operator=(SCSBornNoTexture &&) = delete;
     ~SCSBornNoTexture() = default;
 
-    void Init(const STGCharactorSetting &setting) final
+    void Init(const STGTexture &texs) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
         Timer = 0;
     }
 
-    void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Duration = BORN_TIME;
         Next = nullptr;
@@ -324,15 +343,15 @@ public:
     SCSBornStatic &operator=(SCSBornStatic &&) = delete;
     ~SCSBornStatic() = default;
 
-    void Init(const STGCharactorSetting &setting) final
+    void Init(const STGTexture &texs) final
     {
-        Texture = ResourceManager::GetTexture(setting.Texs.SpriteBorn);
+        Texture = ResourceManager::GetTexture(texs.SpriteBorn);
         Next = nullptr;
         Duration = BORN_TIME;
         Timer = 0;
     }
 
-    void Copy(const SCS *o) final
+    void Copy(const SCSBorn *o) final
     {
         Texture = dynamic_cast<const SCSBornStatic *>(o)->Texture;
         Duration = BORN_TIME;

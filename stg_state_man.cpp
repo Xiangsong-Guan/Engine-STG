@@ -20,44 +20,44 @@ STGStateMan::STGStateMan()
     }
 }
 
-SCSBorn *STGStateMan::MakeChar(const STGCharactorSetting &setting)
+SCSBorn *STGStateMan::MakeChar(const STGTexture &texs, bool no_shooter)
 {
     SCSMovement *m = nullptr;
     SCSBorn *b = nullptr;
 
-    b = *(sbp[static_cast<int>(setting.Texs.SpriteBornType)] +
-          sbn[static_cast<int>(setting.Texs.SpriteBornType)]);
-    sbn[static_cast<int>(setting.Texs.SpriteBornType)] =
-        (sbn[static_cast<int>(setting.Texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
-    b->Init(setting);
+    b = *(sbp[static_cast<int>(texs.SpriteBornType)] +
+          sbn[static_cast<int>(texs.SpriteBornType)]);
+    sbn[static_cast<int>(texs.SpriteBornType)] =
+        (sbn[static_cast<int>(texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
+    b->Init(texs);
 
-    m = *(smp[static_cast<int>(setting.Texs.SpriteMovementType)] +
-          smn[static_cast<int>(setting.Texs.SpriteMovementType)]);
-    smn[static_cast<int>(setting.Texs.SpriteMovementType)] =
-        (smn[static_cast<int>(setting.Texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
-    m->Init(setting);
+    m = *(smp[static_cast<int>(texs.SpriteMovementType)] +
+          smn[static_cast<int>(texs.SpriteMovementType)]);
+    smn[static_cast<int>(texs.SpriteMovementType)] =
+        (smn[static_cast<int>(texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
+    m->Init(texs, no_shooter);
 
     b->Next = m;
 
     return b;
 }
 
-SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGCharactorSetting &setting)
+SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGTexture &texs, bool no_shooter)
 {
     SCSBorn *b;
     SCSMovement *m;
 
-    b = *(sbp[static_cast<int>(setting.Texs.SpriteBornType)] +
-          sbn[static_cast<int>(setting.Texs.SpriteBornType)]);
-    sbn[static_cast<int>(setting.Texs.SpriteBornType)] =
-        (sbn[static_cast<int>(setting.Texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
+    b = *(sbp[static_cast<int>(texs.SpriteBornType)] +
+          sbn[static_cast<int>(texs.SpriteBornType)]);
+    sbn[static_cast<int>(texs.SpriteBornType)] =
+        (sbn[static_cast<int>(texs.SpriteBornType)] + 1) % MAX_STATE_NUM;
     b->Copy(enter);
 
-    m = *(smp[static_cast<int>(setting.Texs.SpriteMovementType)] +
-          smn[static_cast<int>(setting.Texs.SpriteMovementType)]);
-    smn[static_cast<int>(setting.Texs.SpriteMovementType)] =
-        (smn[static_cast<int>(setting.Texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
-    m->Copy(enter->Next);
+    m = *(smp[static_cast<int>(texs.SpriteMovementType)] +
+          smn[static_cast<int>(texs.SpriteMovementType)]);
+    smn[static_cast<int>(texs.SpriteMovementType)] =
+        (smn[static_cast<int>(texs.SpriteMovementType)] + 1) % MAX_STATE_NUM;
+    m->Copy(enter->Next, no_shooter);
 
     b->Next = m;
 
