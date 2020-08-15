@@ -32,6 +32,7 @@ protected:
     int PRIORTY[static_cast<int>(STGCharCommand::NUM)];
     STGCharCommand next_i;
     int last_time_where;
+    bool full;
 
     inline int move_check(const b2Vec2 v) const noexcept
     {
@@ -90,6 +91,11 @@ public:
 
     virtual void Init(const STGTexture &texs, bool no_shooter) = 0;
     virtual void Copy(const SCSMovement *o, bool no_shooter) = 0;
+
+    inline bool IsFull() const noexcept
+    {
+        return full;
+    }
 };
 
 class SCSMovementStatic : public SCSMovement
@@ -102,12 +108,14 @@ public:
         init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
+        full = texs.FullMovementSprites;
     }
 
     void Copy(const SCSMovement *o, bool no_shooter) final
     {
         init(no_shooter);
         std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
+        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -121,7 +129,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where)
+            if (last_time_where != where && full)
                 change_texture(Texture[last_time_where = where], sc->RendererMaster);
         }
     }
@@ -137,6 +145,7 @@ public:
         init(no_shooter);
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
+        full = texs.FullMovementSprites;
     }
 
     void Copy(const SCSMovement *o, bool no_shooter) final
@@ -147,6 +156,7 @@ public:
             Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
             Animation[i].Reset();
         }
+        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -160,7 +170,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where)
+            if (last_time_where != where && full)
             {
                 Animation[last_time_where].Reset();
                 Animation[where].Forward();

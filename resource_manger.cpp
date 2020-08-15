@@ -759,6 +759,7 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         std::cerr << "STG texture for " << name << " contains no idle sprite!\n";
         return st;
     }
+    st.FullMovementSprites = textures.contains(st.SpriteMovement[static_cast<int>(Movement::UP)]);
 
     /* very first texture to init renderer */
     Anime ta;
