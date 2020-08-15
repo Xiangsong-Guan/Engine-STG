@@ -407,6 +407,7 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     bs.Name = name;
     bs.Phy = load_phyfix(name);
     bs.Phy.FD.friction = 0.f;
+    bs.Texs = load_stg_texture(name);
 
     /* Bullet damage & speed. */
     lua_getfield(L_main, -1, "damage");

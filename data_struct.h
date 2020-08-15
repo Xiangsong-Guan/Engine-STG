@@ -138,9 +138,7 @@ struct STGBulletSetting
 
     PhysicalFixture Phy;
 
-    Anime BTex;
-    ALLEGRO_BITMAP *ITex;
-    Anime DTex;
+    STGTexture Texs;
 
     int Damage;
     float Speed;
