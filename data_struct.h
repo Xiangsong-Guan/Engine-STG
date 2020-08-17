@@ -170,7 +170,6 @@ union SSPatternData
 {
     float TurnSpeed;
     float TurnSpeeds[MAX_LUNCHERS_NUM];
-    lua_State *AI;
 };
 
 struct Attitude

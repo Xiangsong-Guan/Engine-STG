@@ -43,6 +43,8 @@ void ResourceManager::Init(lua_State *L)
     L_main = L;
     lua_newtable(L);
     lua_setfield(L, LUA_REGISTRYINDEX, STG_STAGE_FUNCTIONS_KEY);
+    lua_newtable(L);
+    lua_setfield(L, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
 
     luaL_requiref(L, "hell/enum.lua", simple_lmod_loader, 0);
     lua_pop(L, 1);

@@ -114,7 +114,6 @@ private:
 
     /* Lua Things. */
     lua_State *L_stage;
-    int stage_thread_ref;
 
     /* ID System */
     int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];

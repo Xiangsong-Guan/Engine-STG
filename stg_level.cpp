@@ -299,9 +299,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 
     /* Get stage thread in position. (coroutine, function already on the top) */
     L_stage = ResourceManager::GetCoroutine(ResourceManager::STG_STAGE_FUNCTIONS_KEY, setting.Name);
-    /* Save thread in Lua, or it will be collected. */
-    lua_pushthread(L_stage);
-    stage_thread_ref = luaL_ref(L_stage, LUA_REGISTRYINDEX);
     /* Initialize call. thinker lib, Level lib and level light userdata passed in. 
      * Player watching will be return. */
     int rn = 1;
@@ -358,12 +355,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 /* ONLY call by outside. */
 void STGLevel::Unload()
 {
-    /* Just stage thread is kept by game, all charactors' coroutines are kept in 
-     * stage thread by Lua. So here we unref the stage thread, all things in Lua
-     * will be collected. */
-    lua_resetthread(L_stage);
-    luaL_unref(L_stage, LUA_REGISTRYINDEX, stage_thread_ref);
-
     delete world;
 }
 

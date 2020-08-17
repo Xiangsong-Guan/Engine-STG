@@ -8,6 +8,7 @@
 #include "physical_draw.h"
 #endif
 
+#include <lua.hpp>
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 
@@ -81,7 +82,8 @@ public:
 #endif
 
 private:
-    static constexpr int MAX_BULLETS = 512;
+    static constexpr int MAX_D_BULLETS = 256;
+    static constexpr int MAX_S_BULLETS = 512;
     static constexpr int MAX_B_TYPES = 4;
     static constexpr int MAX_LUNCHER_NUM = 8;
 
@@ -116,14 +118,18 @@ private:
     int ammo_slot_n;
     b2BodyDef bd;
 
-    DynamicBullet d_bullets[MAX_BULLETS];
-    b2Body *s_bullets[MAX_BULLETS];
+    DynamicBullet d_bullets[MAX_D_BULLETS];
+    b2Body *s_bullets[MAX_S_BULLETS];
     int d_bullet_n;
     int s_bullet_n;
 
     SSPatternsCode code;
     SSPatternData data;
     std::function<void(STGShooter *)> pattern;
+
+    /* Lua AI can set sub-pattern, also use data. */
+    lua_State *AI;
+    SSPatternsCode sub_ptn;
 
     static std::function<void(STGShooter *)> patterns[static_cast<int>(SSPatternsCode::NUM)];
     void controlled();
@@ -133,6 +139,7 @@ private:
     void track_enemy();
     void track_player();
 
+    inline void init();
     inline void update_phy(int s);
     inline void luncher_track() noexcept;
     inline void update_my_attitude() noexcept;
