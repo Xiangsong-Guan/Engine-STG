@@ -17,9 +17,11 @@ private:
 public:
     /* Duration in anime */
     int DURATION;
+    /* Duration in logic */
+    int LG_DURATION;
     ALLEGRO_BITMAP *Playing;
 
-    Anime() : now_(-1), sync_(-1), DURATION(0), Playing(nullptr) {}
+    Anime() : now_(-1), sync_(-1), DURATION(0), LG_DURATION(0), Playing(nullptr) {}
     Anime(const Anime &) = default;
     Anime(Anime &&) = default;
     Anime &operator=(const Anime &) = default;
@@ -30,6 +32,7 @@ public:
                                                     now_(-1),
                                                     sync_(-1),
                                                     DURATION(static_cast<int>(frames_.size())),
+                                                    LG_DURATION(DURATION * ANIME_UPDATE_TIMER),
                                                     Playing(nullptr) {}
 
     inline bool Forward() noexcept
@@ -50,10 +53,13 @@ public:
         Playing = nullptr;
     }
 
-    /* Duration in logic */
-    inline int Duration() const noexcept
+    inline bool GetFrame(int timer)
     {
-        return DURATION * ANIME_UPDATE_TIMER;
+        if (timer % ANIME_UPDATE_TIMER != 0)
+            return false;
+
+        Playing = frames_[timer % DURATION];
+        return true;
     }
 };
 

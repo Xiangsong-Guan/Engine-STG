@@ -10,6 +10,7 @@
 #include "stg_state_man.h"
 #include "contact_listener.h"
 #include "stg_shooter.h"
+#include "bullet.h"
 
 #ifdef STG_DEBUG_PHY_DRAW
 #include "physical_draw.h"
@@ -72,13 +73,16 @@ public:
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
     void Debut(int char_id, float x, float y) final;
     void Airborne(int char_id, float x, float y, SCPatternsCode ptn, SCPatternData pd) final;
+    void EnableBullet(Bullet *b) final;
+    void DisableBullet(Bullet *b) final;
     void Pause() const final;
     void DisableAll(int id) final;
     void DisableThr(int id) final;
     void EnableSht(int id, STGShooter *ss) noexcept final;
     void DisableSht(int id, STGShooter *ss) noexcept final;
 
-    const b2Body *TrackEnemy() final;
+    const b2Body *TrackEnemy() const noexcept final;
+    const b2Body *TrackPlayer() const noexcept final;
 
 private:
     /* Also directly used in game. */
@@ -92,6 +96,9 @@ private:
     STGShooter many_shooters[MAX_ENTITIES * 2];
     STGShooter *shooters_p;
     int shooters_n;
+    Bullet bullets[MAX_ENTITIES];
+    Bullet *bullets_p;
+    int bullets_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];
     int sprite_renderers_n;
 

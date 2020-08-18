@@ -3,6 +3,7 @@
 
 #include "data_struct.h"
 #include "flow_controller.h"
+#include "bullet.h"
 
 #ifdef STG_DEBUG_PHY_DRAW
 #include "physical_draw.h"
@@ -16,22 +17,6 @@
 #include <queue>
 #include <functional>
 
-struct Bullet
-{
-    float Speed;
-    int Damage;
-    KinematicSeq KS;
-    PhysicalFixture Phy;
-};
-
-struct DynamicBullet
-{
-    int Timer;
-    int KSI;
-    int Type;
-    b2Body *Physics;
-};
-
 class STGShooter
 {
 public:
@@ -41,15 +26,15 @@ public:
     std::string Name;
 
     /* Constructor/Destructor */
-    STGShooter();
+    STGShooter() = default;
     STGShooter(const STGShooter &) = delete;
     STGShooter(STGShooter &&) = delete;
     STGShooter &operator=(const STGShooter &);
     STGShooter &operator=(STGShooter &&) = delete;
     ~STGShooter() = default;
 
-    void Load(const float b[4], const STGShooterSetting &setting, std::queue<STGBulletSetting> &bss);
-    STGShooter *Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm, const b2Body *tg) noexcept;
+    void Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss);
+    STGShooter *Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
     void MyDearPlayer() noexcept;
     STGShooter *Update();
 
@@ -70,35 +55,30 @@ public:
     PhysicalDraw *DebugDraw;
     inline STGShooter *DrawDebugData()
     {
-        b2Color yellow = b2Color(1.f, 1.f, 0.f);
+        const b2Color yellow = b2Color(1.f, 1.f, 0.f);
+        const b2Vec2 front = b2Vec2(0.f, -1.f);
         if (code == SSPatternsCode::TRACK)
             DebugDraw->DrawSegment(physical->GetPosition() + my_xf.p,
-                                   physical->GetPosition() + my_xf.p + (50.f * lunchers_clc_dir[0]), yellow);
+                                   physical->GetPosition() + 30.f * b2Mul(my_xf, front), yellow);
         for (int s = 0; s < luncher_n; s++)
             /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
-            DebugDraw->DrawSolidCircle(physical->GetPosition() + lunchers_clc_pos[s], .2f, lunchers_clc_dir[s], yellow);
+            DebugDraw->DrawSolidCircle(physical->GetPosition() + lunchers_clc_pos[s], .2f, b2Mul(my_xf, front), yellow);
         return Next;
     }
 #endif
 
 private:
-    static constexpr int MAX_D_BULLETS = 256;
-    static constexpr int MAX_S_BULLETS = 512;
     static constexpr int MAX_B_TYPES = 4;
     static constexpr int MAX_LUNCHER_NUM = 8;
-
-    float bound[4];
 
     int rate;
     int power;
     float speed;
 
     bool firing;
-    bool formation;
 
     const b2Body *physical;
     const b2Body *target;
-    b2World *world;
     ALLEGRO_EVENT_SOURCE *render_master;
 
     /* Update per movement (only used to update lunchers' attitude)
@@ -106,7 +86,6 @@ private:
     b2Transform my_xf;
     float my_angle;
     /* Cache the lunchers' charactor-local-coodinate attitude, save some calculation for fire. */
-    b2Vec2 lunchers_clc_dir[MAX_LUNCHER_NUM];
     b2Vec2 lunchers_clc_pos[MAX_LUNCHER_NUM];
     float lunchers_clc_angle[MAX_LUNCHER_NUM];
 
@@ -114,14 +93,8 @@ private:
     Luncher lunchers[MAX_LUNCHER_NUM];
     int luncher_n;
 
-    Bullet bullets[MAX_B_TYPES];
+    Bullet *bullets[MAX_B_TYPES];
     int ammo_slot_n;
-    b2BodyDef bd;
-
-    DynamicBullet d_bullets[MAX_D_BULLETS];
-    b2Body *s_bullets[MAX_S_BULLETS];
-    int d_bullet_n;
-    int s_bullet_n;
 
     SSPatternsCode code;
     SSPatternData data;
@@ -140,10 +113,7 @@ private:
     void track_player();
 
     inline void init();
-    inline void update_phy(int s);
-    inline void luncher_track() noexcept;
-    inline void update_my_attitude() noexcept;
-    inline void update_lunchers_attitude() noexcept;
+    inline void track() noexcept;
     inline void recalc_lunchers_attitude_cache(int s) noexcept;
     inline void fire(int s);
 };

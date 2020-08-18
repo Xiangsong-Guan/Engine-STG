@@ -35,7 +35,7 @@ enum class CollisionType
 {
     /* Groups */
     G_PLAYER_SIDE = -1,
-    G_OTHERS_SIDE = -2,
+    G_ENEMY_SIDE = -2,
 
     /* Categories */
     C_PLAYER = 0b0000000000000001,
@@ -100,18 +100,12 @@ struct STGTexture
  *                                                                                               *
  *************************************************************************************************/
 
-enum class AccelerateType
-{
-    UNIFORM,
-};
-
 struct KinematicPhase
 {
     float VV;
     float VR;
     int PhaseTime;   /* frame */
     float TransTime; /* sec. */
-    AccelerateType AT;
 };
 
 constexpr int MAX_KINEMATIC_PHASE_NUM = 8;
@@ -120,9 +114,8 @@ struct KinematicSeq
 {
     bool Track;
     bool Loop;
-    bool Stay;
 
-    int SqeSize;
+    int SeqSize;
     KinematicPhase Seq[MAX_KINEMATIC_PHASE_NUM];
 };
 
@@ -141,7 +134,6 @@ struct STGBulletSetting
     STGTexture Texs;
 
     int Damage;
-    float Speed;
 
     KinematicSeq KS;
 };

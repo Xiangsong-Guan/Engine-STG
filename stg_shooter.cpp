@@ -7,30 +7,13 @@
 
 #include <iostream>
 
-STGShooter::STGShooter()
-{
-    bd.type = b2_dynamicBody;
-}
-
 inline void STGShooter::init()
 {
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
     my_angle = 0.f;
 
-    for (int s = 0; s < ammo_slot_n; s++)
-        /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-        bullets[s].Phy.FD.shape = bullets[s].Phy.Shape == ShapeType::CIRCLE
-                                      ? static_cast<b2Shape *>(&bullets[s].Phy.C)
-                                      : static_cast<b2Shape *>(&bullets[s].Phy.P);
-
-    Shift = nullptr;
-    Prev = nullptr;
-    Next = nullptr;
     timer = -1;
-    s_bullet_n = 0;
-    d_bullet_n = 0;
     firing = false;
-    formation = false;
     rate = 100;
 
     sub_ptn = SSPatternsCode::CONTROLLED;
@@ -54,18 +37,16 @@ inline void STGShooter::init()
 
 STGShooter &STGShooter::operator=(const STGShooter &o)
 {
-    std::memcpy(bound, o.bound, sizeof(bound));
     Name = o.Name;
     power = o.power;
     speed = o.speed;
     ammo_slot_n = o.ammo_slot_n;
     luncher_n = o.luncher_n;
 
-    std::memcpy(lunchers_clc_angle, o.lunchers_clc_angle, sizeof(lunchers_clc_angle));
-    std::memcpy(lunchers_clc_pos, o.lunchers_clc_pos, sizeof(lunchers_clc_pos));
-    std::memcpy(lunchers_clc_dir, o.lunchers_clc_dir, sizeof(lunchers_clc_dir));
+    std::memcpy(lunchers_clc_angle, o.lunchers_clc_angle, sizeof(float) * luncher_n);
+    std::memcpy(lunchers_clc_pos, o.lunchers_clc_pos, sizeof(b2Vec2) * luncher_n);
     std::memcpy(lunchers, o.lunchers, sizeof(Luncher) * luncher_n);
-    std::memcpy(bullets, o.bullets, sizeof(Bullet) * ammo_slot_n);
+    std::memcpy(bullets, o.bullets, sizeof(Bullet *) * ammo_slot_n);
 
     code = o.code;
     pattern = patterns[static_cast<int>(code)];
@@ -76,9 +57,8 @@ STGShooter &STGShooter::operator=(const STGShooter &o)
     return *this;
 }
 
-void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::queue<STGBulletSetting> &bss)
+void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss)
 {
-    std::memcpy(bound, b, sizeof(bound));
     Name = setting.Name;
     power = setting.Power;
     speed = setting.Speed;
@@ -91,12 +71,11 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
         lunchers[s] = setting.Lunchers[s];
         lunchers_clc_angle[s] = lunchers[s].DAttitude.Angle;
         lunchers_clc_pos[s] = lunchers[s].DAttitude.Pos;
-        lunchers_clc_dir[s] = b2Mul(b2Rot(lunchers_clc_angle[s]), front);
     }
 
     for (int s = 0; s < ammo_slot_n; s++)
     {
-        bullets[s] = {bss.front().Speed, bss.front().Damage, bss.front().KS, bss.front().Phy};
+        bullets[s] = bss.front();
         if (bss.size() > 1)
             bss.pop();
     }
@@ -108,11 +87,9 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
     init();
 }
 
-STGShooter *STGShooter::Undershift(int id, const b2Body *body, b2World *w, ALLEGRO_EVENT_SOURCE *rm, const b2Body *tg) noexcept
+STGShooter *STGShooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
 {
     ID = id;
-    world = w;
-    target = tg;
     physical = body;
     render_master = rm;
 
@@ -128,44 +105,11 @@ void STGShooter::MyDearPlayer() noexcept
 
 STGShooter *STGShooter::Update()
 {
-    /* Do pattern or lua for luncher. */
     pattern(this);
-
-    for (int s = d_bullet_n - 1; s >= 0; s--)
-    {
-        b2Vec2 p = d_bullets[s].Physics->GetPosition();
-        if (p.y < bound[0] || p.y > bound[1] || p.x < bound[2] || p.x > bound[3])
-        {
-            world->DestroyBody(d_bullets[s].Physics);
-            d_bullets[s] = d_bullets[d_bullet_n - 1];
-            d_bullet_n -= 1;
-        }
-        else
-        {
-            update_phy(s);
-
-            // move to s}
-        }
-    }
-
-    for (int s = s_bullet_n - 1; s >= 0; s--)
-    {
-        b2Vec2 p = s_bullets[s]->GetPosition();
-        if (p.y < bound[0] || p.y > bound[1] || p.x < bound[2] || p.x > bound[3])
-        {
-            world->DestroyBody(s_bullets[s]);
-            s_bullets[s] = s_bullets[s_bullet_n - 1];
-            s_bullet_n -= 1;
-        }
-    }
-
-    if (!formation && d_bullet_n == 0)
-        Con->DisableSht(ID, this);
-
     return Next;
 }
 
-inline void STGShooter::luncher_track() noexcept
+inline void STGShooter::track() noexcept
 {
     const b2Vec2 front = b2Vec2(0.f, -1.f);
 
@@ -179,52 +123,18 @@ inline void STGShooter::luncher_track() noexcept
     my_angle = my_xf.q.GetAngle();
 }
 
-inline void STGShooter::update_phy(int s)
-{
-}
-
-inline void STGShooter::update_my_attitude() noexcept
-{
-}
-
-inline void STGShooter::update_lunchers_attitude() noexcept
-{
-}
-
 /* Using transform mul, low priority. */
 inline void STGShooter::recalc_lunchers_attitude_cache(int s) noexcept
 {
-    const b2Vec2 front = b2Vec2(0.f, -1.f);
     lunchers_clc_angle[s] = my_angle + lunchers[s].DAttitude.Angle;
     lunchers_clc_pos[s] = b2Mul(my_xf, lunchers[s].DAttitude.Pos);
-    lunchers_clc_dir[s] = b2Mul(b2Rot(lunchers_clc_angle[s]), front);
 }
 
 inline void STGShooter::fire(int s)
 {
-    int ams = lunchers[s].AmmoSlot;
-
-    /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
-    bd.position = physical->GetPosition() + lunchers_clc_pos[s];
-    /* Charactor will never rot, no need to plus charactor's angle. */
-    bd.angle = lunchers_clc_angle[s];
-
-    b2Body *b = world->CreateBody(&bd);
-    b->CreateFixture(&bullets[ams].Phy.FD);
-
-    b2Vec2 imp = (bullets[ams].Speed * b->GetMass()) * lunchers_clc_dir[s];
-    b->ApplyLinearImpulseToCenter(imp, true);
-
-    if (bullets[ams].KS.Stay)
-    {
-        s_bullets[s_bullet_n] = b;
-        s_bullet_n += 1;
-    }
-    else
-    {
-        d_bullets[d_bullet_n] = {0, 0, ams, b};
-        d_bullet_n += 1;
-    }
+    /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency.
+     * Charactor will never rot, no need to plus charactor's angle. */
+    bullets[lunchers[s].AmmoSlot]->Bang(physical->GetPosition() + lunchers_clc_pos[s], lunchers_clc_angle[s], power);
 }
 
 /*************************************************************************************************
@@ -246,7 +156,6 @@ void STGShooter::Cease() noexcept
 float STGShooter::ShiftIn(bool is_firing) noexcept
 {
     firing = is_firing;
-    formation = true;
     Con->EnableSht(ID, this);
     return speed;
 }
@@ -255,7 +164,7 @@ bool STGShooter::ShiftOut() noexcept
 {
     bool ret = firing;
     firing = false;
-    formation = false;
+    Con->DisableSht(ID, this);
     return ret;
 }
 
@@ -359,7 +268,7 @@ void STGShooter::track_enemy()
                 {
                     target = Con->TrackEnemy();
                     if (target != nullptr)
-                        luncher_track();
+                        track();
                     imada = false;
                 }
                 recalc_lunchers_attitude_cache(s);
@@ -382,7 +291,8 @@ void STGShooter::track_player()
             {
                 if (imada)
                 {
-                    luncher_track();
+                    target = Con->TrackEnemy();
+                    track();
                     imada = false;
                 }
                 recalc_lunchers_attitude_cache(s);

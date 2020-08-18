@@ -302,7 +302,7 @@ public:
         init();
         Animation = ResourceManager::GetAnime(texs.SpriteBorn);
         /* Born time should be same with born animation time */
-        Duration = Animation.Duration();
+        Duration = Animation.LG_DURATION;
     }
 
     void Copy(const SCSBorn *o) final
@@ -311,7 +311,7 @@ public:
         Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
         Animation.Reset();
         /* Born time should be same with born animation time */
-        Duration = Animation.Duration();
+        Duration = Animation.LG_DURATION;
     }
 
     void Action(STGCharactor *sc) final
