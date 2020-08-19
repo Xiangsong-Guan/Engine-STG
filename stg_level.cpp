@@ -187,6 +187,13 @@ STGLevel::STGLevel()
 
 void STGLevel::Load(int width, int height, float time_step, const STGLevelSetting &setting)
 {
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("source_12"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bullets_n.SetWH(width, height);
+    tr_bn.SetText({"", ResourceManager::GetFont("source_12"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bn.SetWH(width, height);
+#endif
+
     /* set right para */
     float scale = static_cast<float>(width) / static_cast<float>(height) >
                           SCREEN_WIDTH / SCREEN_HEIGHT
@@ -448,9 +455,24 @@ void STGLevel::Update()
     STGShooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->Update();
+
+#ifdef STG_PERFORMENCE_SHOW
+    int i_bn = 0;
+#endif
+
     Bullet *b = bullets_p;
     while (b != nullptr)
+    {
+#ifdef STG_PERFORMENCE_SHOW
+        i_bn += b->GetBulletNum();
+#endif
+
         b = b->Update();
+    }
+
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bn.ChangeText(i_bn);
+#endif
 
     /* all physics access and modify should dircetly to physical body,
      * that means logic part have full rw access to physical body, while
@@ -528,6 +550,11 @@ void STGLevel::Render(float forward_time)
     STGShooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->DrawDebugData();
+#endif
+
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bullets_n.Draw();
+    tr_bn.Draw();
 #endif
 }
 

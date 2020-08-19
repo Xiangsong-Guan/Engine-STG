@@ -15,6 +15,9 @@
 #ifdef STG_DEBUG_PHY_DRAW
 #include "physical_draw.h"
 #endif
+#ifdef STG_PERFORMENCE_SHOW
+#include "text_renderer.h"
+#endif
 
 #include <lua.hpp>
 #include <box2d/box2d.h>
@@ -141,6 +144,9 @@ private:
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw p_draw;
+#endif
+#ifdef STG_PERFORMENCE_SHOW
+    TextRenderer tr_bullets_n, tr_bn;
 #endif
 };
 
