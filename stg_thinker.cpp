@@ -54,6 +54,9 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     ID = id;
     where = 0;
 
+    if (ptn == SCPatternsCode::GO_ROUND)
+        data.Round.r_sq = (body->GetPosition() - data.Round.p).LengthSquared();
+
     /* Save AI out of data union. AI can use data to execute sub pattern. */
     AI = data.AI;
     sub_ptn = SCPatternsCode::CONTROLLED;
@@ -143,6 +146,7 @@ std::function<bool(STGThinker *)> STGThinker::patterns[static_cast<int>(SCPatter
 
 void STGThinker::InitSCPattern()
 {
+    patterns[static_cast<int>(SCPatternsCode::GO_ROUND)] = std::mem_fn(&STGThinker::go_round);
     patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&STGThinker::move_last);
     patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&STGThinker::move_to);
     patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] = std::mem_fn(&STGThinker::move_passby);
@@ -235,6 +239,28 @@ bool STGThinker::move_passby()
             else
                 return true;
     }
+
+    return false;
+}
+
+bool STGThinker::go_round()
+{
+    static constexpr float EP = .01f;
+    static b2Rot ADJUST = b2Rot(.05f);
+
+    b2Vec2 d2p = data.Round.p - physics->GetPosition();
+    vec4u = data.Round.dir * d2p.Skew();
+
+    /* rhc: skew -> ccw. Here we use lhc, so skew -> cw. And then dir > 0 -> ccw.
+     * Here mul -> cw; mult -> ccw. And adjust direction should always be same with dir.
+     * (Confirm EP always make circle lager, adjust always go inside.) */
+    if (d2p.LengthSquared() - data.Round.r_sq > EP)
+        vec4u = data.Round.dir > 0.f ? b2MulT(ADJUST, vec4u) : b2Mul(ADJUST, vec4u);
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
+    al_emit_user_event(InputMaster, &event, nullptr);
 
     return false;
 }

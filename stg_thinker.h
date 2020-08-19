@@ -55,6 +55,7 @@ private:
     bool move_to();
     bool move_last();
     bool move_passby();
+    bool go_round();
 };
 
 #endif

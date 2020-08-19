@@ -45,6 +45,12 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
             else
                 break;
         break;
+
+    case SCPatternsCode::GO_ROUND:
+        data->Round.p.x = luaL_checknumber(L, pd_idx + 1);
+        data->Round.p.y = luaL_checknumber(L, pd_idx + 2);
+        data->Round.dir = luaL_checknumber(L, pd_idx + 3);
+        break;
     }
 #else
     *ptn = static_cast<SCPatternsCode>(lua_tointeger(L, pd_idx));
@@ -72,6 +78,12 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
             }
             else
                 break;
+        break;
+
+    case SCPatternsCode::GO_ROUND:
+        data->Round.p.x = lua_tonumber(L, pd_idx + 1);
+        data->Round.p.y = lua_tonumber(L, pd_idx + 2);
+        data->Round.dir = lua_tonumber(L, pd_idx + 3);
         break;
     }
 #endif
@@ -663,6 +675,12 @@ inline void STGLevel::process_pattern_data(SCPatternsCode ptn, SCPatternData &pd
             pd.Passby.Vec[i].x *= PHYSICAL_WIDTH;
             pd.Passby.Vec[i].y *= PHYSICAL_HEIGHT;
         }
+        break;
+
+    case SCPatternsCode::GO_ROUND:
+        pd.Round.p.x *= PHYSICAL_WIDTH;
+        pd.Round.p.y *= PHYSICAL_HEIGHT;
+        break;
     }
 }
 

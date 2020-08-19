@@ -114,6 +114,7 @@ struct KinematicSeq
 {
     bool Track;
     bool Loop;
+    bool Dir;
 
     int SeqSize;
     KinematicPhase Seq[MAX_KINEMATIC_PHASE_NUM];
@@ -214,6 +215,7 @@ enum class SCPatternsCode
     MOVE_TO,
     MOVE_LAST,
     MOVE_PASSBY,
+    GO_ROUND,
 
     NUM
 };
@@ -233,6 +235,13 @@ union SCPatternData
         int Num;
         bool Loop;
     } Passby;
+
+    struct
+    {
+        b2Vec2 p;
+        float r_sq;
+        float dir;
+    } Round;
 };
 
 /*************************************************************************************************
