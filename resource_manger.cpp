@@ -849,6 +849,12 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
     kps.Loop = lua_toboolean(L_main, -1);
     lua_pop(L_main, 1);
 
+    /* Always go front? */
+    if (lua_getfield(L_main, -1, "dir") != LUA_TBOOLEAN)
+        INVALID_KINEMATIC_PHASES(name, "invalid dir!", balance_top);
+    kps.Dir = lua_toboolean(L_main, -1);
+    lua_pop(L_main, 1);
+
     /* Speed change. */
     if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_KINEMATIC_PHASE_NUM)
         INVALID_KINEMATIC_PHASES(name, "invalid speed seq!", balance_top);
@@ -870,6 +876,7 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
                       static_cast<float>(lua_tonumber(L_main, -3)),
                       std::lroundf(lua_tonumber(L_main, -2) * static_cast<float>(UPDATE_PER_SEC)),
                       static_cast<float>(lua_tonumber(L_main, -1))};
+        kps.Seq[i].TransEnd = kps.Seq[i].PhaseTime + (kps.Seq[i].TransTime * static_cast<float>(UPDATE_PER_SEC));
         lua_pop(L_main, 5);
     }
     kps.SeqSize = luaL_len(L_main, -1);

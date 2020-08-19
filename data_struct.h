@@ -106,6 +106,7 @@ struct KinematicPhase
     float VR;
     int PhaseTime;   /* frame */
     float TransTime; /* sec. */
+    int TransEnd;    /* PhaseTime + TransTime * UPDATE_PRE_SEC */
 };
 
 constexpr int MAX_KINEMATIC_PHASE_NUM = 8;

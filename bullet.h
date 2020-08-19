@@ -10,7 +10,7 @@
 
 #include <functional>
 
-enum class STGBulletPatternCode
+enum class SBPatternCode
 {
     TRACK_PLAYER,
     TRACK_ENEMY,
@@ -37,7 +37,8 @@ struct DynamicBullet
 class Bullet
 {
 private:
-    static constexpr int MAX_BULLETS = 512;
+    static constexpr int MAX_D_BULLETS = 512;
+    static constexpr int MAX_S_BULLETS = 1024;
     static constexpr int MAX_JUST_BULLETS = 64;
     static constexpr int MAX_DEAD_BULLETS = 32;
 
@@ -58,18 +59,24 @@ private:
 
     StaticBullet just_bullets[MAX_JUST_BULLETS];
     int just_bullets_n;
-    DynamicBullet fly_bullets[MAX_BULLETS];
+    DynamicBullet fly_bullets[MAX_D_BULLETS];
     int fly_bullets_n;
+    StaticBullet flt_bullets[MAX_S_BULLETS];
+    int flt_bullets_n;
     StaticBullet dead_bullets[MAX_DEAD_BULLETS];
     int dead_bullets_n;
 
     bool lost;
+    bool need_adjust_front_for_flt;
 
-    inline void kinematic_update(const DynamicBullet &db, const KinematicPhase &kp);
+    inline void kinematic_update(b2Body *b, const KinematicPhase &kp);
     inline void track_update(b2Body *s, const b2Body *d);
-    inline void check_outside();
+    inline void adjust_front(b2Body *b);
 
-    static std::function<void(Bullet *)> patterns[static_cast<int>(STGBulletPatternCode::NUM)];
+    inline void check_fly();
+    inline void check_flt();
+
+    static std::function<void(Bullet *)> patterns[static_cast<int>(SBPatternCode::NUM)];
     void track_player();
     void track_enemy();
     void kinematic();
@@ -95,6 +102,13 @@ public:
     Bullet *Update();
     Bullet *Draw(float forward_time);
     void Bang(const b2Vec2 &world_pos, float world_angle, int mp);
+
+#ifdef STG_PERFORMENCE_SHOW
+    inline int GetBulletNum() const
+    {
+        return just_bullets_n + fly_bullets_n + flt_bullets_n + dead_bullets_n;
+    }
+#endif
 };
 
 #endif
