@@ -52,7 +52,7 @@ public:
     ~STGCharactor();
     void CPPSuckSwap(STGCharactor &) noexcept;
 
-    void Enable(int id, b2Body *body, STGShooter *sht, SCS *enter);
+    void Enable(int id, b2Body *body, STGShooter *sht, SCS *enter, float default_speed);
     void Update();
 
     static void InitInputCmd();

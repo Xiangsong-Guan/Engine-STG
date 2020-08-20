@@ -19,7 +19,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     damage = bs.Damage;
     ks = bs.KS;
 
-    phy.FD.density = 1.f;
+    phy.FD.density = bs.Density;
     phy.FD.filter = f;
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
     phy.FD.shape = phy.Shape == ShapeType::CIRCLE ? static_cast<b2Shape *>(&phy.C) : static_cast<b2Shape *>(&phy.P);
@@ -108,6 +108,8 @@ void Bullet::Bang(const b2Vec2 &world_pos, float world_angle, int mp)
     just_bullets[just_bullets_n].MasterPower = mp;
     just_bullets[just_bullets_n].ATimer = 0;
     just_bullets_n += 1;
+
+    assert(just_bullets_n < MAX_JUST_BULLETS);
 
     if (lost)
     {
@@ -252,6 +254,8 @@ void Bullet::track_player()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 
@@ -280,6 +284,8 @@ void Bullet::track_enemy()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 
@@ -309,6 +315,8 @@ void Bullet::kinematic()
             fly_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(fly_bullets_n < MAX_D_BULLETS);
         }
     }
 
@@ -342,6 +350,8 @@ void Bullet::kinematic()
                 flt_bullets_n += 1;
                 fly_bullets[s] = fly_bullets[fly_bullets_n - 1];
                 fly_bullets_n -= 1;
+
+                assert(flt_bullets_n < MAX_S_BULLETS);
             }
         }
         else
@@ -371,6 +381,8 @@ void Bullet::statical()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 
@@ -401,6 +413,8 @@ void Bullet::track_player_d()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 
@@ -429,6 +443,8 @@ void Bullet::track_enemy_d()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 
@@ -458,6 +474,8 @@ void Bullet::kinematic_d()
             fly_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(fly_bullets_n < MAX_D_BULLETS);
         }
     }
 
@@ -493,6 +511,8 @@ void Bullet::kinematic_d()
                 flt_bullets_n += 1;
                 fly_bullets[s] = fly_bullets[fly_bullets_n - 1];
                 fly_bullets_n -= 1;
+
+                assert(flt_bullets_n < MAX_S_BULLETS);
             }
         }
         else
@@ -522,6 +542,8 @@ void Bullet::statical_d()
             flt_bullets_n += 1;
             just_bullets[i] = just_bullets[just_bullets_n - 1];
             just_bullets_n -= 1;
+
+            assert(flt_bullets_n < MAX_S_BULLETS);
         }
     }
 

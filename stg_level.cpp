@@ -377,7 +377,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     /* Player on stage. */
     SCPatternData pd;
     pd.AI = player_watching;
-    onstage_charactors[0].Enable(p_id, player, GPlayer.MyShooters, GPlayer.MyEnter);
+    onstage_charactors[0].Enable(p_id, player, GPlayer.MyShooters, GPlayer.MyEnter, GPlayer.MyChar.DefaultSpeed);
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
     /* Player always just has two shooters, and they are loop. */
@@ -734,7 +734,7 @@ void STGLevel::Debut(int id, float x, float y)
         sprite_renderers_n += 1;
     }
 
-    onstage_charactors[charactors_n].Enable(real_id, b, standby[id].MyShooters, standby[id].MyEnter);
+    onstage_charactors[charactors_n].Enable(real_id, b, standby[id].MyShooters, standby[id].MyEnter, standby[id].MyChar.DefaultSpeed);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     charactors_n += 1;
 }
@@ -786,7 +786,8 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
 
     /* Charactor, on stage things must contain characotrs (expect bullet). */
     onstage_charactors[charactors_n].Enable(real_id, b, my_shooters,
-                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr));
+                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr),
+                                            standby[id].MyChar.DefaultSpeed);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
     charactors_n += 1;
 }

@@ -109,7 +109,7 @@ struct KinematicPhase
     int TransEnd;    /* PhaseTime + TransTime * UPDATE_PRE_SEC */
 };
 
-constexpr int MAX_KINEMATIC_PHASE_NUM = 8;
+constexpr int MAX_KINEMATIC_PHASE_NUM = 16;
 
 struct KinematicSeq
 {
@@ -136,6 +136,7 @@ struct STGBulletSetting
     STGTexture Texs;
 
     int Damage;
+    float Density;
 
     KinematicSeq KS;
 };
@@ -204,6 +205,8 @@ struct STGShooterSetting
 struct STGCharactorSetting
 {
     std::string Name;
+
+    float DefaultSpeed;
 
     PhysicalFixture Phy;
     STGTexture Texs;

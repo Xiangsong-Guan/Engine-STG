@@ -378,6 +378,16 @@ void ResourceManager::LoadSTGChar(const std::string &name)
     cs.Phy = load_phyfix(name);
     cs.Texs = load_stg_texture(name);
 
+    if (lua_getfield(L_main, -1, "default_speed") != LUA_TNUMBER)
+    {
+        std::cerr << "Failed to load STG Char " << name << ": "
+                  << "invalid default speed!\n";
+        lua_pop(L_main, 2);
+        return;
+    }
+    cs.DefaultSpeed = lua_tonumber(L_main, -1);
+    lua_pop(L_main, 1);
+
     /* All charactors is sensor. */
     cs.Phy.FD.isSensor = true;
 
@@ -427,11 +437,16 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     bs.Phy.FD.friction = 0.f;
     bs.Texs = load_stg_texture(name);
 
-    /* Bullet damage & speed. */
+    /* Bullet status */
     lua_getfield(L_main, -1, "damage");
     if (!lua_isinteger(L_main, -1))
         INVALID_BULLET(name, "invalid damage!", balance_top);
     bs.Damage = lua_tointeger(L_main, -1);
+    lua_pop(L_main, 1);
+    lua_getfield(L_main, -1, "density");
+    if (!lua_isnumber(L_main, -1))
+        INVALID_BULLET(name, "invalid density!", balance_top);
+    bs.Density = lua_tonumber(L_main, -1);
     lua_pop(L_main, 1);
 
     /* Bullet patterns */

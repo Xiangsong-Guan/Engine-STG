@@ -27,8 +27,8 @@ struct DynamicBullet
 class Bullet
 {
 private:
-    static constexpr int MAX_D_BULLETS = 512;
-    static constexpr int MAX_S_BULLETS = 1024;
+    static constexpr int MAX_D_BULLETS = 256;
+    static constexpr int MAX_S_BULLETS = 512;
     static constexpr int MAX_JUST_BULLETS = 64;
     static constexpr int MAX_DEAD_BULLETS = 32;
 

@@ -69,7 +69,6 @@ public:
 
 private:
     static constexpr int MAX_B_TYPES = 4;
-    static constexpr int MAX_LUNCHER_NUM = 8;
 
     int rate;
     int power;
@@ -86,11 +85,11 @@ private:
     b2Transform my_xf;
     float my_angle;
     /* Cache the lunchers' charactor-local-coodinate attitude, save some calculation for fire. */
-    b2Vec2 lunchers_clc_pos[MAX_LUNCHER_NUM];
-    float lunchers_clc_angle[MAX_LUNCHER_NUM];
+    b2Vec2 lunchers_clc_pos[MAX_LUNCHERS_NUM];
+    float lunchers_clc_angle[MAX_LUNCHERS_NUM];
 
     int timer;
-    Luncher lunchers[MAX_LUNCHER_NUM];
+    Luncher lunchers[MAX_LUNCHERS_NUM];
     int luncher_n;
 
     Bullet *bullets[MAX_B_TYPES];
