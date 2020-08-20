@@ -10,16 +10,6 @@
 
 #include <functional>
 
-enum class SBPatternCode
-{
-    TRACK_PLAYER,
-    TRACK_ENEMY,
-    KINEMATIC,
-    STATIC,
-
-    NUM
-};
-
 struct StaticBullet
 {
     int ATimer;
@@ -70,17 +60,20 @@ private:
     bool need_adjust_front_for_flt;
 
     inline void kinematic_update(b2Body *b, const KinematicPhase &kp);
-    inline void track_update(b2Body *s, const b2Body *d);
+    inline void track_update_dd(b2Body *s, const b2Body *d);
+    inline void track_update_nd(b2Body *s, const b2Body *d);
     inline void adjust_front(b2Body *b);
+    inline void check_flt_dd();
+    inline void check_flt_nd();
 
-    inline void check_fly();
-    inline void check_flt();
-
-    static std::function<void(Bullet *)> patterns[static_cast<int>(SBPatternCode::NUM)];
     void track_player();
     void track_enemy();
     void kinematic();
     void statical();
+    void track_player_d();
+    void track_enemy_d();
+    void kinematic_d();
+    void statical_d();
     std::function<void(Bullet *)> pattern;
 
 public:
