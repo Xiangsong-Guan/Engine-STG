@@ -157,7 +157,7 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Cannot load anime " << name << ": " << e.what() << '\n';
+        std::cerr << "Cannot load texture sheet " << name << ": " << e.what() << '\n';
     }
 }
 
@@ -520,7 +520,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     {
     case SSPatternsCode::CONTROLLED:
         if (lua_getfield(L_main, -1, "data") != LUA_TFUNCTION)
-            INVALID_SHOOTER(name, "invalid update function!,balance_top", balance_top)
+            INVALID_SHOOTER(name, "invalid update function!", balance_top)
         lua_getfield(L_main, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
         lua_pushvalue(L_main, -2);
         lua_setfield(L_main, -2, name.c_str());
@@ -529,15 +529,15 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
     case SSPatternsCode::TOTAL_TURN:
         if (lua_getfield(L_main, -1, "data") != LUA_TNUMBER)
-            INVALID_SHOOTER(name, "invalid total turn speed!,balance_top", balance_top)
+            INVALID_SHOOTER(name, "invalid total turn speed!", balance_top)
         ss.Data.TurnSpeed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
         lua_pop(L_main, 1);
         break;
 
     case SSPatternsCode::SPLIT_TURN:
-        if (lua_getfield(L_main, -1, "data") != LUA_TTABLE)
-            INVALID_SHOOTER(name, "invalid split turn speeds!,balance_top", balance_top)
-        for (int i = 0; i < std::min(MAX_LUNCHERS_NUM, static_cast<int>(luaL_len(L_main, -1))); i++)
+        if (lua_getfield(L_main, -1, "data") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
+            INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top)
+        for (int i = 0; i < luaL_len(L_main, -1); i++)
         {
             if (lua_geti(L_main, -1, i + 1) != LUA_TNUMBER)
                 INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top);
@@ -682,6 +682,8 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
             pf.P.SetAsBox(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1), b2Vec2(x, y), 0.f);
             lua_pop(L_main, 3);
             break;
+        default:
+            INVALID_PHYSICS(name, "invalid physical shape!", balance_top);
         }
     }
 

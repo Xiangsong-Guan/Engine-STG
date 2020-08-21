@@ -51,6 +51,9 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         data->Round.p.y = luaL_checknumber(L, pd_idx + 2);
         data->Round.dir = luaL_checknumber(L, pd_idx + 3);
         break;
+
+    default:
+        return;
     }
 #else
     *ptn = static_cast<SCPatternsCode>(lua_tointeger(L, pd_idx));
@@ -85,6 +88,9 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         data->Round.p.y = lua_tonumber(L, pd_idx + 2);
         data->Round.dir = lua_tonumber(L, pd_idx + 3);
         break;
+
+    default:
+        return;
     }
 #endif
 }
@@ -268,7 +274,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
             bullets_n += 1;
         }
 
-        bss.push(loaded_bullets.at(bn));
+        bss.push(loaded_bullets[bn]);
     }
     for (const auto &sn : SPlayer.Shooters)
     {
@@ -319,7 +325,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
                 bullets_n += 1;
             }
 
-            bss.push(loaded_bullets.at(bn));
+            bss.push(loaded_bullets[bn]);
         }
         for (const auto &sn : setting.Charactors[i].Shooters)
         {
@@ -361,6 +367,8 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 #else
     lua_resume(L_stage, nullptr, 3, &rn);
 #endif
+    if (!lua_isthread(L_stage, -1))
+        return;
     player_watching = lua_tothread(L_stage, -1);
     lua_pop(L_stage, rn);
 
@@ -537,8 +545,6 @@ void STGLevel::Update()
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
         std::cerr << "STG stage lua error: " << lua_tostring(L_stage, -1) << std::endl;
-    if (rn != 0)
-        std::cerr << "STG stage lua return something stupid!\n";
 #endif
     /* STG game over, just notify game. */
     if (good != LUA_YIELD)

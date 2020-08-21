@@ -182,8 +182,6 @@ bool STGThinker::controlled()
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
         std::cerr << "STG thinker lua error: " << lua_tostring(AI, -1) << std::endl;
-    else if (rn != 0)
-        std::cerr << "STG thinker lua return something stupid!\n";
 #endif
 
     if (good != LUA_YIELD)

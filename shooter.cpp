@@ -1,4 +1,4 @@
-#include "stg_shooter.h"
+#include "shooter.h"
 
 #include "resource_manger.h"
 #include "game_event.h"
@@ -29,8 +29,6 @@ inline void STGShooter::init()
             std::cerr << "STG shooter" << Name << " lua error: return in init call!" << std::endl;
         else if (good != LUA_YIELD)
             std::cerr << "STG shooterr" << Name << " lua error: " << lua_tostring(AI, -1) << std::endl;
-        else if (rn != 0)
-            std::cerr << "STG shooterr" << Name << " lua return something stupid!\n";
 #endif
     }
 }
@@ -64,6 +62,9 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
     speed = setting.Speed;
     ammo_slot_n = setting.AmmoSlotsNum;
     luncher_n = setting.LuncherSize;
+
+    assert(ammo_slot_n < MAX_B_TYPES);
+    assert(luncher_n < MAX_LUNCHERS_NUM);
 
     const b2Vec2 front = b2Vec2(0.f, -1.f);
     for (int s = 0; s < luncher_n; s++)

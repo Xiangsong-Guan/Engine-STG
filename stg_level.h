@@ -9,7 +9,7 @@
 #include "stg_thinker.h"
 #include "stg_state_man.h"
 #include "contact_listener.h"
-#include "stg_shooter.h"
+#include "shooter.h"
 #include "bullet.h"
 
 #ifdef STG_DEBUG_PHY_DRAW

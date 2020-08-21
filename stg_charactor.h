@@ -4,7 +4,7 @@
 #include "data_struct.h"
 #include "game_event.h"
 #include "flow_controller.h"
-#include "stg_shooter.h"
+#include "shooter.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
