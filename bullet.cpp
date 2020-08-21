@@ -1,5 +1,7 @@
 #include "bullet.h"
 
+#include "resource_manger.h"
+
 /*************************************************************************************************
  *                                                                                               *
  *                                Initialize / Destroy Function                                  *
@@ -13,6 +15,24 @@ Bullet::Bullet()
 
 void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 {
+    /* Bullet's textures */
+    if (bs.Texs.SpriteBornType == SpriteType::ANIMED)
+        born = ResourceManager::GetAnime(bs.Texs.SpriteBorn);
+    if (bs.Texs.SpriteDisableType == SpriteType::ANIMED)
+        disable = ResourceManager::GetAnime(bs.Texs.SpriteDisable);
+    if (bs.Texs.SpriteMovementType == SpriteType::ANIMED)
+        idle = ResourceManager::GetAnime(bs.Texs.SpriteMovement[0]);
+    else if (bs.Texs.SpriteMovementType == SpriteType::STATIC)
+        idle = Anime(ResourceManager::GetTexture(bs.Texs.SpriteMovement[static_cast<int>(Movement::IDLE)]));
+    else
+        idle = Anime(ResourceManager::GetTexture("blank"));
+    if (idle.DURATION == 1)
+    {
+        idle.Forward();
+        idle.Forward();
+        idle.Forward();
+    }
+
     world = w;
 
     phy = bs.Phy;
@@ -59,7 +79,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 void Bullet::SetScale(float x, float y, float phy, const float b[4]) noexcept
 {
     std::memcpy(bound, b, sizeof(bound));
-    // draw.SetScale(x, y, phy);
+    draw.SetScale(x, y, phy);
 }
 
 /*************************************************************************************************
@@ -94,6 +114,31 @@ Bullet *Bullet::Update()
 
 Bullet *Bullet::Draw(float forward_time)
 {
+    draw.Reset(forward_time);
+
+    if (born.DURATION > 1)
+        for (int i = 0; i < just_bullets_n; i++)
+            draw.Draw(just_bullets[i].Physics, born.GetFrame(just_bullets[i].ATimer));
+    if (disable.DURATION > 1)
+        for (int i = 0; i < dead_bullets_n; i++)
+            draw.Draw(dead_bullets[i].Physics, born.GetFrame(dead_bullets[i].ATimer));
+
+    if (idle.DURATION > 1)
+    {
+        for (int i = 0; i < fly_bullets_n; i++)
+            draw.Draw(fly_bullets[i].SB.Physics, born.GetFrame(fly_bullets[i].SB.ATimer));
+        for (int i = 0; i < flt_bullets_n; i++)
+            draw.Draw(flt_bullets[i].Physics, born.GetFrame(flt_bullets[i].ATimer));
+    }
+    else
+    {
+        for (int i = 0; i < fly_bullets_n; i++)
+            draw.Draw(fly_bullets[i].SB.Physics, idle.Playing);
+        for (int i = 0; i < flt_bullets_n; i++)
+            draw.Draw(flt_bullets[i].Physics, idle.Playing);
+    }
+
+    draw.Flush();
     return Next;
 }
 

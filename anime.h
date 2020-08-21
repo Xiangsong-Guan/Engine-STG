@@ -34,6 +34,12 @@ public:
                                                     DURATION(static_cast<int>(frames_.size())),
                                                     LG_DURATION(DURATION * ANIME_UPDATE_TIMER),
                                                     Playing(nullptr) {}
+    Anime(ALLEGRO_BITMAP *one_frame) : frames_(std::vector{one_frame}),
+                                       now_(-1),
+                                       sync_(-1),
+                                       DURATION(1),
+                                       LG_DURATION(1 * ANIME_UPDATE_TIMER),
+                                       Playing(nullptr) {}
 
     inline bool Forward() noexcept
     {
@@ -53,13 +59,9 @@ public:
         Playing = nullptr;
     }
 
-    inline bool GetFrame(int timer)
+    inline ALLEGRO_BITMAP *GetFrame(int timer) noexcept
     {
-        if (timer % ANIME_UPDATE_TIMER != 0)
-            return false;
-
-        Playing = frames_[timer % DURATION];
-        return true;
+        return frames_[(timer / ANIME_UPDATE_TIMER) % DURATION];
     }
 };
 

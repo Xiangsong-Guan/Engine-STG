@@ -4,7 +4,7 @@
 #include "anime.h"
 #include "data_struct.h"
 #include "flow_controller.h"
-// #include "muti_renderer.h"
+#include "bullets_renderer.h"
 
 #include <box2d/box2d.h>
 
@@ -42,7 +42,7 @@ private:
     KinematicSeq ks;
     PhysicalFixture phy;
 
-    // MutiRenderer draw;
+    BulletsRenderer draw;
     Anime born;
     Anime idle;
     Anime disable;
