@@ -52,14 +52,14 @@ public:
     ~STGCharactor();
     void CPPSuckSwap(STGCharactor &) noexcept;
 
-    void Enable(int id, b2Body *body, STGShooter *sht, SCS *enter, float default_speed);
+    void Enable(int id, b2Body *body, Shooter *sht, SCS *enter, float default_speed);
     void Update();
 
     static void InitInputCmd();
 
 private:
     float speed;
-    STGShooter *shooter;
+    Shooter *shooter;
 
     static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
                       static_cast<int>(STGCharCommand::NUM)>

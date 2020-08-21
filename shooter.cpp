@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-inline void STGShooter::init()
+inline void Shooter::init()
 {
     my_xf = b2Transform(b2Vec2_zero, b2Rot(0.f));
     my_angle = 0.f;
@@ -33,7 +33,7 @@ inline void STGShooter::init()
     }
 }
 
-STGShooter &STGShooter::operator=(const STGShooter &o)
+Shooter &Shooter::operator=(const Shooter &o)
 {
     Name = o.Name;
     power = o.power;
@@ -55,7 +55,7 @@ STGShooter &STGShooter::operator=(const STGShooter &o)
     return *this;
 }
 
-void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss)
+void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss)
 {
     Name = setting.Name;
     power = setting.Power;
@@ -63,8 +63,8 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
     ammo_slot_n = setting.AmmoSlotsNum;
     luncher_n = setting.LuncherSize;
 
-    assert(ammo_slot_n < MAX_B_TYPES);
-    assert(luncher_n < MAX_LUNCHERS_NUM);
+    assert(ammo_slot_n <= MAX_B_TYPES);
+    assert(luncher_n <= MAX_LUNCHERS_NUM);
 
     const b2Vec2 front = b2Vec2(0.f, -1.f);
     for (int s = 0; s < luncher_n; s++)
@@ -88,7 +88,7 @@ void STGShooter::Load(const float b[4], const STGShooterSetting &setting, std::q
     init();
 }
 
-STGShooter *STGShooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
+Shooter *Shooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
 {
     ID = id;
     physical = body;
@@ -98,19 +98,19 @@ STGShooter *STGShooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOU
 }
 
 /* Player are special, need get target from world. */
-void STGShooter::MyDearPlayer() noexcept
+void Shooter::MyDearPlayer() noexcept
 {
     if (ID == 0 && code == SSPatternsCode::TRACK)
-        pattern = std::mem_fn(&STGShooter::track_enemy);
+        pattern = std::mem_fn(&Shooter::track_enemy);
 }
 
-STGShooter *STGShooter::Update()
+Shooter *Shooter::Update()
 {
     pattern(this);
     return Next;
 }
 
-inline void STGShooter::track() noexcept
+inline void Shooter::track() noexcept
 {
     const b2Vec2 front = b2Vec2(0.f, -1.f);
 
@@ -125,13 +125,13 @@ inline void STGShooter::track() noexcept
 }
 
 /* Using transform mul, low priority. */
-inline void STGShooter::recalc_lunchers_attitude_cache(int s) noexcept
+inline void Shooter::recalc_lunchers_attitude_cache(int s) noexcept
 {
     lunchers_clc_angle[s] = my_angle + lunchers[s].DAttitude.Angle;
     lunchers_clc_pos[s] = b2Mul(my_xf, lunchers[s].DAttitude.Pos);
 }
 
-inline void STGShooter::fire(int s)
+inline void Shooter::fire(int s)
 {
     /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency.
      * Charactor will never rot, no need to plus charactor's angle. */
@@ -144,24 +144,24 @@ inline void STGShooter::fire(int s)
  *                                                                                               *
  *************************************************************************************************/
 
-void STGShooter::Fire() noexcept
+void Shooter::Fire() noexcept
 {
     firing = true;
 }
 
-void STGShooter::Cease() noexcept
+void Shooter::Cease() noexcept
 {
     firing = false;
 }
 
-float STGShooter::ShiftIn(bool is_firing) noexcept
+float Shooter::ShiftIn(bool is_firing) noexcept
 {
     firing = is_firing;
     Con->EnableSht(ID, this);
     return speed;
 }
 
-bool STGShooter::ShiftOut() noexcept
+bool Shooter::ShiftOut() noexcept
 {
     bool ret = firing;
     firing = false;
@@ -169,15 +169,15 @@ bool STGShooter::ShiftOut() noexcept
     return ret;
 }
 
-void STGShooter::Sync()
+void Shooter::Sync()
 {
 }
 
-void STGShooter::FSync()
+void Shooter::FSync()
 {
 }
 
-void STGShooter::Destroy()
+void Shooter::Destroy()
 {
 }
 
@@ -187,22 +187,22 @@ void STGShooter::Destroy()
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<void(STGShooter *)> STGShooter::patterns[static_cast<int>(SSPatternsCode::NUM)];
+std::function<void(Shooter *)> Shooter::patterns[static_cast<int>(SSPatternsCode::NUM)];
 
-void STGShooter::InitSSPattern()
+void Shooter::InitSSPattern()
 {
-    patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&STGShooter::controlled);
-    patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&STGShooter::stay);
-    patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&STGShooter::track_player);
-    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&STGShooter::total_turn);
-    patterns[static_cast<int>(SSPatternsCode::SPLIT_TURN)] = std::mem_fn(&STGShooter::split_turn);
+    patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&Shooter::controlled);
+    patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&Shooter::stay);
+    patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&Shooter::track_player);
+    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&Shooter::total_turn);
+    patterns[static_cast<int>(SSPatternsCode::SPLIT_TURN)] = std::mem_fn(&Shooter::split_turn);
 }
 
-void STGShooter::controlled()
+void Shooter::controlled()
 {
 }
 
-void STGShooter::stay()
+void Shooter::stay()
 {
     if (firing)
     {
@@ -215,7 +215,7 @@ void STGShooter::stay()
         timer = -1;
 }
 
-void STGShooter::total_turn()
+void Shooter::total_turn()
 {
     my_angle += data.TurnSpeed;
 
@@ -235,7 +235,7 @@ void STGShooter::total_turn()
         timer = -1;
 }
 
-void STGShooter::split_turn()
+void Shooter::split_turn()
 {
     for (int s = 0; s < luncher_n; s++)
         lunchers[s].DAttitude.Angle += data.TurnSpeeds[s];
@@ -255,7 +255,7 @@ void STGShooter::split_turn()
         timer = -1;
 }
 
-void STGShooter::track_enemy()
+void Shooter::track_enemy()
 {
     if (firing)
     {
@@ -280,7 +280,7 @@ void STGShooter::track_enemy()
         timer = -1;
 }
 
-void STGShooter::track_player()
+void Shooter::track_player()
 {
     if (firing)
     {

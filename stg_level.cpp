@@ -472,7 +472,7 @@ void STGLevel::Update()
     disabled_n = 0;
 
     /* Shooting & Bullet management */
-    STGShooter *sp = shooters_p;
+    Shooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->Update();
 
@@ -565,7 +565,7 @@ void STGLevel::Render(float forward_time)
 #ifdef STG_DEBUG_PHY_DRAW
     world->DrawDebugData();
 
-    STGShooter *sp = shooters_p;
+    Shooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->DrawDebugData();
 #endif
@@ -725,7 +725,7 @@ void STGLevel::Debut(int id, float x, float y)
     /* Shooter */
     if (standby[id].MyShooters != nullptr)
     {
-        STGShooter *sp = standby[id].MyShooters;
+        Shooter *sp = standby[id].MyShooters;
         do
             sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != standby[id].MyShooters);
@@ -771,11 +771,11 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     }
 
     /* Shooter */
-    STGShooter *my_shooters = nullptr;
+    Shooter *my_shooters = nullptr;
     if (standby[id].MyShooters != nullptr)
     {
         my_shooters = copy_shooters(standby[id].MyShooters);
-        STGShooter *sp = my_shooters;
+        Shooter *sp = my_shooters;
         do
             sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != my_shooters);
@@ -855,7 +855,7 @@ void STGLevel::DisableThr(int id)
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::EnableSht(int id, STGShooter *ss) noexcept
+void STGLevel::EnableSht(int id, Shooter *ss) noexcept
 {
     if (shooters_p != nullptr)
         shooters_p->Prev = ss;
@@ -875,7 +875,7 @@ void STGLevel::EnableSht(int id, STGShooter *ss) noexcept
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::DisableSht(int id, STGShooter *ss) noexcept
+void STGLevel::DisableSht(int id, Shooter *ss) noexcept
 {
     /* Different with others. List just lost, no recycle. */
     if (ss->Prev == nullptr)
@@ -893,11 +893,11 @@ void STGLevel::DisableSht(int id, STGShooter *ss) noexcept
 }
 
 /* Aux Functions */
-STGShooter *STGLevel::copy_shooters(const STGShooter *first)
+Shooter *STGLevel::copy_shooters(const Shooter *first)
 {
     int copied_shooters_n = 0;
-    const STGShooter *sp = first;
-    STGShooter *ret = many_shooters + shooters_n;
+    const Shooter *sp = first;
+    Shooter *ret = many_shooters + shooters_n;
 
     do
     {

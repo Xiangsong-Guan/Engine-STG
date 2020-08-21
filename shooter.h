@@ -17,7 +17,7 @@
 #include <queue>
 #include <functional>
 
-class STGShooter
+class Shooter
 {
 public:
     static void InitSSPattern();
@@ -26,17 +26,17 @@ public:
     std::string Name;
 
     /* Constructor/Destructor */
-    STGShooter() = default;
-    STGShooter(const STGShooter &) = delete;
-    STGShooter(STGShooter &&) = delete;
-    STGShooter &operator=(const STGShooter &);
-    STGShooter &operator=(STGShooter &&) = delete;
-    ~STGShooter() = default;
+    Shooter() = default;
+    Shooter(const Shooter &) = delete;
+    Shooter(Shooter &&) = delete;
+    Shooter &operator=(const Shooter &);
+    Shooter &operator=(Shooter &&) = delete;
+    ~Shooter() = default;
 
     void Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss);
-    STGShooter *Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
+    Shooter *Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
     void MyDearPlayer() noexcept;
-    STGShooter *Update();
+    Shooter *Update();
 
     void Fire() noexcept;
     void Cease() noexcept;
@@ -46,14 +46,14 @@ public:
     void FSync();
     void Destroy();
 
-    STGShooter *Prev, *Next;
-    STGShooter *Shift;
+    Shooter *Prev, *Next;
+    Shooter *Shift;
 
     STGFlowController *Con;
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw *DebugDraw;
-    inline STGShooter *DrawDebugData()
+    inline Shooter *DrawDebugData()
     {
         const b2Color yellow = b2Color(1.f, 1.f, 0.f);
         const b2Vec2 front = b2Vec2(0.f, -1.f);
@@ -97,13 +97,13 @@ private:
 
     SSPatternsCode code;
     SSPatternData data;
-    std::function<void(STGShooter *)> pattern;
+    std::function<void(Shooter *)> pattern;
 
     /* Lua AI can set sub-pattern, also use data. */
     lua_State *AI;
     SSPatternsCode sub_ptn;
 
-    static std::function<void(STGShooter *)> patterns[static_cast<int>(SSPatternsCode::NUM)];
+    static std::function<void(Shooter *)> patterns[static_cast<int>(SSPatternsCode::NUM)];
     void controlled();
     void stay();
     void total_turn();

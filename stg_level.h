@@ -38,7 +38,7 @@ enum class STGCompType
 struct StageCharInfo
 {
     STGCharactorSetting MyChar; /* same in airborne */
-    STGShooter *MyShooters;     /* copy in airborne */
+    Shooter *MyShooters;     /* copy in airborne */
     SCPatternsCode MyPtn;       /* change in airborne */
     SCPatternData MyPD;         /* change in airborne */
     SCSBorn *MyEnter;           /* copy in airborne */
@@ -81,8 +81,8 @@ public:
     void Pause() const final;
     void DisableAll(int id) final;
     void DisableThr(int id) final;
-    void EnableSht(int id, STGShooter *ss) noexcept final;
-    void DisableSht(int id, STGShooter *ss) noexcept final;
+    void EnableSht(int id, Shooter *ss) noexcept final;
+    void DisableSht(int id, Shooter *ss) noexcept final;
 
     const b2Body *TrackEnemy() const noexcept final;
     const b2Body *TrackPlayer() const noexcept final;
@@ -96,8 +96,8 @@ private:
     int thinkers_n;
     STGCharactor onstage_charactors[MAX_ON_STAGE];
     int charactors_n;
-    STGShooter many_shooters[MAX_ENTITIES * 2];
-    STGShooter *shooters_p;
+    Shooter many_shooters[MAX_ENTITIES * 2];
+    Shooter *shooters_p;
     int shooters_n;
     Bullet bullets[MAX_ENTITIES];
     Bullet *bullets_p;
@@ -140,7 +140,7 @@ private:
 
     /* AUX Function */
     inline void process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept;
-    STGShooter *copy_shooters(const STGShooter *first);
+    Shooter *copy_shooters(const Shooter *first);
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw p_draw;
