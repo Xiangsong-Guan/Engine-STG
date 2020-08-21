@@ -2,6 +2,7 @@
 
 #include "resource_manger.h"
 
+#include <unordered_map>
 #include <iostream>
 #include <queue>
 
@@ -44,6 +45,15 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
             else
                 break;
         break;
+
+    case SCPatternsCode::GO_ROUND:
+        data->Round.p.x = luaL_checknumber(L, pd_idx + 1);
+        data->Round.p.y = luaL_checknumber(L, pd_idx + 2);
+        data->Round.dir = luaL_checknumber(L, pd_idx + 3);
+        break;
+
+    default:
+        return;
     }
 #else
     *ptn = static_cast<SCPatternsCode>(lua_tointeger(L, pd_idx));
@@ -72,6 +82,15 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
             else
                 break;
         break;
+
+    case SCPatternsCode::GO_ROUND:
+        data->Round.p.x = lua_tonumber(L, pd_idx + 1);
+        data->Round.p.y = lua_tonumber(L, pd_idx + 2);
+        data->Round.dir = lua_tonumber(L, pd_idx + 3);
+        break;
+
+    default:
+        return;
     }
 #endif
 }
@@ -180,10 +199,19 @@ STGLevel::STGLevel()
     }
     for (int i = 0; i < MAX_ENTITIES * 2; i++)
         many_shooters[i].Con = this;
+    for (int i = 0; i < MAX_ENTITIES; i++)
+        bullets[i].Con = this;
 }
 
 void STGLevel::Load(int width, int height, float time_step, const STGLevelSetting &setting)
 {
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("source_12"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bullets_n.SetWH(width, height);
+    tr_bn.SetText({"", ResourceManager::GetFont("source_12"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bn.SetWH(width, height);
+#endif
+
     /* set right para */
     float scale = static_cast<float>(width) / static_cast<float>(height) >
                           SCREEN_WIDTH / SCREEN_HEIGHT
@@ -207,12 +235,20 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     /* Set right thing for comps */
     for (int i = 0; i < MAX_ON_STAGE; i++)
         sprite_renderers[i].SetScale(scale, scale, PIXIL_PRE_M * scale);
+    for (int i = 0; i < MAX_ENTITIES; i++)
+        bullets[i].SetScale(scale, scale, PIXIL_PRE_M * scale, bound);
 
     /* pool reset */
     reset_id();
     shooters_p = nullptr;
     shooters_n = 0;
+    bullets_p = nullptr;
+    bullets_n = 0;
     all_state.Reset();
+
+    /* Recording which bullet has been loaded. */
+    b2Filter f;
+    std::unordered_map<std::string, Bullet *> loaded_bullets;
 
     /* Preload player */
     int player_shooters_n = 0;
@@ -225,14 +261,20 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     GPlayer.MyChar.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
     GPlayer.MyChar.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER);
     GPlayer.MyChar.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_ENEMY);
-    std::queue<STGBulletSetting> bss;
+    std::queue<Bullet *> bss;
+    f.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
+    f.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER_BULLET);
+    f.maskBits = static_cast<uint16>(CollisionType::C_ENEMY);
     for (const auto &bn : SPlayer.Bulletss)
     {
-        STGBulletSetting bs = ResourceManager::GetSTGBullet(bn);
-        bs.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
-        bs.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER_BULLET);
-        bs.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::C_ENEMY);
-        bss.push(std::move(bs));
+        if (!loaded_bullets.contains(bn))
+        {
+            bullets[bullets_n].Load(ResourceManager::GetSTGBullet(bn), f, world);
+            loaded_bullets.emplace(bn, bullets + bullets_n);
+            bullets_n += 1;
+        }
+
+        bss.push(loaded_bullets[bn]);
     }
     for (const auto &sn : SPlayer.Shooters)
     {
@@ -254,6 +296,9 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
      * Some in game feature, like physics, script coroutine, etc. should be initialize
      * in different time: someone in level load phase, someone in stage runtime.
      * Let stage thread first call to initialize whatever, not here. */
+    f.groupIndex = static_cast<int16>(CollisionType::G_ENEMY_SIDE);
+    f.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY_BULLET);
+    f.maskBits = static_cast<uint16>(CollisionType::C_PLAYER);
     for (size_t i = 0; i < (setting.Charactors.size() > MAX_ENTITIES ? MAX_ENTITIES : setting.Charactors.size()); i++)
     {
         standby[i].MyChar = ResourceManager::GetSTGChar(setting.Charactors[i].Char);
@@ -263,21 +308,24 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
                                              ? static_cast<b2Shape *>(&standby[i].MyChar.Phy.C)
                                              : static_cast<b2Shape *>(&standby[i].MyChar.Phy.P);
         /* Tune the filter, here we can tishu. */
-        standby[i].MyChar.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_OTHERS_SIDE);
+        standby[i].MyChar.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_ENEMY_SIDE);
         standby[i].MyChar.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY);
         standby[i].MyChar.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_PLAYER);
 
         /* Make shooter */
         standby[i].MyShooters = nullptr;
         int my_shooters_n = 0;
-        std::queue<STGBulletSetting> bss;
+        std::queue<Bullet *> bss;
         for (const auto &bn : setting.Charactors[i].Bulletss)
         {
-            STGBulletSetting bs = ResourceManager::GetSTGBullet(bn);
-            bs.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_OTHERS_SIDE);
-            bs.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY_BULLET);
-            bs.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::C_PLAYER_BULLET);
-            bss.push(std::move(bs));
+            if (!loaded_bullets.contains(bn))
+            {
+                bullets[bullets_n].Load(ResourceManager::GetSTGBullet(bn), f, world);
+                loaded_bullets.emplace(bn, bullets + bullets_n);
+                bullets_n += 1;
+            }
+
+            bss.push(loaded_bullets[bn]);
         }
         for (const auto &sn : setting.Charactors[i].Shooters)
         {
@@ -299,9 +347,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 
     /* Get stage thread in position. (coroutine, function already on the top) */
     L_stage = ResourceManager::GetCoroutine(ResourceManager::STG_STAGE_FUNCTIONS_KEY, setting.Name);
-    /* Save thread in Lua, or it will be collected. */
-    lua_pushthread(L_stage);
-    stage_thread_ref = luaL_ref(L_stage, LUA_REGISTRYINDEX);
     /* Initialize call. thinker lib, Level lib and level light userdata passed in. 
      * Player watching will be return. */
     int rn = 1;
@@ -322,6 +367,8 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 #else
     lua_resume(L_stage, nullptr, 3, &rn);
 #endif
+    if (!lua_isthread(L_stage, -1))
+        return;
     player_watching = lua_tothread(L_stage, -1);
     lua_pop(L_stage, rn);
 
@@ -338,12 +385,12 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     /* Player on stage. */
     SCPatternData pd;
     pd.AI = player_watching;
-    onstage_charactors[0].Enable(p_id, player, GPlayer.MyShooters, GPlayer.MyEnter);
+    onstage_charactors[0].Enable(p_id, player, GPlayer.MyShooters, GPlayer.MyEnter, GPlayer.MyChar.DefaultSpeed);
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
     /* Player always just has two shooters, and they are loop. */
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster, nullptr);
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, world, onstage_charactors[0].RendererMaster, nullptr);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, onstage_charactors[0].RendererMaster);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, onstage_charactors[0].RendererMaster);
     /* id record */
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
     records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
@@ -358,12 +405,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
 /* ONLY call by outside. */
 void STGLevel::Unload()
 {
-    /* Just stage thread is kept by game, all charactors' coroutines are kept in 
-     * stage thread by Lua. So here we unref the stage thread, all things in Lua
-     * will be collected. */
-    lua_resetthread(L_stage);
-    luaL_unref(L_stage, LUA_REGISTRYINDEX, stage_thread_ref);
-
     delete world;
 }
 
@@ -397,7 +438,7 @@ void STGLevel::Update()
      * Stgcharactor just store state and have a hit function for colloision to call. */
     for (int i = 0; i < charactors_n; i++)
     {
-        b2Vec2 p = onstage_charactors[i].Physics->GetPosition();
+        const b2Vec2 &p = onstage_charactors[i].Physics->GetPosition();
         if (p.y > bound[0] && p.y < bound[1] && p.x > bound[2] && p.x < bound[3])
             onstage_charactors[i].Update();
         else /* out of field die with no mercy */
@@ -431,9 +472,27 @@ void STGLevel::Update()
     disabled_n = 0;
 
     /* Shooting & Bullet management */
-    STGShooter *sp = shooters_p;
+    Shooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->Update();
+
+#ifdef STG_PERFORMENCE_SHOW
+    int i_bn = 0;
+#endif
+
+    Bullet *b = bullets_p;
+    while (b != nullptr)
+    {
+#ifdef STG_PERFORMENCE_SHOW
+        i_bn += b->GetBulletNum();
+#endif
+
+        b = b->Update();
+    }
+
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bn.ChangeText(i_bn);
+#endif
 
     /* all physics access and modify should dircetly to physical body,
      * that means logic part have full rw access to physical body, while
@@ -486,8 +545,6 @@ void STGLevel::Update()
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
         std::cerr << "STG stage lua error: " << lua_tostring(L_stage, -1) << std::endl;
-    if (rn != 0)
-        std::cerr << "STG stage lua return something stupid!\n";
 #endif
     /* STG game over, just notify game. */
     if (good != LUA_YIELD)
@@ -497,21 +554,29 @@ void STGLevel::Update()
 void STGLevel::Render(float forward_time)
 {
 #ifndef STG_JUST_DRAW_PHY
-    /* draw to off-window frame */
     for (int i = 0; i < sprite_renderers_n; i++)
         sprite_renderers[i].Draw(forward_time);
+
+    Bullet *b = bullets_p;
+    while (b != nullptr)
+        b = b->Draw(forward_time);
 #endif
 
 #ifdef STG_DEBUG_PHY_DRAW
     world->DrawDebugData();
 
-    STGShooter *sp = shooters_p;
+    Shooter *sp = shooters_p;
     while (sp != nullptr)
         sp = sp->DrawDebugData();
 #endif
+
+#ifdef STG_PERFORMENCE_SHOW
+    tr_bullets_n.Draw();
+    tr_bn.Draw();
+#endif
 }
 
-const b2Body *STGLevel::TrackEnemy()
+const b2Body *STGLevel::TrackEnemy() const noexcept
 {
     const b2Vec2 pp = player->GetPosition();
     const b2Body *ret = nullptr;
@@ -533,13 +598,17 @@ const b2Body *STGLevel::TrackEnemy()
     return ret;
 }
 
+const b2Body *STGLevel::TrackPlayer() const noexcept
+{
+    return player;
+}
+
 /*************************************************************************************************
  *                                                                                               *
- *                                                   Pool                                        *
+ *                                             ID Pool                                           *
  *                                                                                               *
  *************************************************************************************************/
 
-/* Some pool control. */
 inline int STGLevel::get_id() noexcept
 {
     for (int i = record_hint; i < MAX_ON_STAGE; i++)
@@ -612,6 +681,12 @@ inline void STGLevel::process_pattern_data(SCPatternsCode ptn, SCPatternData &pd
             pd.Passby.Vec[i].x *= PHYSICAL_WIDTH;
             pd.Passby.Vec[i].y *= PHYSICAL_HEIGHT;
         }
+        break;
+
+    case SCPatternsCode::GO_ROUND:
+        pd.Round.p.x *= PHYSICAL_WIDTH;
+        pd.Round.p.y *= PHYSICAL_HEIGHT;
+        break;
     }
 }
 
@@ -633,6 +708,7 @@ void STGLevel::Debut(int id, float x, float y)
     if (standby[id].MyChar.Phy.Physical)
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
+    /* Thinker */
     if (standby[id].MyPtn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
@@ -646,22 +722,27 @@ void STGLevel::Debut(int id, float x, float y)
         thinkers_n += 1;
     }
 
+    /* Shooter */
     if (standby[id].MyShooters != nullptr)
     {
-        STGShooter *sp = standby[id].MyShooters;
+        Shooter *sp = standby[id].MyShooters;
         do
-            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster, player);
+            sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != standby[id].MyShooters);
     }
 
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+    /* Renderer */
+    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    {
+        sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        sprite_renderers_n += 1;
+    }
 
-    onstage_charactors[charactors_n].Enable(real_id, b, standby[id].MyShooters, standby[id].MyEnter);
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+    onstage_charactors[charactors_n].Enable(real_id, b, standby[id].MyShooters, standby[id].MyEnter, standby[id].MyChar.DefaultSpeed);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
-    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
-    sprite_renderers_n += 1;
 }
 
 void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternData pd)
@@ -674,6 +755,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     if (standby[id].MyChar.Phy.Physical)
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
+    /* Thinker */
     if (ptn != SCPatternsCode::STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
@@ -688,26 +770,32 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         thinkers_n += 1;
     }
 
-    STGShooter *my_shooters = nullptr;
+    /* Shooter */
+    Shooter *my_shooters = nullptr;
     if (standby[id].MyShooters != nullptr)
     {
         my_shooters = copy_shooters(standby[id].MyShooters);
-        STGShooter *sp = my_shooters;
+        Shooter *sp = my_shooters;
         do
-            sp = sp->Undershift(real_id, b, world, onstage_charactors[charactors_n].RendererMaster, player);
+            sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != my_shooters);
     }
 
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
-                             onstage_charactors[charactors_n].RendererMaster);
+    /* Renderer */
+    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    {
+        sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        sprite_renderers_n += 1;
+    }
 
+    /* Charactor, on stage things must contain characotrs (expect bullet). */
     onstage_charactors[charactors_n].Enable(real_id, b, my_shooters,
-                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr));
-    sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
+                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs, my_shooters == nullptr),
+                                            standby[id].MyChar.DefaultSpeed);
     records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
-    records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
     charactors_n += 1;
-    sprite_renderers_n += 1;
 }
 
 void STGLevel::Pause() const
@@ -767,13 +855,12 @@ void STGLevel::DisableThr(int id)
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::EnableSht(int id, STGShooter *ss) noexcept
+void STGLevel::EnableSht(int id, Shooter *ss) noexcept
 {
     if (shooters_p != nullptr)
-    {
         shooters_p->Prev = ss;
-        ss->Next = shooters_p;
-    }
+    ss->Next = shooters_p;
+    ss->Prev = nullptr;
     shooters_p = ss;
 
 #ifdef _DEBUG
@@ -788,7 +875,7 @@ void STGLevel::EnableSht(int id, STGShooter *ss) noexcept
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::DisableSht(int id, STGShooter *ss) noexcept
+void STGLevel::DisableSht(int id, Shooter *ss) noexcept
 {
     /* Different with others. List just lost, no recycle. */
     if (ss->Prev == nullptr)
@@ -806,11 +893,11 @@ void STGLevel::DisableSht(int id, STGShooter *ss) noexcept
 }
 
 /* Aux Functions */
-STGShooter *STGLevel::copy_shooters(const STGShooter *first)
+Shooter *STGLevel::copy_shooters(const Shooter *first)
 {
     int copied_shooters_n = 0;
-    const STGShooter *sp = first;
-    STGShooter *ret = many_shooters + shooters_n;
+    const Shooter *sp = first;
+    Shooter *ret = many_shooters + shooters_n;
 
     do
     {
@@ -824,4 +911,31 @@ STGShooter *STGLevel::copy_shooters(const STGShooter *first)
     shooters_n += copied_shooters_n;
 
     return ret;
+}
+
+void STGLevel::EnableBullet(Bullet *b)
+{
+    if (bullets_p != nullptr)
+        bullets_p->Prev = b;
+    b->Next = bullets_p;
+    bullets_p = b;
+
+#ifdef _DEBUG
+    std::cout << "Bullet enabled: " << b - bullets << "\n";
+#endif
+}
+
+void STGLevel::DisableBullet(Bullet *b)
+{
+    if (b->Prev == nullptr)
+        bullets_p = b->Next;
+    else
+        b->Prev->Next = b->Next;
+
+    if (b->Next != nullptr)
+        b->Next->Prev = b->Prev;
+
+#ifdef _DEBUG
+    std::cout << "Bullet disabled: " << b - bullets << "\n";
+#endif
 }

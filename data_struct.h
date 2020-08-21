@@ -35,7 +35,7 @@ enum class CollisionType
 {
     /* Groups */
     G_PLAYER_SIDE = -1,
-    G_OTHERS_SIDE = -2,
+    G_ENEMY_SIDE = -2,
 
     /* Categories */
     C_PLAYER = 0b0000000000000001,
@@ -100,29 +100,24 @@ struct STGTexture
  *                                                                                               *
  *************************************************************************************************/
 
-enum class AccelerateType
-{
-    UNIFORM,
-};
-
 struct KinematicPhase
 {
     float VV;
     float VR;
     int PhaseTime;   /* frame */
     float TransTime; /* sec. */
-    AccelerateType AT;
+    int TransEnd;    /* PhaseTime + TransTime * UPDATE_PRE_SEC */
 };
 
-constexpr int MAX_KINEMATIC_PHASE_NUM = 8;
+constexpr int MAX_KINEMATIC_PHASE_NUM = 16;
 
 struct KinematicSeq
 {
     bool Track;
     bool Loop;
-    bool Stay;
+    bool Dir;
 
-    int SqeSize;
+    int SeqSize;
     KinematicPhase Seq[MAX_KINEMATIC_PHASE_NUM];
 };
 
@@ -141,7 +136,7 @@ struct STGBulletSetting
     STGTexture Texs;
 
     int Damage;
-    float Speed;
+    float Density;
 
     KinematicSeq KS;
 };
@@ -170,7 +165,6 @@ union SSPatternData
 {
     float TurnSpeed;
     float TurnSpeeds[MAX_LUNCHERS_NUM];
-    lua_State *AI;
 };
 
 struct Attitude
@@ -212,6 +206,8 @@ struct STGCharactorSetting
 {
     std::string Name;
 
+    float DefaultSpeed;
+
     PhysicalFixture Phy;
     STGTexture Texs;
 };
@@ -223,6 +219,7 @@ enum class SCPatternsCode
     MOVE_TO,
     MOVE_LAST,
     MOVE_PASSBY,
+    GO_ROUND,
 
     NUM
 };
@@ -242,6 +239,13 @@ union SCPatternData
         int Num;
         bool Loop;
     } Passby;
+
+    struct
+    {
+        b2Vec2 p;
+        float r_sq;
+        float dir;
+    } Round;
 };
 
 /*************************************************************************************************

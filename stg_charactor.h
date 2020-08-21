@@ -4,7 +4,7 @@
 #include "data_struct.h"
 #include "game_event.h"
 #include "flow_controller.h"
-#include "stg_shooter.h"
+#include "shooter.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -52,14 +52,14 @@ public:
     ~STGCharactor();
     void CPPSuckSwap(STGCharactor &) noexcept;
 
-    void Enable(int id, b2Body *body, STGShooter *sht, SCS *enter);
+    void Enable(int id, b2Body *body, Shooter *sht, SCS *enter, float default_speed);
     void Update();
 
     static void InitInputCmd();
 
 private:
     float speed;
-    STGShooter *shooter;
+    Shooter *shooter;
 
     static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
                       static_cast<int>(STGCharCommand::NUM)>

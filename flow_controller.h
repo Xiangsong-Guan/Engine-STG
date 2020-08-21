@@ -5,7 +5,8 @@
 
 #include <lua.hpp>
 
-class STGShooter;
+class Shooter;
+class Bullet;
 
 class STGFlowController
 {
@@ -23,10 +24,13 @@ public:
     virtual void Pause() const = 0;
     virtual void DisableAll(int id) = 0;
     virtual void DisableThr(int id) = 0;
-    virtual void EnableSht(int id, STGShooter *ss) = 0;
-    virtual void DisableSht(int id, STGShooter *ss) = 0;
+    virtual void EnableSht(int id, Shooter *ss) = 0;
+    virtual void DisableSht(int id, Shooter *ss) = 0;
+    virtual void EnableBullet(Bullet *b) = 0;
+    virtual void DisableBullet(Bullet *b) = 0;
 
-    virtual const b2Body *TrackEnemy() = 0;
+    virtual const b2Body *TrackEnemy() const noexcept = 0;
+    virtual const b2Body *TrackPlayer() const noexcept = 0;
 };
 
 class GameFlowController

@@ -53,6 +53,13 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     physics = body;
     ID = id;
     where = 0;
+
+    if (ptn == SCPatternsCode::GO_ROUND)
+        data.Round.r_sq = (body->GetPosition() - data.Round.p).LengthSquared();
+
+    /* Save AI out of data union. AI can use data to execute sub pattern. */
+    AI = data.AI;
+    sub_ptn = SCPatternsCode::CONTROLLED;
 }
 
 /*************************************************************************************************
@@ -63,7 +70,8 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
 
 void STGThinker::Think()
 {
-    pattern(this);
+    if (pattern(this))
+        Con->DisableThr(ID);
 }
 
 /*************************************************************************************************
@@ -134,19 +142,19 @@ void STGThinker::Move(int dir)
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<void(STGThinker *)> STGThinker::patterns[static_cast<int>(SCPatternsCode::NUM)];
+std::function<bool(STGThinker *)> STGThinker::patterns[static_cast<int>(SCPatternsCode::NUM)];
 
 void STGThinker::InitSCPattern()
 {
+    patterns[static_cast<int>(SCPatternsCode::GO_ROUND)] = std::mem_fn(&STGThinker::go_round);
     patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&STGThinker::move_last);
     patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&STGThinker::move_to);
-    patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] =
-        std::mem_fn(&STGThinker::move_passby);
+    patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] = std::mem_fn(&STGThinker::move_passby);
     patterns[static_cast<int>(SCPatternsCode::CONTROLLED)] = std::mem_fn(&STGThinker::controlled);
     /* Pattern "STAY" will not has thinker obj. */
 }
 
-void STGThinker::controlled()
+bool STGThinker::controlled()
 {
     int good;
     int event_bit = 0b0;
@@ -154,7 +162,13 @@ void STGThinker::controlled()
     ALLEGRO_EVENT event;
 
     /* Pass porxy firstly. */
-    lua_pushlightuserdata(data.AI, this);
+    lua_pushlightuserdata(AI, this);
+
+    /* Execute sub-pattern, if exists. */
+    if (sub_ptn != SCPatternsCode::CONTROLLED)
+        if (patterns[static_cast<int>(sub_ptn)](this))
+            /* Notify Lua this pattern end. */
+            event_bit += 1;
 
     /* Pass STG char events */
     while (al_get_next_event(Recv, &event))
@@ -163,20 +177,20 @@ void STGThinker::controlled()
     }
 
     /* AI online. If AI return, means dead. */
-    good = lua_resume(data.AI, nullptr, 1, &rn);
+    good = lua_resume(AI, nullptr, 1, &rn);
 
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
-        std::cerr << "STG thinker lua error: " << lua_tostring(data.AI, -1) << std::endl;
-    else if (rn != 0)
-        std::cerr << "STG thinker lua return something stupid!\n";
+        std::cerr << "STG thinker lua error: " << lua_tostring(AI, -1) << std::endl;
 #endif
 
     if (good != LUA_YIELD)
-        Con->DisableThr(ID);
+        return true;
+
+    return false;
 }
 
-void STGThinker::move_to()
+bool STGThinker::move_to()
 {
     vec4u = data.Vec - physics->GetPosition();
 
@@ -188,18 +202,22 @@ void STGThinker::move_to()
         al_emit_user_event(InputMaster, &event, nullptr);
     }
     else
-        Con->DisableThr(ID);
+        return true;
+
+    return false;
 }
 
-void STGThinker::move_last()
+bool STGThinker::move_last()
 {
     ALLEGRO_EVENT event;
     event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
     event.user.data2 = reinterpret_cast<intptr_t>(&data.Vec);
     al_emit_user_event(InputMaster, &event, nullptr);
+
+    return false;
 }
 
-void STGThinker::move_passby()
+bool STGThinker::move_passby()
 {
     vec4u = data.Passby.Vec[where] - physics->GetPosition();
 
@@ -217,6 +235,30 @@ void STGThinker::move_passby()
             if (data.Passby.Loop)
                 where = 0;
             else
-                Con->DisableThr(ID);
+                return true;
     }
+
+    return false;
+}
+
+bool STGThinker::go_round()
+{
+    static constexpr float EP = .01f;
+    static b2Rot ADJUST = b2Rot(.05f);
+
+    b2Vec2 d2p = data.Round.p - physics->GetPosition();
+    vec4u = data.Round.dir * d2p.Skew();
+
+    /* rhc: skew -> ccw. Here we use lhc, so skew -> cw. And then dir > 0 -> ccw.
+     * Here mul -> cw; mult -> ccw. And adjust direction should always be same with dir.
+     * (Confirm EP always make circle lager, adjust always go inside.) */
+    if (d2p.LengthSquared() - data.Round.r_sq > EP)
+        vec4u = data.Round.dir > 0.f ? b2MulT(ADJUST, vec4u) : b2Mul(ADJUST, vec4u);
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
+    al_emit_user_event(InputMaster, &event, nullptr);
+
+    return false;
 }

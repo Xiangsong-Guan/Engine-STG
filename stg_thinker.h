@@ -4,6 +4,7 @@
 #include "flow_controller.h"
 #include "data_struct.h"
 
+#include <lua.hpp>
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 
@@ -43,13 +44,18 @@ private:
     int where;
     b2Vec2 vec4u;
     SCPatternData data;
-    std::function<void(STGThinker *)> pattern;
+    std::function<bool(STGThinker *)> pattern;
 
-    static std::function<void(STGThinker *)> patterns[static_cast<int>(SCPatternsCode::NUM)];
-    void controlled();
-    void move_to();
-    void move_last();
-    void move_passby();
+    /* Lua AI can set sub-pattern, also use data. */
+    lua_State *AI;
+    SCPatternsCode sub_ptn;
+
+    static std::function<bool(STGThinker *)> patterns[static_cast<int>(SCPatternsCode::NUM)];
+    bool controlled();
+    bool move_to();
+    bool move_last();
+    bool move_passby();
+    bool go_round();
 };
 
 #endif

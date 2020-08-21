@@ -50,7 +50,7 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 }
 
 /* Do something when char is loaded. */
-void STGCharactor::Enable(int id, b2Body *body, STGShooter *sht, SCS *enter)
+void STGCharactor::Enable(int id, b2Body *body, Shooter *sht, SCS *enter, float default_speed)
 {
     ID = id;
     Physics = body;
@@ -59,6 +59,7 @@ void STGCharactor::Enable(int id, b2Body *body, STGShooter *sht, SCS *enter)
     body->SetUserData(this);
 
     /* Prepare the enter state & shooter */
+    speed = default_speed;
     SPending = enter;
     shooter = sht;
     if (shooter != nullptr)
