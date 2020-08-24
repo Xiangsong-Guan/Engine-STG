@@ -24,6 +24,8 @@ enum class ShapeType
     BOX
 };
 
+const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX"};
+
 enum class SpriteType
 {
     STATIC,
@@ -161,6 +163,13 @@ enum class SSPatternsCode
     NUM
 };
 
+const char *const SS_PATTERNS_CODE[] =
+    {"CONTROLLED",
+     "STAY",
+     "TOTAL_TURN",
+     "SPLIT_TURN",
+     "TRACK"};
+
 union SSPatternData
 {
     float TurnSpeed;
@@ -223,6 +232,14 @@ enum class SCPatternsCode
 
     NUM
 };
+
+const char *const SC_PATTERNS_CODE[] =
+    {"CONTROLLED",
+     "STAY",
+     "MOVE_TO",
+     "MOVE_LAST",
+     "MOVE_PASSBY",
+     "GO_ROUND"};
 
 union SCPatternData
 {

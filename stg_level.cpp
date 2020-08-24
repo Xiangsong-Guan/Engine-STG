@@ -17,7 +17,7 @@
 static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, SCPatternData *data)
 {
 #ifdef STG_LUA_API_ARG_CHECK
-    *ptn = static_cast<SCPatternsCode>(luaL_checkinteger(L, pd_idx));
+    *ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, nullptr, SC_PATTERNS_CODE));
     switch (*ptn)
     {
     case SCPatternsCode::CONTROLLED:
@@ -56,7 +56,7 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         return;
     }
 #else
-    *ptn = static_cast<SCPatternsCode>(lua_tointeger(L, pd_idx));
+    *ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, nullptr, SC_PATTERNS_CODE));
     switch (*ptn)
     {
     case SCPatternsCode::CONTROLLED:
@@ -640,8 +640,8 @@ inline int STGLevel::get_id() noexcept
         }
     }
 
-    std::cerr << "Too many things on stage!\n";
-    return 0;
+    assert(false);
+    return 0x0fffffff;
 }
 
 inline void STGLevel::reset_id() noexcept

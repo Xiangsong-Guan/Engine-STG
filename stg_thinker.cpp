@@ -80,16 +80,16 @@ void STGThinker::Think()
  *                                                                                               *
  *************************************************************************************************/
 
-/* Tell charactor to move in 8 direction (bit format).
- * 1=thinker, 2=8-dir-opt 
+/* Tell charactor to move x,y
+ * 1=thinker, 2=x, 3=y
  * no return */
 static int move(lua_State *L)
 {
 #ifndef STG_LUA_API_ARG_CHECK
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(luaL_checkinteger(L, 2));
+    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(luaL_checknumber(L, 2), luaL_checknumber(L, 3));
 #else
-    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(lua_tointeger(L, 2));
+    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(lua_tointeger(L, 2), lua_tonumber(L, 3));
 #endif
 
     return 0;
@@ -110,30 +110,15 @@ void STGThinker::HandoverController(lua_State *L)
  *                                                                                               *
  *************************************************************************************************/
 
-void STGThinker::Move(int dir)
+void STGThinker::Move(float x, float y)
 {
     ALLEGRO_EVENT event;
 
-    if (dir & static_cast<int>(Movement::B_U))
-    {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::UP);
-        al_emit_user_event(InputMaster, &event, nullptr);
-    }
-    if (dir & static_cast<int>(Movement::B_D))
-    {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::DOWN);
-        al_emit_user_event(InputMaster, &event, nullptr);
-    }
-    if (dir & static_cast<int>(Movement::B_L))
-    {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::LEFT);
-        al_emit_user_event(InputMaster, &event, nullptr);
-    }
-    if (dir & static_cast<int>(Movement::B_R))
-    {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::RIGHT);
-        al_emit_user_event(InputMaster, &event, nullptr);
-    }
+    vec4u.Set(x, y);
+
+    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
+    al_emit_user_event(InputMaster, &event, nullptr);
 }
 
 /*************************************************************************************************

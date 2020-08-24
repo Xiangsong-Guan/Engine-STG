@@ -44,13 +44,7 @@ enum class Movement
     UR = IDLE + 1 - 3,
     DL = IDLE - 1 + 3,
     DR = IDLE - 1 - 3,
-    NUM = 9,
-
-    B_I = 0b0000,
-    B_U = 0b1000,
-    B_D = 0b0100,
-    B_L = 0b0010,
-    B_R = 0b0001
+    NUM = 9
 };
 
 enum class InputAction

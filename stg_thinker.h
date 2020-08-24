@@ -22,7 +22,7 @@ public:
     static void InitSCPattern();
 
     /* Lua AI commands */
-    void Move(int dir);
+    void Move(float x, float y);
 
     STGThinker();
     STGThinker(const STGThinker &) = delete;

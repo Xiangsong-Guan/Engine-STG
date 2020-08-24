@@ -10,6 +10,18 @@
 #include <filesystem>
 #include <cmath>
 
+inline int luaNOERROR_checkoption(lua_State *L, int arg, const char *def, const char *const lst[])
+{
+    /* From lauxlib.c */
+    const char *name = (def) ? luaL_optstring(L, arg, def) : luaL_checkstring(L, arg);
+    int i;
+    for (i = 0; lst[i]; i++)
+        if (strcmp(lst[i], name) == 0)
+            return i;
+
+    return -1;
+}
+
 /* Instantiate static variables */
 std::unordered_map<std::string, ALLEGRO_BITMAP *> ResourceManager::textures;
 std::unordered_map<std::string, Anime> ResourceManager::animations;
@@ -511,9 +523,11 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     lua_pop(L_main, 1);
 
     /* patterns */
-    if (lua_getfield(L_main, -1, "pattern") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
-        INVALID_SHOOTER(name, "invalid pattern!", balance_top);
-    ss.Pattern = static_cast<SSPatternsCode>(lua_tointeger(L_main, -1));
+    lua_getfield(L_main, -1, "pattern");
+    int good = luaNOERROR_checkoption(L_main, -1, nullptr, SS_PATTERNS_CODE);
+    if (good < 0)
+        INVALID_SHOOTER(name, "invalid pattern", balance_top);
+    ss.Pattern = static_cast<SSPatternsCode>(good);
     lua_pop(L_main, 1);
 
     switch (ss.Pattern)
@@ -649,14 +663,14 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
     lua_getfield(L_main, -1, "physical");
     if (lua_istable(L_main, -1))
     {
-        int good;
         pf.Physical = true;
 
         /* Get shape */
         lua_getfield(L_main, -1, "shape");
-        pf.Shape = static_cast<ShapeType>(lua_tointegerx(L_main, -1, &good));
-        if (!good)
+        int good = luaNOERROR_checkoption(L_main, -1, nullptr, SHAPE_TYPE);
+        if (good < 0)
             INVALID_PHYSICS(name, "invalid shape!", balance_top);
+        pf.Shape = static_cast<ShapeType>(good);
         lua_pop(L_main, 1);
         if (lua_getfield(L_main, -1, "pos") != LUA_TTABLE ||
             lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
@@ -760,14 +774,14 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         st.SpriteFSyncType = SpriteType::ANIMED;
     else
         st.SpriteFSyncType = SpriteType::NONE;
-    st.SpriteHit = art_name + "_diable";
+    st.SpriteHit = art_name + "_hit";
     if (textures.contains(st.SpriteHit))
         st.SpriteHitType = SpriteType::STATIC;
     else if (animations.contains(st.SpriteHit))
         st.SpriteHitType = SpriteType::ANIMED;
     else
         st.SpriteHitType = SpriteType::NONE;
-    st.SpriteDisable = art_name + "_diable";
+    st.SpriteDisable = art_name + "disable";
     if (textures.contains(st.SpriteDisable))
         st.SpriteDisableType = SpriteType::STATIC;
     else if (animations.contains(st.SpriteDisable))
