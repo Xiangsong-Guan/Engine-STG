@@ -229,9 +229,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     p_draw.Init(PIXIL_PRE_M * scale);
     world->SetDebugDraw(&p_draw);
 #endif
-#ifdef _DEBUG
-    world->SetContactListener(&d_contact_listener);
-#endif
 
     /* Set right thing for comps */
     for (int i = 0; i < MAX_ON_STAGE; i++)
@@ -424,6 +421,18 @@ ALLEGRO_EVENT_QUEUE *STGLevel::InputConnectionTerminal() const noexcept
 
 void STGLevel::Update()
 {
+    /* Stage update. Level event pass in here. New things on stage
+     * here, controled by Lua. */
+    int rn = 0;
+    int good = lua_resume(L_stage, nullptr, 1, &rn);
+#ifdef STG_LUA_API_ARG_CHECK
+    if (good != LUA_OK && good != LUA_YIELD)
+        std::cerr << "STG stage lua error: " << lua_tostring(L_stage, -1) << std::endl;
+#endif
+    /* STG game over, just notify game. */
+    if (good != LUA_YIELD)
+        GameCon->STGReturn(true);
+
     /* Thinking... Disable has not been submit to flow controller can be cancel here. */
     /* Disable can be invoked by AI thinker (I think I am dead...). Thinker will notify charactor,
      * charactor will notify render... All these comps will tell level to disable themselves.
@@ -538,18 +547,6 @@ void STGLevel::Update()
      * Lua will tell game to finally disable itself. So dead processing happens very first
      * in loop. */
     world->Step(time_step, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-
-    /* Stage update. Level event pass in here. New things on stage
-     * here, controled by Lua. */
-    int rn = 0;
-    int good = lua_resume(L_stage, nullptr, 1, &rn);
-#ifdef STG_LUA_API_ARG_CHECK
-    if (good != LUA_OK && good != LUA_YIELD)
-        std::cerr << "STG stage lua error: " << lua_tostring(L_stage, -1) << std::endl;
-#endif
-    /* STG game over, just notify game. */
-    if (good != LUA_YIELD)
-        GameCon->STGReturn(true);
 }
 
 void STGLevel::Render(float forward_time)

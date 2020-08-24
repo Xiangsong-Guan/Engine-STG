@@ -29,10 +29,9 @@ static inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE 
 class SCSMovement : public SCS
 {
 protected:
-    int PRIORTY[static_cast<int>(STGCharCommand::NUM)];
-    STGCharCommand next_i;
+    int PRIORTY[static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::NUM)];
+    int next_i;
     int last_time_where;
-    bool full;
 
     inline int move_check(const b2Vec2 v) const noexcept
     {
@@ -48,38 +47,29 @@ protected:
         return where;
     }
 
-    inline void init(bool no_shooter) noexcept
+    inline void init() noexcept
     {
-        next_i = STGCharCommand::UP;
+        next_i = static_cast<int>(STGCharCommand::UP);
         last_time_where = -1;
 
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::NUM); i++)
             Next[i] = nullptr;
-
-        if (no_shooter)
-        {
-            PRIORTY[static_cast<int>(STGCharCommand::STG_FIRE)] = -1;
-            PRIORTY[static_cast<int>(STGCharCommand::STG_CEASE)] = -1;
-        }
     }
 
 public:
-    SCS *Next[static_cast<int>(STGCharCommand::NUM)];
+    SCS *Next[static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::NUM)];
 
     SCSMovement()
     {
-        PRIORTY[static_cast<int>(STGCharCommand::UP)] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::DOWN)] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::LEFT)] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::RIGHT)] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_FIRE)] = 1;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_CEASE)] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_CHANGE)] = 2;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_SYNC)] = 3;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_REQUEST)] = 4;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_RESPONE)] = 4;
-        PRIORTY[static_cast<int>(STGCharCommand::DISABLE)] = 5;
-        PRIORTY[static_cast<int>(STGCharCommand::RESPAWN)] = 5;
+        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::NUM); i++)
+            PRIORTY[i] = 0;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_CHANGE)] = 8;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_SYNC)] = 9;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_REQUEST)] = 10;
+        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_RESPONE)] = 10;
+        PRIORTY[static_cast<int>(STGCharCommand::DISABLE)] = 999;
+        PRIORTY[static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::GO_DIE)] = 998;
+        PRIORTY[static_cast<int>(STGCharCommand::NUM) + static_cast<int>(STGStateChangeCode::JUST_HURT)] = 50;
     }
     SCSMovement(const SCSMovement &) = delete;
     SCSMovement(SCSMovement &&) = delete;
@@ -89,19 +79,26 @@ public:
 
     bool CheckInput(STGCharCommand cmd) noexcept final
     {
-        if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[static_cast<int>(next_i)])
-            next_i = cmd;
+        if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[next_i])
+            next_i = static_cast<int>(cmd);
         return PRIORTY[static_cast<int>(cmd)] >= 0;
     }
 
-    virtual void Init(const STGTexture &texs, bool no_shooter)
+    bool CheckChange(const STGChange *change) final
     {
-        init(no_shooter);
+        if (PRIORTY[static_cast<int>(STGCharCommand::NUM) + static_cast<int>(change->Code)] > PRIORTY[next_i])
+            next_i = static_cast<int>(change->Code);
+        return true;
     }
 
-    virtual void Copy(const SCSMovement *o, bool no_shooter)
+    virtual void Init(const STGTexture &texs)
     {
-        init(no_shooter);
+        init();
+    }
+
+    virtual void Copy(const SCSMovement *o)
+    {
+        init();
     }
 
     virtual void Action(STGCharactor *sc) override
@@ -110,11 +107,6 @@ public:
             Next[static_cast<int>(next_i)]->Action(sc);
         else
             sc->SPending = this;
-    }
-
-    inline bool IsFull() const noexcept
-    {
-        return full;
     }
 };
 
@@ -130,19 +122,17 @@ public:
     SCSMovementStatic &operator=(SCSMovementStatic &&) = delete;
     ~SCSMovementStatic() = default;
 
-    void Init(const STGTexture &texs, bool no_shooter) final
+    void Init(const STGTexture &texs) final
     {
-        init(no_shooter);
+        init();
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
-        full = texs.FullMovementSprites;
     }
 
-    void Copy(const SCSMovement *o, bool no_shooter) final
+    void Copy(const SCSMovement *o) final
     {
-        init(no_shooter);
+        init();
         std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
-        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -156,7 +146,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where && full)
+            if (last_time_where != where)
                 change_texture(Texture[last_time_where = where], sc->RendererMaster);
         }
     }
@@ -174,23 +164,21 @@ public:
     SCSMovementAnimed &operator=(SCSMovementAnimed &&) = delete;
     ~SCSMovementAnimed() = default;
 
-    void Init(const STGTexture &texs, bool no_shooter) final
+    void Init(const STGTexture &texs) final
     {
-        init(no_shooter);
+        init();
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
             Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
-        full = texs.FullMovementSprites;
     }
 
-    void Copy(const SCSMovement *o, bool no_shooter) final
+    void Copy(const SCSMovement *o) final
     {
-        init(no_shooter);
+        init();
         for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
         {
             Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
             Animation[i].Reset();
         }
-        full = o->IsFull();
     }
 
     void Action(STGCharactor *sc) final
@@ -204,7 +192,7 @@ public:
         {
             sc->SPending = this;
             int where = move_check(sc->Velocity);
-            if (last_time_where != where && full)
+            if (last_time_where != where)
             {
                 Animation[last_time_where].Reset();
                 Animation[where].Forward();
@@ -230,9 +218,10 @@ protected:
 
     inline void init()
     {
-        Duration = BORN_TIME;
+        /* When use pending to change, make change happens in advance one frame. */
+        Duration = BORN_TIME - 1;
         Next = nullptr;
-        Timer = 0;
+        Timer = -1;
     }
 
 public:
@@ -262,6 +251,11 @@ public:
         return FILTER[static_cast<int>(cmd)];
     }
 
+    bool CheckChange(const STGChange *change) final
+    {
+        return false;
+    }
+
     virtual void Init(const STGTexture &texs)
     {
         init();
@@ -275,11 +269,11 @@ public:
     virtual void Action(STGCharactor *sc) override
     {
         Timer += 1;
-        if (Timer < Duration)
+        if (Timer == 0)
             sc->SPending = this;
-        else
+        else if (Timer == Duration)
         {
-            Timer = 0;
+            Timer = -1;
             sc->SPending = Next;
         }
     }
@@ -302,7 +296,7 @@ public:
         init();
         Animation = ResourceManager::GetAnime(texs.SpriteBorn);
         /* Born time should be same with born animation time */
-        Duration = Animation.LG_DURATION;
+        Duration = Animation.LG_DURATION - 1;
     }
 
     void Copy(const SCSBorn *o) final
@@ -311,22 +305,22 @@ public:
         Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
         Animation.Reset();
         /* Born time should be same with born animation time */
-        Duration = Animation.LG_DURATION;
+        Duration = Animation.LG_DURATION - 1;
     }
 
     void Action(STGCharactor *sc) final
     {
         Timer += 1;
-        if (Timer <= Duration)
+        /* Last animation frame (in logic) must return false. */
+        if (Timer < Duration)
         {
+            sc->SPending = this;
             if (Animation.Forward())
                 change_texture(Animation.Playing, sc->RendererMaster);
         }
-        if (Timer < Duration)
-            sc->SPending = this;
         else
         {
-            Timer = 0;
+            Timer = -1;
             Animation.Reset();
             sc->SPending = Next;
         }
@@ -362,31 +356,16 @@ public:
         Timer += 1;
         if (Timer == Duration)
         {
-            Timer = 0;
+            Timer = -1;
             sc->SPending = Next;
         }
-        if (Timer == 1)
+        else if (Timer == 0)
         {
             sc->SPending = this;
             change_texture(Texture, sc->RendererMaster);
         }
     }
 };
-
-// class SCSShooting : public SCS
-// {
-// public:
-//     SCSShooting() = default;
-//     SCSShooting(const SCSShooting &) = delete;
-//     SCSShooting(SCSShooting &&) = delete;
-//     SCSShooting &operator=(const SCSShooting &) = delete;
-//     SCSShooting &operator=(SCSShooting &&) = delete;
-//     ~SCSShooting() = default;
-
-//     void Action(STGCharactor *sc) final;
-//     void Enter(STGCharactor *sc) final;
-//     void Leave(STGCharactor *sc) final;
-// };
 
 // class SCSSync : public SCS
 // {
@@ -433,19 +412,48 @@ public:
 //     void Leave(STGCharactor *sc) final;
 // };
 
-// class SCSDisbaled : public SCS
-// {
-// public:
-//     SCSDisbaled() = default;
-//     SCSDisbaled(const SCSDisbaled &) = delete;
-//     SCSDisbaled(SCSDisbaled &&) = delete;
-//     SCSDisbaled &operator=(const SCSDisbaled &) = delete;
-//     SCSDisbaled &operator=(SCSDisbaled &&) = delete;
-//     ~SCSDisbaled() = default;
+class SCSDisbaled : public SCS
+{
+private:
+    bool tomaranaizoooooo;
+    int timer;
 
-//     void Action(STGCharactor *sc) final;
-//     void Enter(STGCharactor *sc) final;
-//     void Leave(STGCharactor *sc) final;
-// };
+public:
+    int Duration;
+    SCSBorn *Next;
+
+    SCSDisbaled() = default;
+    SCSDisbaled(const SCSDisbaled &) = delete;
+    SCSDisbaled(SCSDisbaled &&) = delete;
+    SCSDisbaled &operator=(const SCSDisbaled &) = delete;
+    SCSDisbaled &operator=(SCSDisbaled &&) = delete;
+    ~SCSDisbaled() = default;
+
+    virtual void Action(STGCharactor *sc)
+    {
+        timer += 1;
+        if (timer == 0)
+        {
+            sc->Physics->SetActive(false);
+            sc->SPending = this;
+        }
+        else if (timer == Duration)
+            if (tomaranaizoooooo && Next != nullptr)
+                sc->SPending = Next;
+            else
+                sc->Con->DisableAll(sc->ID);
+    }
+
+    bool CheckInput(STGCharCommand cmd) final
+    {
+        if (cmd != STGCharCommand::RESPAWN)
+            return false;
+        else
+            tomaranaizoooooo = true;
+        return true;
+    }
+
+    bool CheckChange(const STGChange *change) final { return false; }
+};
 
 #endif

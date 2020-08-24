@@ -33,8 +33,12 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     /* Bullet's textures */
     if (bs.Texs.SpriteBornType == SpriteType::ANIMED)
         born = ResourceManager::GetAnime(bs.Texs.SpriteBorn);
+    else if (bs.Texs.SpriteBornType == SpriteType::STATIC)
+        born = Anime(ResourceManager::GetTexture(bs.Texs.SpriteBorn));
     if (bs.Texs.SpriteHitType == SpriteType::ANIMED)
         hit = ResourceManager::GetAnime(bs.Texs.SpriteHit);
+    else if (bs.Texs.SpriteHitType == SpriteType::STATIC)
+        hit = Anime(ResourceManager::GetTexture(bs.Texs.SpriteHit));
     if (bs.Texs.SpriteMovementType == SpriteType::ANIMED)
         idle = ResourceManager::GetAnime(bs.Texs.SpriteMovement[0]);
     else if (bs.Texs.SpriteMovementType == SpriteType::STATIC)
@@ -47,10 +51,21 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
         idle.Forward();
         idle.Forward();
     }
-    /* Usully we count timer from -1, but here renderer takes frame asynchronously. So conut from -1 will 
+    if (hit.DURATION == 1)
+    {
+        hit.Forward();
+        hit.Forward();
+        hit.Forward();
+    }
+    if (born.DURATION == 1)
+    {
+        born.Forward();
+        born.Forward();
+        born.Forward();
+    }
+    /* Usully we count timer from -1, but here renderer takes frame asynchronously (FOR DEAD ONES). So conut from -1 will 
      * make error. Count from 0 and check in end of a frame will cause one frame more in the final end. That
      * is clearly visible. Minus one for total duration to avoid this happens. */
-    born.LG_DURATION -= 1;
     hit.LG_DURATION -= 1;
 
     world = w;
@@ -125,6 +140,7 @@ Bullet *Bullet::Update()
                 dead_bullets[i].Physics->SetAwake(false);
                 dead_bullets[i].Physics->DestroyFixture(dead_bullets[i].Physics->GetFixtureList());
             }
+            /* Note that (only) dead bullets count from 0. */
             dead_bullets[i].ATimer += 1;
         }
         else
@@ -151,9 +167,16 @@ Bullet *Bullet::Draw(float forward_time)
     if (born.DURATION > 1)
         for (int i = 0; i < just_bullets_n; i++)
             draw.Draw(just_bullets[i].Physics, born.GetFrame(just_bullets[i].ATimer));
+    else if (born.DURATION == 1)
+        for (int i = 0; i < just_bullets_n; i++)
+            draw.Draw(just_bullets[i].Physics, born.Playing);
+
     if (hit.DURATION > 1)
         for (int i = 0; i < dead_bullets_n; i++)
             draw.Draw(dead_bullets[i].Physics, hit.GetFrame(dead_bullets[i].ATimer));
+    if (hit.DURATION == 1)
+        for (int i = 0; i < dead_bullets_n; i++)
+            draw.Draw(dead_bullets[i].Physics, hit.Playing);
 
     if (idle.DURATION > 1)
     {
@@ -183,7 +206,6 @@ void Bullet::Bang(const b2Vec2 &world_pos, float world_angle, int mp)
     just_bullets[just_bullets_n].Physics = world->CreateBody(&bd);
 
     just_bullets[just_bullets_n].MasterPower = mp;
-    /* Bang will be follewed by update loop, no chance for rendering. So use -1 here to avoid first frame be skipped. */
     just_bullets[just_bullets_n].ATimer = -1;
     just_bullets_n += 1;
 
@@ -213,6 +235,7 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
 
     if (who->IsStatical)
     {
+        /* Note that dead bullets count from 0.*/
         flt_bullets[flaw].ATimer = 0;
         flt_bullets[flaw].Physics->SetUserData(nullptr);
 
@@ -227,6 +250,7 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
     }
     else
     {
+        /* Note that dead bullets count from 0.*/
         fly_bullets[flaw].SB.ATimer = 0;
         fly_bullets[flaw].SB.Physics->SetUserData(nullptr);
 
@@ -359,7 +383,7 @@ inline void Bullet::move_from_fly_to_flt_with_cp(int s)
 
 inline void Bullet::move_from_just_to_flt(int i)
 {
-    just_bullets[i].ATimer = 0;
+    just_bullets[i].ATimer = -1;
     flt_bullets[flt_bullets_n] = just_bullets[i];
     flt_bullets_n += 1;
     just_bullets[i] = just_bullets[just_bullets_n - 1];
@@ -370,7 +394,7 @@ inline void Bullet::move_from_just_to_flt(int i)
 
 inline void Bullet::move_from_just_to_fly(int i)
 {
-    just_bullets[i].ATimer = 0;
+    just_bullets[i].ATimer = -1;
     fly_bullets[fly_bullets_n].SB = just_bullets[i];
     fly_bullets[fly_bullets_n].KSI = 0;
     fly_bullets[fly_bullets_n].KTimer = -1;
@@ -387,9 +411,8 @@ inline void Bullet::track_a_part()
 
     for (int i = just_bullets_n - 1; i >= 0; i--)
     {
-        if (just_bullets[i].ATimer < born.LG_DURATION)
-            just_bullets[i].ATimer += 1;
-        else
+        just_bullets[i].ATimer += 1;
+        if (just_bullets[i].ATimer == born.LG_DURATION)
         {
             make_cp_just(i, true, flt_bullets_n);
             just_bullets[i].Physics->ApplyLinearImpulseToCenter(
@@ -403,9 +426,8 @@ inline void Bullet::kinematic_a_part()
 {
     for (int i = just_bullets_n - 1; i >= 0; i--)
     {
-        if (just_bullets[i].ATimer < born.LG_DURATION)
-            just_bullets[i].ATimer += 1;
-        else
+        just_bullets[i].ATimer += 1;
+        if (just_bullets[i].ATimer == born.LG_DURATION)
         {
             make_cp_just(i, false, fly_bullets_n);
             move_from_just_to_fly(i);
@@ -417,9 +439,8 @@ inline void Bullet::statical_a_part()
 {
     for (int i = just_bullets_n - 1; i >= 0; i--)
     {
-        if (just_bullets[i].ATimer < born.LG_DURATION)
-            just_bullets[i].ATimer += 1;
-        else
+        just_bullets[i].ATimer += 1;
+        if (just_bullets[i].ATimer == born.LG_DURATION)
         {
             make_cp_just(i, true, flt_bullets_n);
             /* Only initial v. */

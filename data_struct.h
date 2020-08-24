@@ -92,7 +92,6 @@ struct STGTexture
     std::string SpriteDisable;
     SpriteType SpriteDisableType;
 
-    bool FullMovementSprites;
     ALLEGRO_BITMAP *VeryFirstTex;
 };
 

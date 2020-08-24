@@ -48,6 +48,9 @@ public:
             return false;
 
         now_ = (now_ + 1) % DURATION;
+        if (frames_[now_] == Playing)
+            return false;
+
         Playing = frames_[now_];
         return true;
     }
