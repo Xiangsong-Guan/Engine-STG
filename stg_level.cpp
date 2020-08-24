@@ -223,6 +223,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     bound[2] = 0.f - STG_FIELD_BOUND_BUFFER;
     bound[3] = PHYSICAL_WIDTH + STG_FIELD_BOUND_BUFFER;
     world = new b2World(b2Vec2(0.f, 0.f));
+    world->SetContactListener(&contact_listener);
 
 #ifdef STG_DEBUG_PHY_DRAW
     p_draw.Init(PIXIL_PRE_M * scale);

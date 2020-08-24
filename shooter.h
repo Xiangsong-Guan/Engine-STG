@@ -51,6 +51,8 @@ public:
 
     STGFlowController *Con;
 
+    int Rate;
+
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw *DebugDraw;
     inline Shooter *DrawDebugData()
@@ -70,7 +72,6 @@ public:
 private:
     static constexpr int MAX_B_TYPES = 4;
 
-    int rate;
     int power;
     float speed;
 

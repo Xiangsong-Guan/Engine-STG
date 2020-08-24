@@ -94,6 +94,32 @@ void STGCharactor::Update()
 
 /*************************************************************************************************
  *                                                                                               *
+ *                                      Collision Handle                                         *
+ *                                                                                               *
+ *************************************************************************************************/
+
+void STGCharactor::Hit(CollisionHandler *o)
+{
+    o->Hurt(nullptr);
+}
+
+void STGCharactor::Hurt(const STGChange *c)
+{
+    if (SNow->CheckChange(c) && shooter != nullptr)
+        shooter->Rate -= c->any.Damage;
+
+    if (shooter == nullptr || shooter->Rate < 1)
+    {
+        const STGChange death = {STGStateChangeCode::GO_DIE};
+        SNow->CheckChange(&death);
+        ALLEGRO_EVENT event;
+        event.user.data1 = static_cast<int>(STGCharEvent::GAME_OVER);
+        al_emit_user_event(KneeJump, &event, nullptr);
+    }
+}
+
+/*************************************************************************************************
+ *                                                                                               *
  *                             Input Commands Function                                           *
  *                                                                                               *
  *************************************************************************************************/

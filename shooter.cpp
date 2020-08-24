@@ -14,7 +14,7 @@ inline void Shooter::init()
 
     timer = -1;
     firing = false;
-    rate = 100;
+    Rate = 100;
 
     sub_ptn = SSPatternsCode::CONTROLLED;
     if (code == SSPatternsCode::CONTROLLED)

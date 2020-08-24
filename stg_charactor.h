@@ -5,6 +5,7 @@
 #include "game_event.h"
 #include "flow_controller.h"
 #include "shooter.h"
+#include "contact_listener.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -26,9 +27,10 @@ public:
 
     virtual void Action(STGCharactor *sc) = 0;
     virtual bool CheckInput(STGCharCommand cmd) = 0;
+    virtual bool CheckChange(const STGChange *change) = 0;
 };
 
-class STGCharactor
+class STGCharactor : public CollisionHandler
 {
 public:
     int ID;
@@ -56,6 +58,9 @@ public:
     void Update();
 
     static void InitInputCmd();
+
+    void Hit(CollisionHandler *o) final;
+    void Hurt(const STGChange *c) final;
 
 private:
     float speed;

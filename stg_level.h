@@ -38,7 +38,7 @@ enum class STGCompType
 struct StageCharInfo
 {
     STGCharactorSetting MyChar; /* same in airborne */
-    Shooter *MyShooters;     /* copy in airborne */
+    Shooter *MyShooters;        /* copy in airborne */
     SCPatternsCode MyPtn;       /* change in airborne */
     SCPatternData MyPD;         /* change in airborne */
     SCSBorn *MyEnter;           /* copy in airborne */
@@ -115,9 +115,7 @@ private:
     float time_step;
 
     /* Physical things. */
-#ifdef _DEBUG
-    STGDebugContactListener d_contact_listener;
-#endif
+    STGContactListener contact_listener;
     b2World *world;
     b2BodyDef bd; /* Used for create char's physic in staging. */
     b2Body *player;

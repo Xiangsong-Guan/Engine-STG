@@ -125,26 +125,6 @@ struct KinematicSeq
 
 /*************************************************************************************************
  *                                                                                               *
- *                               STG Bullet Setting & Pattern                                    *
- *                                                                                               *
- *************************************************************************************************/
-
-struct STGBulletSetting
-{
-    std::string Name;
-
-    PhysicalFixture Phy;
-
-    STGTexture Texs;
-
-    int Damage;
-    float Density;
-
-    KinematicSeq KS;
-};
-
-/*************************************************************************************************
- *                                                                                               *
  *                             STG SHooter Setting & Pattern                                     *
  *                   Unlike bullet: Pattern is not bind with Shooter!                            *
  *                                                                                               *
@@ -299,6 +279,64 @@ struct TextItem
     float X;
     float Y;
     int Align;
+};
+
+/*************************************************************************************************
+ *                                                                                               *
+ *                               STG Status Change / State Type                                  *
+ *                                                                                               *
+ *************************************************************************************************/
+
+enum class STGStateChangeCode
+{
+    JUST_HURT,
+    GO_DIE,
+
+    NUM
+};
+
+const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE"};
+
+/* SHOULD ALWAYS BE CONTAINED AT FIRST */
+#define STGCHANGE_HEADER     \
+    STGStateChangeCode Code; \
+    int Damage;
+
+union STGChange
+{
+    /* NOT OPTIONAL */
+    STGStateChangeCode Code;
+
+    /* FOR EXAMPLE */
+    struct
+    {
+        STGCHANGE_HEADER;
+    } any;
+
+    /* Just get some bullets to eat, nothing. */
+    struct
+    {
+        STGCHANGE_HEADER;
+    } just_hurt;
+};
+
+/*************************************************************************************************
+ *                                                                                               *
+ *                               STG Bullet Setting & Pattern                                    *
+ *                                                                                               *
+ *************************************************************************************************/
+
+struct STGBulletSetting
+{
+    std::string Name;
+
+    PhysicalFixture Phy;
+
+    STGTexture Texs;
+
+    STGChange Change;
+
+    KinematicSeq KS;
 };
 
 #endif

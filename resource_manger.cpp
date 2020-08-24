@@ -449,16 +449,17 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
     bs.Phy.FD.friction = 0.f;
     bs.Texs = load_stg_texture(name);
 
-    /* Bullet status */
+    /* Bullet function */
+    lua_getfield(L_main, -1, "change");
+    int good = luaNOERROR_checkoption(L_main, -1, "JUST_HURT", STG_STATE_CHANGE_CODE);
+    if (good < 0)
+        INVALID_BULLET(name, "invalid STG change!", balance_top);
+    bs.Change.Code = static_cast<STGStateChangeCode>(good);
+    lua_pop(L_main, 1);
     lua_getfield(L_main, -1, "damage");
     if (!lua_isinteger(L_main, -1))
         INVALID_BULLET(name, "invalid damage!", balance_top);
-    bs.Damage = lua_tointeger(L_main, -1);
-    lua_pop(L_main, 1);
-    lua_getfield(L_main, -1, "density");
-    if (!lua_isnumber(L_main, -1))
-        INVALID_BULLET(name, "invalid density!", balance_top);
-    bs.Density = lua_tonumber(L_main, -1);
+    bs.Change.any.Damage = lua_tointeger(L_main, -1);
     lua_pop(L_main, 1);
 
     /* Bullet patterns */
@@ -664,6 +665,13 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
     if (lua_istable(L_main, -1))
     {
         pf.Physical = true;
+
+        /* Mass */
+        lua_getfield(L_main, -1, "density");
+        if (!(lua_isnumber(L_main, -1) || lua_isnil(L_main, -1)))
+            INVALID_PHYSICS(name, "invalid density!", balance_top);
+        pf.FD.density = lua_tonumber(L_main, -1);
+        lua_pop(L_main, 1);
 
         /* Get shape */
         lua_getfield(L_main, -1, "shape");
