@@ -217,7 +217,7 @@ void Shooter::stay()
 
 void Shooter::total_turn()
 {
-    my_angle += data.TurnSpeed;
+    my_angle += data.turn_speed;
 
     if (firing)
     {
@@ -238,7 +238,7 @@ void Shooter::total_turn()
 void Shooter::split_turn()
 {
     for (int s = 0; s < luncher_n; s++)
-        lunchers[s].DAttitude.Angle += data.TurnSpeeds[s];
+        lunchers[s].DAttitude.Angle += data.turn_speeds[s];
 
     if (firing)
     {

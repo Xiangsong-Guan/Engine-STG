@@ -544,7 +544,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     case SSPatternsCode::TOTAL_TURN:
         if (lua_getfield(L_main, -1, "data") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid total turn speed!", balance_top)
-        ss.Data.TurnSpeed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+        ss.Data.turn_speed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
         lua_pop(L_main, 1);
         break;
 
@@ -555,7 +555,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         {
             if (lua_geti(L_main, -1, i + 1) != LUA_TNUMBER)
                 INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top);
-            ss.Data.TurnSpeeds[i] = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+            ss.Data.turn_speeds[i] = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
             lua_pop(L_main, 1);
         }
         lua_pop(L_main, 1);

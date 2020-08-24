@@ -27,29 +27,29 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
 
     case SCPatternsCode::MOVE_TO:
     case SCPatternsCode::MOVE_LAST:
-        data->Vec.x = luaL_checknumber(L, pd_idx + 1);
-        data->Vec.y = luaL_checknumber(L, pd_idx + 2);
+        data->vec.x = luaL_checknumber(L, pd_idx + 1);
+        data->vec.y = luaL_checknumber(L, pd_idx + 2);
         break;
 
     case SCPatternsCode::MOVE_PASSBY:
         luaL_checktype(L, pd_idx + 1, LUA_TBOOLEAN);
-        data->Passby.Loop = lua_toboolean(L, pd_idx + 1);
-        data->Passby.Num = 0;
+        data->passby.Loop = lua_toboolean(L, pd_idx + 1);
+        data->passby.Num = 0;
         for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
             if (lua_isnumber(L, i))
             {
-                data->Passby.Vec[data->Passby.Num].x = luaL_checknumber(L, i);
-                data->Passby.Vec[data->Passby.Num].y = luaL_checknumber(L, i + 1);
-                data->Passby.Num += 1;
+                data->passby.Vec[data->passby.Num].x = luaL_checknumber(L, i);
+                data->passby.Vec[data->passby.Num].y = luaL_checknumber(L, i + 1);
+                data->passby.Num += 1;
             }
             else
                 break;
         break;
 
     case SCPatternsCode::GO_ROUND:
-        data->Round.p.x = luaL_checknumber(L, pd_idx + 1);
-        data->Round.p.y = luaL_checknumber(L, pd_idx + 2);
-        data->Round.dir = luaL_checknumber(L, pd_idx + 3);
+        data->round.P.x = luaL_checknumber(L, pd_idx + 1);
+        data->round.P.y = luaL_checknumber(L, pd_idx + 2);
+        data->round.Dir = luaL_checknumber(L, pd_idx + 3);
         break;
 
     default:
@@ -65,28 +65,28 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
 
     case SCPatternsCode::MOVE_TO:
     case SCPatternsCode::MOVE_LAST:
-        data->Vec.x = lua_tonumber(L, pd_idx + 1);
-        data->Vec.y = lua_tonumber(L, pd_idx + 2);
+        data->vec.x = lua_tonumber(L, pd_idx + 1);
+        data->vec.y = lua_tonumber(L, pd_idx + 2);
         break;
 
     case SCPatternsCode::MOVE_PASSBY:
-        data->Passby.Loop = lua_toboolean(L, pd_idx + 1);
-        data->Passby.Num = 0;
+        data->passby.Loop = lua_toboolean(L, pd_idx + 1);
+        data->passby.Num = 0;
         for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
             if (lua_isnumber(L, i) && lua_isnumber(L, i + 1))
             {
-                data->Passby.Vec[data->Passby.Num].x = lua_tonumber(L, i);
-                data->Passby.Vec[data->Passby.Num].y = lua_tonumber(L, i + 1);
-                data->Passby.Num += 1;
+                data->passby.Vec[data->passby.Num].x = lua_tonumber(L, i);
+                data->passby.Vec[data->passby.Num].y = lua_tonumber(L, i + 1);
+                data->passby.Num += 1;
             }
             else
                 break;
         break;
 
     case SCPatternsCode::GO_ROUND:
-        data->Round.p.x = lua_tonumber(L, pd_idx + 1);
-        data->Round.p.y = lua_tonumber(L, pd_idx + 2);
-        data->Round.dir = lua_tonumber(L, pd_idx + 3);
+        data->round.P.x = lua_tonumber(L, pd_idx + 1);
+        data->round.P.y = lua_tonumber(L, pd_idx + 2);
+        data->round.Dir = lua_tonumber(L, pd_idx + 3);
         break;
 
     default:
@@ -671,21 +671,21 @@ inline void STGLevel::process_pattern_data(SCPatternsCode ptn, SCPatternData &pd
     switch (ptn)
     {
     case SCPatternsCode::MOVE_TO:
-        pd.Vec.x *= PHYSICAL_WIDTH;
-        pd.Vec.y *= PHYSICAL_HEIGHT;
+        pd.vec.x *= PHYSICAL_WIDTH;
+        pd.vec.y *= PHYSICAL_HEIGHT;
         break;
 
     case SCPatternsCode::MOVE_PASSBY:
-        for (int i = 0; i < pd.Passby.Num; i++)
+        for (int i = 0; i < pd.passby.Num; i++)
         {
-            pd.Passby.Vec[i].x *= PHYSICAL_WIDTH;
-            pd.Passby.Vec[i].y *= PHYSICAL_HEIGHT;
+            pd.passby.Vec[i].x *= PHYSICAL_WIDTH;
+            pd.passby.Vec[i].y *= PHYSICAL_HEIGHT;
         }
         break;
 
     case SCPatternsCode::GO_ROUND:
-        pd.Round.p.x *= PHYSICAL_WIDTH;
-        pd.Round.p.y *= PHYSICAL_HEIGHT;
+        pd.round.P.x *= PHYSICAL_WIDTH;
+        pd.round.P.y *= PHYSICAL_HEIGHT;
         break;
     }
 }

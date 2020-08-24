@@ -55,7 +55,7 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     where = 0;
 
     if (ptn == SCPatternsCode::GO_ROUND)
-        data.Round.r_sq = (body->GetPosition() - data.Round.p).LengthSquared();
+        data.round.R_SQ = (body->GetPosition() - data.round.P).LengthSquared();
 
     /* Save AI out of data union. AI can use data to execute sub pattern. */
     AI = data.AI;
@@ -177,7 +177,7 @@ bool STGThinker::controlled()
 
 bool STGThinker::move_to()
 {
-    vec4u = data.Vec - physics->GetPosition();
+    vec4u = data.vec - physics->GetPosition();
 
     if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
@@ -196,7 +196,7 @@ bool STGThinker::move_last()
 {
     ALLEGRO_EVENT event;
     event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
-    event.user.data2 = reinterpret_cast<intptr_t>(&data.Vec);
+    event.user.data2 = reinterpret_cast<intptr_t>(&data.vec);
     al_emit_user_event(InputMaster, &event, nullptr);
 
     return false;
@@ -204,7 +204,7 @@ bool STGThinker::move_last()
 
 bool STGThinker::move_passby()
 {
-    vec4u = data.Passby.Vec[where] - physics->GetPosition();
+    vec4u = data.passby.Vec[where] - physics->GetPosition();
 
     if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
@@ -216,8 +216,8 @@ bool STGThinker::move_passby()
     else
     {
         where += 1;
-        if (where == data.Passby.Num)
-            if (data.Passby.Loop)
+        if (where == data.passby.Num)
+            if (data.passby.Loop)
                 where = 0;
             else
                 return true;
@@ -231,14 +231,14 @@ bool STGThinker::go_round()
     static constexpr float EP = .01f;
     static b2Rot ADJUST = b2Rot(.05f);
 
-    b2Vec2 d2p = data.Round.p - physics->GetPosition();
-    vec4u = data.Round.dir * d2p.Skew();
+    b2Vec2 d2p = data.round.P - physics->GetPosition();
+    vec4u = data.round.Dir * d2p.Skew();
 
     /* rhc: skew -> ccw. Here we use lhc, so skew -> cw. And then dir > 0 -> ccw.
      * Here mul -> cw; mult -> ccw. And adjust direction should always be same with dir.
      * (Confirm EP always make circle lager, adjust always go inside.) */
-    if (d2p.LengthSquared() - data.Round.r_sq > EP)
-        vec4u = data.Round.dir > 0.f ? b2MulT(ADJUST, vec4u) : b2Mul(ADJUST, vec4u);
+    if (d2p.LengthSquared() - data.round.R_SQ > EP)
+        vec4u = data.round.Dir > 0.f ? b2MulT(ADJUST, vec4u) : b2Mul(ADJUST, vec4u);
 
     ALLEGRO_EVENT event;
     event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);

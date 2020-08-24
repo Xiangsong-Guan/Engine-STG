@@ -172,8 +172,8 @@ const char *const SS_PATTERNS_CODE[] =
 
 union SSPatternData
 {
-    float TurnSpeed;
-    float TurnSpeeds[MAX_LUNCHERS_NUM];
+    float turn_speed;
+    float turn_speeds[MAX_LUNCHERS_NUM];
 };
 
 struct Attitude
@@ -248,21 +248,21 @@ union SCPatternData
 
     lua_State *AI;
 
-    b2Vec2 Vec;
+    b2Vec2 vec;
 
     struct
     {
         b2Vec2 Vec[4];
         int Num;
         bool Loop;
-    } Passby;
+    } passby;
 
     struct
     {
-        b2Vec2 p;
-        float r_sq;
-        float dir;
-    } Round;
+        b2Vec2 P;
+        float R_SQ;
+        float Dir;
+    } round;
 };
 
 /*************************************************************************************************
