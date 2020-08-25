@@ -71,6 +71,12 @@ void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, S
         speed = shooter->ShiftIn(false);
 }
 
+/* This is the final disable. Release the things need to be set free (such as shooter). Pass the point of no return. */
+void STGCharactor::Farewell() const noexcept
+{
+    shooter->ShiftOut();
+}
+
 /*************************************************************************************************
  *                                                                                               *
  *                                  Update    Function                                           *
@@ -110,16 +116,27 @@ void STGCharactor::Hit(CollisionHandler *o)
 
 void STGCharactor::Hurt(const STGChange *c)
 {
-    if (SNow->CheckChange(c) && shooter != nullptr)
-        shooter->Rate -= c->any.Damage;
-
-    if (shooter == nullptr || shooter->Rate < 1)
+    if (SNow->CheckChange(c, this) && shooter != nullptr)
     {
-        const STGChange death = {STGStateChangeCode::GO_DIE};
-        SNow->CheckChange(&death);
-        ALLEGRO_EVENT event;
-        event.user.data1 = static_cast<int>(STGCharEvent::GAME_OVER);
-        al_emit_user_event(KneeJump, &event, nullptr);
+#ifdef _DEBUG
+        std::cout << "Char-" << ID << " hurt!\n";
+#endif
+        if (shooter->Hurt(c->any.Damage))
+        {
+#ifdef _DEBUG
+            std::cout << "Char-" << ID << " go die!\n";
+#endif
+
+            const STGChange death = {STGStateChangeCode::GO_DIE};
+            if (SNow->CheckChange(&death, this))
+            {
+                /* Disable all charactor's effect. */
+                // ...
+            }
+            ALLEGRO_EVENT event;
+            event.user.data1 = static_cast<int>(STGCharEvent::GAME_OVER);
+            al_emit_user_event(KneeJump, &event, nullptr);
+        }
     }
 }
 
@@ -169,16 +186,19 @@ void STGCharactor::right(const ALLEGRO_EVENT *e) noexcept
 
 void STGCharactor::shoot(const ALLEGRO_EVENT *e)
 {
-    shooter->Fire();
+    if (shooter != nullptr)
+        shooter->Fire();
 }
 
 void STGCharactor::cease(const ALLEGRO_EVENT *e)
 {
-    shooter->Cease();
+    if (shooter != nullptr)
+        shooter->Cease();
 }
 
 void STGCharactor::shift(const ALLEGRO_EVENT *e)
 {
+    if (shooter != nullptr)
     {
         bool firing = shooter->ShiftOut();
 

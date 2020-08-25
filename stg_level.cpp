@@ -291,7 +291,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
         many_shooters[shooters_n + player_shooters_n - 1].Shift = &many_shooters[shooters_n];
     }
     shooters_n += player_shooters_n;
-    GPlayer.MyEnter = all_state.MakeChar(GPlayer.MyChar.Texs, player_shooters_n < 1);
+    GPlayer.MyEnter = all_state.MakeChar(GPlayer.MyChar.Texs);
 
     /* Preload function just load all the resource, like sprite, sound, anime, etc.
      * Some in game feature, like physics, script coroutine, etc. should be initialize
@@ -343,7 +343,7 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
         shooters_n += my_shooters_n;
 
         /* Make state */
-        standby[i].MyEnter = all_state.MakeChar(standby[i].MyChar.Texs, my_shooters_n < 1);
+        standby[i].MyEnter = all_state.MakeChar(standby[i].MyChar.Texs);
     }
 
     /* Get stage thread in position. (coroutine, function already on the top) */
@@ -396,7 +396,6 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
     records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
     records[p_id][static_cast<int>(STGCompType::THINKER)] = 0;
-    records[p_id][static_cast<int>(STGCompType::SHOOTER)] = 0;
     /* Update information for update loop. */
     charactors_n = 1;
     thinkers_n = 1;
@@ -455,27 +454,50 @@ void STGLevel::Update()
         if (p.y > bound[0] && p.y < bound[1] && p.x > bound[2] && p.x < bound[3])
             onstage_charactors[i].Update();
         else /* out of field die with no mercy */
+        {
+#ifdef _DEBUG
+            std::cout << "Char-" << onstage_charactors[i].ID << " becomes outsider!\n";
+#endif
+
             DisableAll(onstage_charactors[i].ID);
+        }
     }
 
     /* Disable Execution */
     for (int i = 0; i < disabled_n; i++)
     {
-        int flaw = disabled[i];
+        int flaw = -1;
+        int id = disabled[i];
+
         switch (disabled_t[i])
         {
         case STGCompType::CHARACTOR:
+            flaw = records[id][static_cast<int>(STGCompType::CHARACTOR)];
+            records[id][static_cast<int>(STGCompType::CHARACTOR)] = -1;
+
+            onstage_charactors[flaw].Farewell();
             world->DestroyBody(onstage_charactors[flaw].Physics);
+
             onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
             records[onstage_charactors[flaw].ID][static_cast<int>(STGCompType::CHARACTOR)] = flaw;
             charactors_n -= 1;
+
+            return_id(id);
             break;
+
         case STGCompType::RENDER:
+            flaw = records[id][static_cast<int>(STGCompType::RENDER)];
+            records[id][static_cast<int>(STGCompType::RENDER)] = -1;
+
             sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
             records[sprite_renderers[flaw].ID][static_cast<int>(STGCompType::RENDER)] = flaw;
             sprite_renderers_n -= 1;
             break;
+
         case STGCompType::THINKER:
+            flaw = records[id][static_cast<int>(STGCompType::THINKER)];
+            records[id][static_cast<int>(STGCompType::THINKER)] = -1;
+
             onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
             records[onstage_thinkers[flaw].ID][static_cast<int>(STGCompType::THINKER)] = flaw;
             thinkers_n -= 1;
@@ -585,8 +607,8 @@ const b2Body *STGLevel::TrackEnemy() const noexcept
 
     for (int i = 1; i < charactors_n; i++)
         /* When charactor is actully dying, she will still need body to represent her untill disable animation done.
-         * While fixture will be destroyed when dead. So use this to determine if charactor can be collision to make damage. */
-        if (onstage_charactors[i].Physics->GetFixtureList() != nullptr)
+         * While body will be destroyed when dead. So use this to determine if charactor can be collision to make damage. */
+        if (onstage_charactors[i].Physics->IsActive())
         {
             float dis_sq = (onstage_charactors[i].Physics->GetPosition() - pp).LengthSquared();
             if (dis_sq < closest_distance_sq)
@@ -806,52 +828,41 @@ void STGLevel::Pause() const
 
 void STGLevel::DisableAll(int id)
 {
-    int flaw;
+#ifdef _DEBUG
+    std::cout << "Char-" << id << " will be diabled!\n";
+#endif
 
-    disabled[disabled_n] = records[id][static_cast<int>(STGCompType::CHARACTOR)];
+    disabled[disabled_n] = id;
     disabled_t[disabled_n] = STGCompType::CHARACTOR;
     disabled_n += 1;
 
-    flaw = records[id][static_cast<int>(STGCompType::RENDER)];
-    if (flaw > -1)
+    if (records[id][static_cast<int>(STGCompType::RENDER)] > -1)
     {
         al_unregister_event_source(
             sprite_renderers[records[id][static_cast<int>(STGCompType::RENDER)]].Recv,
-            onstage_charactors[flaw].RendererMaster);
+            onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].RendererMaster);
 
-        disabled[disabled_n] = flaw;
+        disabled[disabled_n] = id;
         disabled_t[disabled_n] = STGCompType::RENDER;
         disabled_n += 1;
     }
 
     if (records[id][static_cast<int>(STGCompType::THINKER)] > -1)
         DisableThr(id);
-
-    if (records[id][static_cast<int>(STGCompType::SHOOTER)] > -1)
-        (many_shooters + records[id][static_cast<int>(STGCompType::SHOOTER)])->ShiftOut();
-
-    records[id][static_cast<int>(STGCompType::SHOOTER)] = -1;
-    records[id][static_cast<int>(STGCompType::CHARACTOR)] = -1;
-    records[id][static_cast<int>(STGCompType::RENDER)] = -1;
-    return_id(id);
 }
 
 void STGLevel::DisableThr(int id)
 {
-    int flaw = records[id][static_cast<int>(STGCompType::THINKER)];
-
     al_unregister_event_source(
-        onstage_thinkers[flaw].Recv,
+        onstage_thinkers[records[id][static_cast<int>(STGCompType::THINKER)]].Recv,
         onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].KneeJump);
     al_unregister_event_source(
         onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].InputTerminal,
-        onstage_thinkers[flaw].InputMaster);
+        onstage_thinkers[records[id][static_cast<int>(STGCompType::THINKER)]].InputMaster);
 
-    disabled[disabled_n] = flaw;
+    disabled[disabled_n] = id;
     disabled_t[disabled_n] = STGCompType::THINKER;
     disabled_n += 1;
-
-    records[id][static_cast<int>(STGCompType::THINKER)] = -1;
 }
 
 /* Only called from shooter inside (in stage). */

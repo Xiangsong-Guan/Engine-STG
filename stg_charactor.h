@@ -11,6 +11,7 @@
 #include <allegro5/allegro5.h>
 
 #include <functional>
+#include <string>
 #include <array>
 
 class STGCharactor;
@@ -27,7 +28,7 @@ public:
 
     virtual void Action(STGCharactor *sc) = 0;
     virtual bool CheckInput(STGCharCommand cmd) = 0;
-    virtual bool CheckChange(const STGChange *change) = 0;
+    virtual bool CheckChange(const STGChange *change, STGCharactor *sc) = 0;
 };
 
 class STGCharactor : public CollisionHandler
@@ -58,6 +59,7 @@ public:
 
     void Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter);
     void Update();
+    void Farewell() const noexcept;
 
     static void InitInputCmd();
 
