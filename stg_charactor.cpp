@@ -39,14 +39,17 @@ STGCharactor::~STGCharactor()
 
 void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 {
-    std::swap(this->ID, o.ID);
+    this->ID = o.ID;
+    this->Name = o.Name;
+    this->CodeName = o.CodeName;
+    this->Physics = o.Physics;
+    this->SNow = o.SNow;
+    this->SPending = o.SPending;
+    this->speed = o.speed;
+    this->shooter = o.shooter;
     std::swap(this->KneeJump, o.KneeJump);
     std::swap(this->RendererMaster, o.RendererMaster);
     std::swap(this->InputTerminal, o.InputTerminal);
-    std::swap(this->Physics, o.Physics);
-    std::swap(this->SNow, o.SNow);
-    std::swap(this->SPending, o.SPending);
-    std::swap(this->speed, o.speed);
 }
 
 /* Do something when char is loaded. */

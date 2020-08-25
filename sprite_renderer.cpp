@@ -29,11 +29,11 @@ SpriteRenderer::~SpriteRenderer()
 
 void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
 {
-    std::swap(this->ID, o.ID);
-    std::swap(this->Sprite, o.Sprite);
-    std::swap(this->Color, o.Color);
+    this->ID = o.ID;
+    this->Sprite = o.Sprite;
+    this->Color = o.Color;
+    this->physics = o.physics;
     std::swap(this->Recv, o.Recv);
-    std::swap(this->physics, o.physics);
 }
 
 void SpriteRenderer::Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept

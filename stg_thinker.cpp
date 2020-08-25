@@ -37,13 +37,15 @@ STGThinker::~STGThinker()
 
 void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
 {
-    std::swap(this->ID, o.ID);
+    this->ID = o.ID;
+    this->physics = o.physics;
+    this->data = o.data;
+    this->pattern = o.pattern;
+    this->where = o.where;
+    this->AI = o.AI;
+    this->sub_ptn = o.sub_ptn;
     std::swap(this->InputMaster, o.InputMaster);
     std::swap(this->Recv, o.Recv);
-    std::swap(this->physics, o.physics);
-    std::swap(this->data, o.data);
-    std::swap(this->pattern, o.pattern);
-    std::swap(this->where, o.where);
 }
 
 void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Body *body) noexcept
