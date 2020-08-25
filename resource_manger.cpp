@@ -212,7 +212,7 @@ void ResourceManager::LoadSTGLevel(const std::string &name)
     }
 
     STGLevelSetting ls;
-    ls.Name = name;
+    ls.CodeName = name;
 
     /* Load all Chatactors. */
     if (lua_getfield(L_main, -1, "charactors") != LUA_TTABLE)
@@ -386,7 +386,7 @@ void ResourceManager::LoadSTGChar(const std::string &name)
     }
 
     STGCharactorSetting cs;
-    cs.Name = name;
+    cs.CodeName = name;
     cs.Phy = load_phyfix(name);
     cs.Texs = load_stg_texture(name);
 
@@ -444,7 +444,7 @@ void ResourceManager::LoadSTGBullet(const std::string &name)
         INVALID_BULLET(name, "Lua return not valid!", balance_top);
 
     STGBulletSetting bs;
-    bs.Name = name;
+    bs.CodeName = name;
     bs.Phy = load_phyfix(name);
     bs.Phy.FD.friction = 0.f;
     bs.Texs = load_stg_texture(name);
@@ -506,7 +506,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         INVALID_SHOOTER(name, "Lua return not valid!", balance_top);
 
     STGShooterSetting ss;
-    ss.Name = name;
+    ss.CodeName = name;
 
     /* stg para */
     lua_getfield(L_main, -1, "power");

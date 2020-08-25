@@ -24,6 +24,7 @@ public:
 
     int ID;
     std::string Name;
+    std::string CodeName;
 
     /* Constructor/Destructor */
     Shooter() = default;

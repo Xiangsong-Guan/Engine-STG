@@ -34,6 +34,8 @@ class STGCharactor : public CollisionHandler
 {
 public:
     int ID;
+    std::string Name;
+    std::string CodeName;
 
     STGFlowController *Con;
 
@@ -54,7 +56,7 @@ public:
     ~STGCharactor();
     void CPPSuckSwap(STGCharactor &) noexcept;
 
-    void Enable(int id, b2Body *body, Shooter *sht, SCS *enter, float default_speed);
+    void Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter);
     void Update();
 
     static void InitInputCmd();

@@ -50,16 +50,18 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 }
 
 /* Do something when char is loaded. */
-void STGCharactor::Enable(int id, b2Body *body, Shooter *sht, SCS *enter, float default_speed)
+void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter)
 {
     ID = id;
+    Name = sc.Name;
+    CodeName = sc.CodeName;
     Physics = body;
 
     /* Setting userdata. Userdata must update every swap in loop array. */
     body->SetUserData(this);
 
     /* Prepare the enter state & shooter */
-    speed = default_speed;
+    speed = sc.DefaultSpeed;
     SPending = enter;
     shooter = sht;
     if (shooter != nullptr)

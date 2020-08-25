@@ -23,6 +23,8 @@
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
 
+#include <string>
+
 enum class STGCompType
 {
     CHARACTOR,
@@ -47,6 +49,9 @@ struct StageCharInfo
 class STGLevel : public Scene, public STGFlowController
 {
 public:
+    std::string Name;
+    std::string CodeName;
+
     GameFlowController *GameCon;
 
     /* Store the Player's stg status. */

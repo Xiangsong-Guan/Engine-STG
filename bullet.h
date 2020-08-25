@@ -10,6 +10,7 @@
 #include <box2d/box2d.h>
 
 #include <functional>
+#include <string>
 
 struct StaticBullet
 {
@@ -124,6 +125,9 @@ private:
     std::function<void(Bullet *)> pattern;
 
 public:
+    std::string Name;
+    std::string CodeName;
+
     STGFlowController *Con;
     Bullet *Prev, *Next;
 

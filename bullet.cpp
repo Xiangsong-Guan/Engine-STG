@@ -30,6 +30,9 @@ Bullet::Bullet()
 
 void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 {
+    Name = bs.Name;
+    CodeName = bs.CodeName;
+
     /* Bullet's textures */
     if (bs.Texs.SpriteBornType == SpriteType::ANIMED)
         born = ResourceManager::GetAnime(bs.Texs.SpriteBorn);

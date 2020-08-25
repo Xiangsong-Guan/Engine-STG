@@ -21,14 +21,14 @@ inline void Shooter::init()
     {
         int good, rn;
 
-        AI = ResourceManager::GetCoroutine(ResourceManager::STG_SHOOT_FUNCTIONS_KEY, Name);
+        AI = ResourceManager::GetCoroutine(ResourceManager::STG_SHOOT_FUNCTIONS_KEY, CodeName);
         good = lua_resume(AI, nullptr, 0, &rn);
 
 #ifdef STG_LUA_API_ARG_CHECK
         if (good == LUA_OK)
-            std::cerr << "STG shooter" << Name << " lua error: return in init call!" << std::endl;
+            std::cerr << "STG shooter" << CodeName << " lua error: return in init call!" << std::endl;
         else if (good != LUA_YIELD)
-            std::cerr << "STG shooterr" << Name << " lua error: " << lua_tostring(AI, -1) << std::endl;
+            std::cerr << "STG shooterr" << CodeName << " lua error: " << lua_tostring(AI, -1) << std::endl;
 #endif
     }
 }
@@ -36,6 +36,7 @@ inline void Shooter::init()
 Shooter &Shooter::operator=(const Shooter &o)
 {
     Name = o.Name;
+    CodeName = o.CodeName;
     power = o.power;
     speed = o.speed;
     ammo_slot_n = o.ammo_slot_n;
@@ -58,6 +59,7 @@ Shooter &Shooter::operator=(const Shooter &o)
 void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss)
 {
     Name = setting.Name;
+    CodeName = setting.CodeName;
     power = setting.Power;
     speed = setting.Speed;
     ammo_slot_n = setting.AmmoSlotsNum;

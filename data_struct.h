@@ -171,6 +171,7 @@ struct Luncher
 struct STGShooterSetting
 {
     std::string Name;
+    std::string CodeName;
 
     int AmmoSlotsNum;
     int Power;
@@ -193,6 +194,7 @@ struct STGShooterSetting
 struct STGCharactorSetting
 {
     std::string Name;
+    std::string CodeName;
 
     float DefaultSpeed;
 
@@ -260,6 +262,7 @@ struct StageCharRes
 struct STGLevelSetting
 {
     std::string Name;
+    std::string CodeName;
 
     /* About all charactors will on stage. */
     std::vector<StageCharRes> Charactors;
@@ -328,6 +331,7 @@ union STGChange
 struct STGBulletSetting
 {
     std::string Name;
+    std::string CodeName;
 
     PhysicalFixture Phy;
 
