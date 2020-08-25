@@ -390,8 +390,8 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
     /* Player always just has two shooters, and they are loop. */
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, onstage_charactors[0].RendererMaster);
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(p_id, player, onstage_charactors[0].RendererMaster);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
+    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
     /* id record */
     records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
     records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
@@ -728,7 +728,7 @@ void STGLevel::Debut(int id, float x, float y)
     {
         Shooter *sp = standby[id].MyShooters;
         do
-            sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != standby[id].MyShooters);
     }
 
@@ -778,7 +778,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         my_shooters = copy_shooters(standby[id].MyShooters);
         Shooter *sp = my_shooters;
         do
-            sp = sp->Undershift(real_id, b, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(b, onstage_charactors[charactors_n].RendererMaster);
         while (sp != my_shooters);
     }
 
@@ -855,7 +855,7 @@ void STGLevel::DisableThr(int id)
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::EnableSht(int id, Shooter *ss) noexcept
+void STGLevel::EnableSht(Shooter *ss) noexcept
 {
     if (shooters_p != nullptr)
         shooters_p->Prev = ss;
@@ -864,10 +864,8 @@ void STGLevel::EnableSht(int id, Shooter *ss) noexcept
     shooters_p = ss;
 
 #ifdef _DEBUG
-    std::cout << "Shooter enabled: " << id << " with shooter index-" << ss - many_shooters << "\n";
+    std::cout << "Shooter enabled: " << ss - many_shooters << ".\n";
 #endif
-
-    records[id][static_cast<int>(STGCompType::SHOOTER)] = ss - many_shooters;
 
 #ifdef STG_DEBUG_PHY_DRAW
     ss->DebugDraw = &p_draw;
@@ -875,7 +873,7 @@ void STGLevel::EnableSht(int id, Shooter *ss) noexcept
 }
 
 /* Only called from shooter inside (in stage). */
-void STGLevel::DisableSht(int id, Shooter *ss) noexcept
+void STGLevel::DisableSht(Shooter *ss) noexcept
 {
     /* Different with others. List just lost, no recycle. */
     if (ss->Prev == nullptr)
@@ -887,9 +885,8 @@ void STGLevel::DisableSht(int id, Shooter *ss) noexcept
         ss->Next->Prev = ss->Prev;
 
 #ifdef _DEBUG
-    std::cout << "Shooter disabled: " << id << "\n";
+    std::cout << "Shooter disabled: " << ss - many_shooters << ".\n";
 #endif
-    records[id][static_cast<int>(STGCompType::SHOOTER)] = -1;
 }
 
 /* Aux Functions */

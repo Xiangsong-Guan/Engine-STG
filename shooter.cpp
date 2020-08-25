@@ -14,7 +14,7 @@ inline void Shooter::init()
 
     timer = -1;
     firing = false;
-    Rate = 100;
+    rate = 100;
 
     sub_ptn = SSPatternsCode::CONTROLLED;
     if (code == SSPatternsCode::CONTROLLED)
@@ -90,9 +90,8 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     init();
 }
 
-Shooter *Shooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
+Shooter *Shooter::Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
 {
-    ID = id;
     physical = body;
     render_master = rm;
 
@@ -102,7 +101,7 @@ Shooter *Shooter::Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *r
 /* Player are special, need get target from world. */
 void Shooter::MyDearPlayer() noexcept
 {
-    if (ID == 0 && code == SSPatternsCode::TRACK)
+    if (code == SSPatternsCode::TRACK)
         pattern = std::mem_fn(&Shooter::track_enemy);
 }
 
@@ -159,7 +158,7 @@ void Shooter::Cease() noexcept
 float Shooter::ShiftIn(bool is_firing) noexcept
 {
     firing = is_firing;
-    Con->EnableSht(ID, this);
+    Con->EnableSht(this);
     return speed;
 }
 
@@ -167,7 +166,7 @@ bool Shooter::ShiftOut() noexcept
 {
     bool ret = firing;
     firing = false;
-    Con->DisableSht(ID, this);
+    Con->DisableSht(this);
     return ret;
 }
 
@@ -177,6 +176,32 @@ void Shooter::Sync()
 
 void Shooter::FSync()
 {
+}
+
+void Shooter::Heal(int curing)
+{
+    rate += curing;
+}
+
+bool Shooter::Hurt(int damage)
+{
+    rate -= damage;
+
+    if (damage > 0)
+    {
+        if (rate > 0)
+        {
+        }
+        else
+        {
+            return true;
+        }
+    }
+    else if (damage < 0)
+    {
+    }
+
+    return false;
 }
 
 void Shooter::Destroy()

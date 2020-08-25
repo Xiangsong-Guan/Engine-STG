@@ -22,7 +22,6 @@ class Shooter
 public:
     static void InitSSPattern();
 
-    int ID;
     std::string Name;
     std::string CodeName;
 
@@ -35,7 +34,7 @@ public:
     ~Shooter() = default;
 
     void Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss);
-    Shooter *Undershift(int id, const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
+    Shooter *Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
     void MyDearPlayer() noexcept;
     Shooter *Update();
 
@@ -45,14 +44,15 @@ public:
     float ShiftIn(bool firing) noexcept;
     void Sync();
     void FSync();
+
+    void Heal(int curing);
+    bool Hurt(int damage);
     void Destroy();
 
     Shooter *Prev, *Next;
     Shooter *Shift;
 
     STGFlowController *Con;
-
-    int Rate;
 
 #ifdef STG_DEBUG_PHY_DRAW
     PhysicalDraw *DebugDraw;
@@ -73,6 +73,7 @@ public:
 private:
     static constexpr int MAX_B_TYPES = 4;
 
+    int rate;
     int power;
     float speed;
 

@@ -30,11 +30,11 @@ enum class STGCompType
     CHARACTOR,
     RENDER,
     THINKER,
-    SHOOTER,
 
+    /* Count in for management. */
     NUM,
 
-    ALL
+    SHOOTER
 };
 
 struct StageCharInfo
@@ -86,8 +86,8 @@ public:
     void Pause() const final;
     void DisableAll(int id) final;
     void DisableThr(int id) final;
-    void EnableSht(int id, Shooter *ss) noexcept final;
-    void DisableSht(int id, Shooter *ss) noexcept final;
+    void EnableSht(Shooter *ss) noexcept final;
+    void DisableSht(Shooter *ss) noexcept final;
 
     const b2Body *TrackEnemy() const noexcept final;
     const b2Body *TrackPlayer() const noexcept final;
