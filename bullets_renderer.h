@@ -11,10 +11,6 @@ class BulletsRenderer
 private:
     float forward_time;
 
-    float xscale;
-    float yscale;
-    float physcale;
-
 public:
     /* Constructor/Destructor */
     BulletsRenderer() = default;
@@ -25,13 +21,6 @@ public:
     ~BulletsRenderer() = default;
 
     ALLEGRO_COLOR Color;
-
-    inline void SetScale(float x, float y, float phy) noexcept
-    {
-        yscale = y;
-        xscale = x;
-        physcale = phy;
-    }
 
     inline void Reset(float ft)
     {
@@ -48,13 +37,13 @@ public:
 
         /* update render status then */
         position += forward_time * SEC_PER_UPDATE * velocity;
-        position *= physcale;
+        position *= PIXIL_PRE_M;
 
         /* begin to draw */
-        al_draw_tinted_scaled_rotated_bitmap(s_sprite, Color,
-                                             static_cast<float>(al_get_bitmap_width(s_sprite)) / 2.f,
-                                             static_cast<float>(al_get_bitmap_height(s_sprite)) / 2.f,
-                                             position.x, position.y, xscale, yscale, rotate, 0);
+        al_draw_tinted_rotated_bitmap(s_sprite, Color,
+                                      static_cast<float>(al_get_bitmap_width(s_sprite)) / 2.f,
+                                      static_cast<float>(al_get_bitmap_height(s_sprite)) / 2.f,
+                                      position.x, position.y, rotate, 0);
     }
 
     inline void Flush()

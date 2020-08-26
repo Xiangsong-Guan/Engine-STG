@@ -30,7 +30,6 @@ public:
     void CPPSuckSwap(SpriteRenderer &) noexcept;
 
     /* Reusable, do not have init/disable function. */
-    void SetScale(float x, float y, float phy) noexcept;
     void Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept;
     void Draw(float forward_time);
 
@@ -39,10 +38,6 @@ public:
 
 private:
     const b2Body *physics;
-
-    float xscale;
-    float yscale;
-    float physcale;
 
     /* Command Things */
     static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,

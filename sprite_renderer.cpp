@@ -12,7 +12,7 @@ static inline void nothing(SpriteRenderer *r, const ALLEGRO_EVENT *e) noexcept {
  *                                                                                               *
  *************************************************************************************************/
 
-SpriteRenderer::SpriteRenderer() : Color(al_map_rgb_f(1.f, 1.f, 1.f)), xscale(1.f), yscale(1.f)
+SpriteRenderer::SpriteRenderer() : Color(al_map_rgb_f(1.f, 1.f, 1.f))
 {
     Recv = al_create_event_queue();
     if (!Recv)
@@ -43,13 +43,6 @@ void SpriteRenderer::Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept
     Sprite = first;
 }
 
-void SpriteRenderer::SetScale(float x, float y, float phy) noexcept
-{
-    yscale = y;
-    xscale = x;
-    physcale = phy;
-}
-
 /*************************************************************************************************
  *                                                                                               *
  *                                  Update    Function                                           *
@@ -66,17 +59,17 @@ void SpriteRenderer::Draw(float forward_time)
 
     /* update render status then */
     position += forward_time * SEC_PER_UPDATE * velocity;
-    position *= physcale;
+    position *= PIXIL_PRE_M;
 
     /* make change */
     while (al_get_next_event(Recv, &event))
         commands[event.user.data1](this, &event);
 
     /* begin to draw */
-    al_draw_tinted_scaled_rotated_bitmap(Sprite, Color,
-                                         static_cast<float>(al_get_bitmap_width(Sprite)) / 2.f,
-                                         static_cast<float>(al_get_bitmap_height(Sprite)) / 2.f,
-                                         position.x, position.y, xscale, yscale, rotate, 0);
+    al_draw_tinted_rotated_bitmap(Sprite, Color,
+                                  static_cast<float>(al_get_bitmap_width(Sprite)) / 2.f,
+                                  static_cast<float>(al_get_bitmap_height(Sprite)) / 2.f,
+                                  position.x, position.y, rotate, 0);
 }
 
 /*************************************************************************************************

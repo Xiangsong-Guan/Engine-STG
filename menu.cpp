@@ -122,7 +122,6 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
     for (auto &&e : its)
     {
         items_text[item_n].SetText(e);
-        items_text[item_n].SetWH(width, height);
 
         if (btn_n < funcs.size())
         {
@@ -134,9 +133,6 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
 
         item_n += 1;
     }
-
-    Width = width;
-    Height = height;
 }
 
 void Menu::Attach() noexcept

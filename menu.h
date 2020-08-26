@@ -50,8 +50,6 @@ public:
 private:
     static constexpr int MAX_MENU_ITEM = 32;
 
-    int Width, Height;
-
     MenuBtn items[MAX_MENU_ITEM];
     TextRenderer items_text[MAX_MENU_ITEM];
     int item_n, btn_n;

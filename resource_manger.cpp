@@ -624,8 +624,12 @@ void ResourceManager::LoadSave()
 void ResourceManager::LoadFont()
 {
     std::vector<std::pair<std::string, std::string>> font_file = {
-        {"art/SourceHanSansCN-Regular.otf", "source"}};
-    std::vector<int> size = {12, 18, 24, 36, 42};
+        {"art/SourceHanSansCN-Regular.otf", "source"},
+        {"art/PixelMplus12-Regular.ttf", "m+12r"},
+        {"art/PixelMplus10-Regular.ttf", "m+10r"},
+        {"art/PixelMplus12-Bold.ttf", "m+12b"},
+        {"art/PixelMplus10-Bold.ttf", "m+10b"}};
+    std::vector<int> size = {10, 12, 20, 24, 30, 36};
 
     for (auto e : font_file)
         for (auto ee : size)

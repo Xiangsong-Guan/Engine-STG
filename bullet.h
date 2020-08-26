@@ -144,7 +144,6 @@ public:
     ~Bullet() = default;
 
     void Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w);
-    void SetScale(float x, float y, float phy, const float b[4]) noexcept;
     Bullet *Update();
     Bullet *Draw(float forward_time);
     void Bang(const b2Vec2 &world_pos, float world_angle, int mp);

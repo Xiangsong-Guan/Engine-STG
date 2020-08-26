@@ -203,23 +203,16 @@ STGLevel::STGLevel()
         bullets[i].Con = this;
 }
 
-void STGLevel::Load(int width, int height, float time_step, const STGLevelSetting &setting)
+void STGLevel::Load(float time_step, const STGLevelSetting &setting)
 {
 #ifdef STG_PERFORMENCE_SHOW
-    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("source_12"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
-    tr_bullets_n.SetWH(width, height);
-    tr_bn.SetText({"", ResourceManager::GetFont("source_12"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
-    tr_bn.SetWH(width, height);
+    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("m+10r_10"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bn.SetText({"", ResourceManager::GetFont("m+10r_10"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
 #endif
 
     Name = setting.Name;
     CodeName = setting.CodeName;
 
-    /* set right para */
-    float scale = static_cast<float>(width) / static_cast<float>(height) >
-                          SCREEN_WIDTH / SCREEN_HEIGHT
-                      ? static_cast<float>(height) / static_cast<float>(SCREEN_HEIGHT)
-                      : static_cast<float>(width) / static_cast<float>(SCREEN_WIDTH);
     this->time_step = time_step;
     bound[0] = 0.f - STG_FIELD_BOUND_BUFFER;
     bound[1] = PHYSICAL_HEIGHT + STG_FIELD_BOUND_BUFFER;
@@ -229,15 +222,9 @@ void STGLevel::Load(int width, int height, float time_step, const STGLevelSettin
     world->SetContactListener(&contact_listener);
 
 #ifdef STG_DEBUG_PHY_DRAW
-    p_draw.Init(PIXIL_PRE_M * scale);
+    p_draw.Init(PIXIL_PRE_M);
     world->SetDebugDraw(&p_draw);
 #endif
-
-    /* Set right thing for comps */
-    for (int i = 0; i < MAX_ON_STAGE; i++)
-        sprite_renderers[i].SetScale(scale, scale, PIXIL_PRE_M * scale);
-    for (int i = 0; i < MAX_ENTITIES; i++)
-        bullets[i].SetScale(scale, scale, PIXIL_PRE_M * scale, bound);
 
     /* pool reset */
     reset_id();

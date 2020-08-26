@@ -26,6 +26,11 @@ Bullet::Bullet()
 
     for (int i = 0; i < MAX_BULLETS; i++)
         collision_proxy[i].Master = this;
+
+    bound[0] = 0.f - STG_FIELD_BOUND_BUFFER;
+    bound[1] = PHYSICAL_HEIGHT + STG_FIELD_BOUND_BUFFER;
+    bound[2] = 0.f - STG_FIELD_BOUND_BUFFER;
+    bound[3] = PHYSICAL_WIDTH + STG_FIELD_BOUND_BUFFER;
 }
 
 void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
@@ -112,12 +117,6 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     fly_bullets_n = 0;
     flt_bullets_n = 0;
     dead_bullets_n = 0;
-}
-
-void Bullet::SetScale(float x, float y, float phy, const float b[4]) noexcept
-{
-    std::memcpy(bound, b, sizeof(bound));
-    draw.SetScale(x, y, phy);
 }
 
 /*************************************************************************************************

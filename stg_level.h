@@ -67,7 +67,7 @@ public:
     ~STGLevel() = default;
 
     /* Self constructor */
-    void Load(int width, int height, float time_step, const STGLevelSetting &setting);
+    void Load(float time_step, const STGLevelSetting &setting);
     void Unload();
 
     /* GameLoop */
@@ -115,7 +115,6 @@ private:
 
     /* Battle field */
     /* STG Field Buffer Area */
-    static constexpr float STG_FIELD_BOUND_BUFFER = 5.f;
     float bound[4];
     float time_step;
 

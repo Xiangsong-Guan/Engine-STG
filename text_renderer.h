@@ -13,7 +13,6 @@ class TextRenderer
 private:
     float x, y;
     TextItem text;
-    int width, height;
 
 public:
     ALLEGRO_COLOR Color;
@@ -26,13 +25,13 @@ public:
     ~TextRenderer() = default;
 
     void Draw() const;
-    void SetWH(int w, int h) noexcept;
     void SetText(TextItem t) noexcept;
     
-    void ChangeText(float f);
+    void ChangeText(float f, int w);
     void ChangeText(int i);
 
     float GetWidth() const;
+    float GetRight() const;
 };
 
 #endif
