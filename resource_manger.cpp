@@ -561,6 +561,10 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         }
         lua_pop(L_main, 1);
         break;
+
+    default:
+        ss.Pattern = SSPatternsCode::STAY;
+        break;
     }
 
     /* lunchers */

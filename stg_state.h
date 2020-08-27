@@ -247,7 +247,7 @@ public:
     {
         timer = -1;
         tomaranaizoooooo = false;
-        Duration = DEAD_TIME - 1;
+        Duration = DEAD_TIME;
     }
 
     virtual void Init(const STGTexture &texs) { init(); }
@@ -272,7 +272,7 @@ public:
                 sc->Physics->SetActive(true);
             }
             else
-                sc->Con->DisableAll(sc->ID);
+                sc->Farewell();
     }
 
     bool CheckInput(STGCharCommand cmd) final
@@ -339,7 +339,7 @@ public:
                 sc->Physics->SetActive(true);
             }
             else
-                sc->Con->DisableAll(sc->ID);
+                sc->Farewell();
         }
     }
 };
@@ -387,7 +387,7 @@ public:
                 sc->Physics->SetActive(true);
             }
             else
-                sc->Con->DisableAll(sc->ID);
+                sc->Farewell();
     }
 };
 

@@ -75,6 +75,7 @@ void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, S
 void STGCharactor::Farewell() const noexcept
 {
     shooter->ShiftOut();
+    Con->DisableAll(ID);
 }
 
 /*************************************************************************************************

@@ -37,6 +37,8 @@ public:
 
     ALLEGRO_EVENT_SOURCE *InputMaster;
     ALLEGRO_EVENT_QUEUE *Recv;
+    
+    unsigned int EventBit;
 
 private:
     const b2Body *physics;
@@ -47,7 +49,7 @@ private:
     std::function<bool(STGThinker *)> pattern;
 
     /* Lua AI can set sub-pattern, also use data. */
-    lua_State *AI;
+    lua_State *ai;
     SCPatternsCode sub_ptn;
 
     static std::function<bool(STGThinker *)> patterns[static_cast<int>(SCPatternsCode::NUM)];

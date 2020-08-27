@@ -205,13 +205,15 @@ struct STGCharactorSetting
 enum class SCPatternsCode
 {
     CONTROLLED,
-    STAY,
     MOVE_TO,
     MOVE_LAST,
     MOVE_PASSBY,
     GO_ROUND,
 
-    NUM
+    NUM,
+
+    /* DO NOTHING */
+    STAY
 };
 
 const char *const SC_PATTERNS_CODE[] =
@@ -227,7 +229,7 @@ union SCPatternData
     /// Default constructor does nothing (for performance).
     SCPatternData() {}
 
-    lua_State *AI;
+    lua_State *ai;
 
     b2Vec2 vec;
 

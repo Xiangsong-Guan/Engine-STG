@@ -22,7 +22,7 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
     {
     case SCPatternsCode::CONTROLLED:
         luaL_checktype(L, pd_idx + 1, LUA_TTHREAD);
-        data->AI = lua_tothread(L, pd_idx + 1);
+        data->ai = lua_tothread(L, pd_idx + 1);
         break;
 
     case SCPatternsCode::MOVE_TO:
@@ -53,6 +53,8 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         break;
 
     default:
+        /* STAY will be the default. Not thinking. */
+        *ptn = SCPatternsCode::STAY;
         return;
     }
 #else
@@ -60,7 +62,7 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
     switch (*ptn)
     {
     case SCPatternsCode::CONTROLLED:
-        data->AI = lua_tothread(L, pd_idx + 1);
+        data->ai = lua_tothread(L, pd_idx + 1);
         break;
 
     case SCPatternsCode::MOVE_TO:
@@ -90,6 +92,8 @@ static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, S
         break;
 
     default:
+        /* STAY will be the default. Not thinking. */
+        *ptn = SCPatternsCode::STAY;
         return;
     }
 #endif
@@ -372,7 +376,7 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     int p_id = get_id();
     /* Player on stage. */
     SCPatternData pd;
-    pd.AI = player_watching;
+    pd.ai = player_watching;
     onstage_charactors[0].Enable(p_id, GPlayer.MyChar, player, GPlayer.MyShooters, GPlayer.MyEnter);
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
     onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
@@ -446,7 +450,7 @@ void STGLevel::Update()
             std::cout << "Char-" << onstage_charactors[i].ID << " becomes outsider!\n";
 #endif
 
-            DisableAll(onstage_charactors[i].ID);
+            onstage_charactors[i].Farewell();
         }
     }
 
@@ -462,7 +466,6 @@ void STGLevel::Update()
             flaw = records[id][static_cast<int>(STGCompType::CHARACTOR)];
             records[id][static_cast<int>(STGCompType::CHARACTOR)] = -1;
 
-            onstage_charactors[flaw].Farewell();
             world->DestroyBody(onstage_charactors[flaw].Physics);
 
             onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);

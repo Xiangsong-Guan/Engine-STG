@@ -42,7 +42,7 @@ void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
     this->data = o.data;
     this->pattern = o.pattern;
     this->where = o.where;
-    this->AI = o.AI;
+    this->ai = o.ai;
     this->sub_ptn = o.sub_ptn;
     std::swap(this->InputMaster, o.InputMaster);
     std::swap(this->Recv, o.Recv);
@@ -60,7 +60,7 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
         data.round.R_SQ = (body->GetPosition() - data.round.P).LengthSquared();
 
     /* Save AI out of data union. AI can use data to execute sub pattern. */
-    AI = data.AI;
+    ai = data.ai;
     sub_ptn = SCPatternsCode::CONTROLLED;
 }
 
@@ -144,31 +144,39 @@ void STGThinker::InitSCPattern()
 bool STGThinker::controlled()
 {
     int good;
-    int event_bit = 0b0;
-    int rn = 0;
+    int rn = 1;
     ALLEGRO_EVENT event;
 
     /* Pass porxy firstly. */
-    lua_pushlightuserdata(AI, this);
+    lua_pushlightuserdata(ai, this);
 
     /* Execute sub-pattern, if exists. */
     if (sub_ptn != SCPatternsCode::CONTROLLED)
         if (patterns[static_cast<int>(sub_ptn)](this))
-            /* Notify Lua this pattern end. */
-            event_bit += 1;
+        {
+            sub_ptn = SCPatternsCode::CONTROLLED;
+            EventBit |= static_cast<unsigned int>(STGCharEvent::SUB_PATTERN_DONE);
+        }
 
-    /* Pass STG char events */
+    /* Hold STG char events */
     while (al_get_next_event(Recv, &event))
+        EventBit |= event.user.data1;
+
+    /* If something happenned, notify lua. Lua will ask what happenned when it is thinking. */
+    if (EventBit > 0u)
     {
-        // ...
+        lua_pushboolean(ai, 1);
+        rn = 2;
     }
 
-    /* AI online. If AI return, means dead. */
-    good = lua_resume(AI, nullptr, 1, &rn);
+    /* AI online. If AI return, means no need to further thinking. */
+    good = lua_resume(ai, nullptr, rn, &rn);
+    /* Event just stay one loop for lua. */
+    EventBit = 0u;
 
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
-        std::cerr << "STG thinker lua error: " << lua_tostring(AI, -1) << std::endl;
+        std::cerr << "STG thinker lua error: " << lua_tostring(ai, -1) << std::endl;
 #endif
 
     if (good != LUA_YIELD)
