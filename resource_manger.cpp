@@ -533,7 +533,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
     switch (ss.Pattern)
     {
-    case SSPatternsCode::CONTROLLED:
+    case SSPatternsCode::SSPC_CONTROLLED:
         if (lua_getfield(L_main, -1, "data") != LUA_TFUNCTION)
             INVALID_SHOOTER(name, "invalid update function!", balance_top)
         lua_getfield(L_main, LUA_REGISTRYINDEX, STG_SHOOT_FUNCTIONS_KEY);
@@ -542,14 +542,14 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         lua_pop(L_main, 2);
         break;
 
-    case SSPatternsCode::TOTAL_TURN:
+    case SSPatternsCode::SSPC_TOTAL_TURN:
         if (lua_getfield(L_main, -1, "data") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid total turn speed!", balance_top)
         ss.Data.turn_speed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
         lua_pop(L_main, 1);
         break;
 
-    case SSPatternsCode::SPLIT_TURN:
+    case SSPatternsCode::SSPC_SPLIT_TURN:
         if (lua_getfield(L_main, -1, "data") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
             INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top)
         for (int i = 0; i < luaL_len(L_main, -1); i++)
@@ -563,7 +563,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         break;
 
     default:
-        ss.Pattern = SSPatternsCode::STAY;
+        ss.Pattern = SSPatternsCode::SSPC_STAY;
         break;
     }
 
@@ -699,14 +699,14 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
             INVALID_PHYSICS(name, "invalid size!", balance_top);
         switch (pf.Shape)
         {
-        case ShapeType::CIRCLE:
+        case ShapeType::ST_CIRCLE:
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
                 INVALID_PHYSICS(name, "invalid size!", balance_top);
             pf.C.m_p.Set(x, y);
             pf.C.m_radius = lua_tonumber(L_main, -1);
             lua_pop(L_main, 2);
             break;
-        case ShapeType::BOX:
+        case ShapeType::ST_BOX:
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
                 INVALID_PHYSICS(name, "invalid size!", balance_top);
             pf.P.SetAsBox(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1), b2Vec2(x, y), 0.f);
@@ -740,14 +740,14 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     {
         lua_pop(L_main, 1);
         st.VeryFirstTex = nullptr;
-        st.SpriteBornType = SpriteType::NONE;
-        st.SpriteShootingType = SpriteType::NONE;
-        st.SpriteShiftType = SpriteType::NONE;
-        st.SpriteSyncType = SpriteType::NONE;
-        st.SpriteFSyncType = SpriteType::NONE;
-        st.SpriteHitType = SpriteType::NONE;
-        st.SpriteDisableType = SpriteType::NONE;
-        st.SpriteMovementType = SpriteType::NONE;
+        st.SpriteBornType = SpriteType::SPT_NONE;
+        st.SpriteShootingType = SpriteType::SPT_NONE;
+        st.SpriteShiftType = SpriteType::SPT_NONE;
+        st.SpriteSyncType = SpriteType::SPT_NONE;
+        st.SpriteFSyncType = SpriteType::SPT_NONE;
+        st.SpriteHitType = SpriteType::SPT_NONE;
+        st.SpriteDisableType = SpriteType::SPT_NONE;
+        st.SpriteMovementType = SpriteType::SPT_NONE;
         return st;
     }
     std::string art_name = std::string(lua_tostring(L_main, -1));
@@ -757,66 +757,66 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     /* texture res */
     st.SpriteBorn = art_name + "_born";
     if (textures.contains(st.SpriteBorn))
-        st.SpriteBornType = SpriteType::STATIC;
+        st.SpriteBornType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteBorn))
-        st.SpriteBornType = SpriteType::ANIMED;
+        st.SpriteBornType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteBornType = SpriteType::NONE;
+        st.SpriteBornType = SpriteType::SPT_NONE;
     st.SpriteShooting = art_name + "_shooting";
     if (textures.contains(st.SpriteShooting))
-        st.SpriteShootingType = SpriteType::STATIC;
+        st.SpriteShootingType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteShooting))
-        st.SpriteShootingType = SpriteType::ANIMED;
+        st.SpriteShootingType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteShootingType = SpriteType::NONE;
+        st.SpriteShootingType = SpriteType::SPT_NONE;
     st.SpriteShift = art_name + "_shift";
     if (textures.contains(st.SpriteShift))
-        st.SpriteShiftType = SpriteType::STATIC;
+        st.SpriteShiftType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteShift))
-        st.SpriteShiftType = SpriteType::ANIMED;
+        st.SpriteShiftType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteShiftType = SpriteType::NONE;
+        st.SpriteShiftType = SpriteType::SPT_NONE;
     st.SpriteSync = art_name + "_sync";
     if (textures.contains(st.SpriteSync))
-        st.SpriteSyncType = SpriteType::STATIC;
+        st.SpriteSyncType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteSync))
-        st.SpriteSyncType = SpriteType::ANIMED;
+        st.SpriteSyncType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteSyncType = SpriteType::NONE;
+        st.SpriteSyncType = SpriteType::SPT_NONE;
     st.SpriteFSync = art_name + "_fsync";
     if (textures.contains(st.SpriteFSync))
-        st.SpriteFSyncType = SpriteType::STATIC;
+        st.SpriteFSyncType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteFSync))
-        st.SpriteFSyncType = SpriteType::ANIMED;
+        st.SpriteFSyncType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteFSyncType = SpriteType::NONE;
+        st.SpriteFSyncType = SpriteType::SPT_NONE;
     st.SpriteHit = art_name + "_hit";
     if (textures.contains(st.SpriteHit))
-        st.SpriteHitType = SpriteType::STATIC;
+        st.SpriteHitType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteHit))
-        st.SpriteHitType = SpriteType::ANIMED;
+        st.SpriteHitType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteHitType = SpriteType::NONE;
+        st.SpriteHitType = SpriteType::SPT_NONE;
     st.SpriteDisable = art_name + "disable";
     if (textures.contains(st.SpriteDisable))
-        st.SpriteDisableType = SpriteType::STATIC;
+        st.SpriteDisableType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteDisable))
-        st.SpriteDisableType = SpriteType::ANIMED;
+        st.SpriteDisableType = SpriteType::SPT_ANIMED;
     else
-        st.SpriteDisableType = SpriteType::NONE;
-    st.SpriteMovement[static_cast<int>(Movement::IDLE)] = art_name + "_idle";
-    st.SpriteMovement[static_cast<int>(Movement::UP)] = art_name + "_up";
-    st.SpriteMovement[static_cast<int>(Movement::DOWN)] = art_name + "_down";
-    st.SpriteMovement[static_cast<int>(Movement::LEFT)] = art_name + "_left";
-    st.SpriteMovement[static_cast<int>(Movement::RIGHT)] = art_name + "_right";
-    st.SpriteMovement[static_cast<int>(Movement::UL)] = art_name + "_ul";
-    st.SpriteMovement[static_cast<int>(Movement::UR)] = art_name + "_ur";
-    st.SpriteMovement[static_cast<int>(Movement::DL)] = art_name + "_dl";
-    st.SpriteMovement[static_cast<int>(Movement::DR)] = art_name + "_dr";
-    if (textures.contains(st.SpriteMovement[static_cast<int>(Movement::IDLE)]))
-        st.SpriteMovementType = SpriteType::STATIC;
-    else if (animations.contains(st.SpriteMovement[static_cast<int>(Movement::IDLE)]))
-        st.SpriteMovementType = SpriteType::ANIMED;
+        st.SpriteDisableType = SpriteType::SPT_NONE;
+    st.SpriteMovement[Movement::MM_IDLE] = art_name + "_idle";
+    st.SpriteMovement[Movement::MM_UP] = art_name + "_up";
+    st.SpriteMovement[Movement::MM_DOWN] = art_name + "_down";
+    st.SpriteMovement[Movement::MM_LEFT] = art_name + "_left";
+    st.SpriteMovement[Movement::MM_RIGHT] = art_name + "_right";
+    st.SpriteMovement[Movement::MM_UL] = art_name + "_ul";
+    st.SpriteMovement[Movement::MM_UR] = art_name + "_ur";
+    st.SpriteMovement[Movement::MM_DL] = art_name + "_dl";
+    st.SpriteMovement[Movement::MM_DR] = art_name + "_dr";
+    if (textures.contains(st.SpriteMovement[Movement::MM_IDLE]))
+        st.SpriteMovementType = SpriteType::SPT_STATIC;
+    else if (animations.contains(st.SpriteMovement[Movement::MM_IDLE]))
+        st.SpriteMovementType = SpriteType::SPT_ANIMED;
     else
     {
         std::cerr << "STG texture for " << name << " contains no idle sprite!\n";
@@ -827,10 +827,10 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     Anime ta;
     switch (st.SpriteBornType)
     {
-    case SpriteType::STATIC:
+    case SpriteType::SPT_STATIC:
         st.VeryFirstTex = GetTexture(st.SpriteBorn);
         break;
-    case SpriteType::ANIMED:
+    case SpriteType::SPT_ANIMED:
         ta = GetAnime(st.SpriteBorn);
         ta.Forward();
         st.VeryFirstTex = ta.Playing;
@@ -838,11 +838,11 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     default:
         switch (st.SpriteMovementType)
         {
-        case SpriteType::STATIC:
-            st.VeryFirstTex = GetTexture(st.SpriteMovement[static_cast<int>(Movement::IDLE)]);
+        case SpriteType::SPT_STATIC:
+            st.VeryFirstTex = GetTexture(st.SpriteMovement[Movement::MM_IDLE]);
             break;
-        case SpriteType::ANIMED:
-            ta = GetAnime(st.SpriteMovement[static_cast<int>(Movement::IDLE)]);
+        case SpriteType::SPT_ANIMED:
+            ta = GetAnime(st.SpriteMovement[Movement::MM_IDLE]);
             ta.Forward();
             st.VeryFirstTex = ta.Playing;
             break;

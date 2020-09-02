@@ -39,18 +39,18 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     CodeName = bs.CodeName;
 
     /* Bullet's textures */
-    if (bs.Texs.SpriteBornType == SpriteType::ANIMED)
+    if (bs.Texs.SpriteBornType == SpriteType::SPT_ANIMED)
         born = ResourceManager::GetAnime(bs.Texs.SpriteBorn);
-    else if (bs.Texs.SpriteBornType == SpriteType::STATIC)
+    else if (bs.Texs.SpriteBornType == SpriteType::SPT_STATIC)
         born = Anime(ResourceManager::GetTexture(bs.Texs.SpriteBorn));
-    if (bs.Texs.SpriteHitType == SpriteType::ANIMED)
+    if (bs.Texs.SpriteHitType == SpriteType::SPT_ANIMED)
         hit = ResourceManager::GetAnime(bs.Texs.SpriteHit);
-    else if (bs.Texs.SpriteHitType == SpriteType::STATIC)
+    else if (bs.Texs.SpriteHitType == SpriteType::SPT_STATIC)
         hit = Anime(ResourceManager::GetTexture(bs.Texs.SpriteHit));
-    if (bs.Texs.SpriteMovementType == SpriteType::ANIMED)
+    if (bs.Texs.SpriteMovementType == SpriteType::SPT_ANIMED)
         idle = ResourceManager::GetAnime(bs.Texs.SpriteMovement[0]);
-    else if (bs.Texs.SpriteMovementType == SpriteType::STATIC)
-        idle = Anime(ResourceManager::GetTexture(bs.Texs.SpriteMovement[static_cast<int>(Movement::IDLE)]));
+    else if (bs.Texs.SpriteMovementType == SpriteType::SPT_STATIC)
+        idle = Anime(ResourceManager::GetTexture(bs.Texs.SpriteMovement[Movement::MM_IDLE]));
     else
         idle = Anime(ResourceManager::GetTexture("blank"));
     if (idle.DURATION == 1)

@@ -40,8 +40,7 @@ private:
     const b2Body *physics;
 
     /* Command Things */
-    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
-                      static_cast<size_t>(GameRenderCommand::NUM)>
+    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM>
         commands;
     void change_texture(const ALLEGRO_EVENT *e) noexcept;
 };

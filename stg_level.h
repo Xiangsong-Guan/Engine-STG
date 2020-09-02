@@ -25,16 +25,16 @@
 
 #include <string>
 
-enum class STGCompType
+enum STGCompType
 {
-    CHARACTOR,
-    RENDER,
-    THINKER,
+    SCT_CHARACTOR,
+    SCT_RENDER,
+    SCT_THINKER,
 
     /* Count in for management. */
-    NUM,
+    SCT_NUM,
 
-    SHOOTER
+    SCT_SHOOTER
 };
 
 struct StageCharInfo
@@ -128,7 +128,7 @@ private:
     lua_State *L_stage;
 
     /* ID System */
-    int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];
+    int records[MAX_ON_STAGE][STGCompType::SCT_NUM];
     bool used_record[MAX_ON_STAGE];
     int record_hint;
     inline int get_id() noexcept;
@@ -136,8 +136,8 @@ private:
     inline void reset_id() noexcept;
 
     /* Memory management */
-    int disabled[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
-    STGCompType disabled_t[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    int disabled[MAX_ON_STAGE * STGCompType::SCT_NUM];
+    STGCompType disabled_t[MAX_ON_STAGE * STGCompType::SCT_NUM];
     int disabled_n;
 
     /* AUX Function */

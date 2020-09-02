@@ -9,10 +9,10 @@
 class InputProcessor
 {
 protected:
-    static bool state[static_cast<int>(InputAction::NUM)];
+    static bool state[InputAction::IA_NUM];
 
-    int commands[static_cast<int>(InputAction::NUM)];
-    bool filter[static_cast<int>(InputAction::NUM)];
+    int commands[InputAction::IA_NUM];
+    bool filter[InputAction::IA_NUM];
 
     inline bool check_button_just_pressed(InputAction button, const bool keys[]) const noexcept;
     inline bool check_button_just_released(InputAction button, const bool keys[]) const noexcept;

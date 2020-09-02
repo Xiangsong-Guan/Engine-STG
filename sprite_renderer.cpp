@@ -78,15 +78,12 @@ void SpriteRenderer::Draw(float forward_time)
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
-           static_cast<size_t>(GameRenderCommand::NUM)>
-    SpriteRenderer::commands;
+std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM> SpriteRenderer::commands;
 
 void SpriteRenderer::InitRndrCmd()
 {
     commands.fill(std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>(nothing));
-    commands[static_cast<int>(GameRenderCommand::CHANGE_TEXTURE)] =
-        std::mem_fn(&SpriteRenderer::change_texture);
+    commands[GameRenderCommand::GRC_CHANGE_TEXTURE] = std::mem_fn(&SpriteRenderer::change_texture);
 }
 
 void SpriteRenderer::change_texture(const ALLEGRO_EVENT *e) noexcept

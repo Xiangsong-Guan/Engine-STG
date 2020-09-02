@@ -16,7 +16,7 @@ constexpr int DEAD_TIME = 3;                  /* Juesi. */
 static inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE *s)
 {
     ALLEGRO_EVENT event;
-    event.user.data1 = static_cast<intptr_t>(GameRenderCommand::CHANGE_TEXTURE);
+    event.user.data1 = GameRenderCommand::GRC_CHANGE_TEXTURE;
     event.user.data2 = (intptr_t)t;
     al_emit_user_event(s, &event, nullptr);
 }
@@ -34,7 +34,7 @@ class SCSDisabled;
 class SCSBorn : public SCS
 {
 protected:
-    bool FILTER[static_cast<int>(STGCharCommand::NUM)];
+    bool FILTER[STGCharCommand::SCC_NUM];
 
     inline void init()
     {
@@ -52,13 +52,13 @@ public:
 
     SCSBorn()
     {
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+        for (int i = 0; i < STGCharCommand::SCC_NUM; i++)
             FILTER[i] = false;
-        FILTER[static_cast<int>(STGCharCommand::UP)] = true;
-        FILTER[static_cast<int>(STGCharCommand::DOWN)] = true;
-        FILTER[static_cast<int>(STGCharCommand::LEFT)] = true;
-        FILTER[static_cast<int>(STGCharCommand::RIGHT)] = true;
-        FILTER[static_cast<int>(STGCharCommand::MOVE_XY)] = true;
+        FILTER[STGCharCommand::SCC_UP] = true;
+        FILTER[STGCharCommand::SCC_DOWN] = true;
+        FILTER[STGCharCommand::SCC_LEFT] = true;
+        FILTER[STGCharCommand::SCC_RIGHT] = true;
+        FILTER[STGCharCommand::SCC_MOVE_XY] = true;
     }
     SCSBorn(const SCSBorn &) = delete;
     SCSBorn(SCSBorn &&) = delete;
@@ -66,7 +66,7 @@ public:
     SCSBorn &operator=(SCSBorn &&) = delete;
     virtual ~SCSBorn() = default;
 
-    bool CheckInput(STGCharCommand cmd) noexcept final { return FILTER[static_cast<int>(cmd)]; }
+    bool CheckInput(ALLEGRO_EVENT *ie) noexcept final { return FILTER[ie->user.data1]; }
 
     bool CheckChange(const STGChange *change, STGCharactor *sc) final { return false; }
 
@@ -275,7 +275,7 @@ public:
                 sc->Farewell();
     }
 
-    bool CheckInput(STGCharCommand cmd) final
+    bool CheckInput(ALLEGRO_EVENT *ie) final
     {
         if (cmd != STGCharCommand::RESPAWN)
             return false;
@@ -400,47 +400,47 @@ public:
 class SCSMovement : public SCS
 {
 protected:
-    int PRIORTY[static_cast<int>(STGCharCommand::NUM)];
+    int PRIORTY[STGCharCommand::SCC_NUM];
     int next_i;
     int last_time_where;
 
     inline int move_check(const b2Vec2 v) const noexcept
     {
-        int where = static_cast<int>(Movement::IDLE);
+        int where = Movement::MM_IDLE;
         if (v.x > .1f)
-            where += static_cast<int>(Movement::TO_RIGHT);
+            where += Movement::MM_TO_RIGHT;
         else if (v.x < -.1f)
-            where += static_cast<int>(Movement::TO_LEFT);
+            where += Movement::MM_TO_LEFT;
         if (v.y > .1f)
-            where += static_cast<int>(Movement::TO_DOWN);
+            where += Movement::MM_TO_DOWN;
         else if (v.y < -.1f)
-            where += static_cast<int>(Movement::TO_UP);
+            where += Movement::MM_TO_UP;
         return where;
     }
 
     inline void init() noexcept
     {
-        next_i = static_cast<int>(STGCharCommand::UP);
+        next_i = STGCharCommand::SCC_UP;
         last_time_where = -1;
 
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+        for (int i = 0; i < STGCharCommand::SCC_NUM; i++)
             Next[i] = nullptr;
         NextDisable = nullptr;
     }
 
 public:
-    SCS *Next[static_cast<int>(STGCharCommand::NUM)];
+    SCS *Next[STGCharCommand::SCC_NUM];
     SCSDisabled *NextDisable;
 
     SCSMovement()
     {
-        for (int i = 0; i < static_cast<int>(STGCharCommand::NUM); i++)
+        for (int i = 0; i < STGCharCommand::SCC_NUM; i++)
             PRIORTY[i] = 0;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_CHANGE)] = 9;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_SYNC)] = 9;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_REQUEST)] = 10;
-        PRIORTY[static_cast<int>(STGCharCommand::STG_FORCE_SYNC_RESPONE)] = 10;
-        PRIORTY[static_cast<int>(STGCharCommand::DISABLE)] = 999;
+        PRIORTY[STGCharCommand::SCC_STG_CHANGE] = 9;
+        PRIORTY[STGCharCommand::SCC_STG_SYNC] = 9;
+        PRIORTY[STGCharCommand::SCC_STG_FORCE_SYNC_REQUEST] = 10;
+        PRIORTY[STGCharCommand::SCC_STG_FORCE_SYNC_RESPONE] = 10;
+        PRIORTY[STGCharCommand::SCC_DISABLE] = 999;
     }
     SCSMovement(const SCSMovement &) = delete;
     SCSMovement(SCSMovement &&) = delete;
@@ -448,16 +448,16 @@ public:
     SCSMovement &operator=(SCSMovement &&) = delete;
     virtual ~SCSMovement() = default;
 
-    bool CheckInput(STGCharCommand cmd) noexcept final
+    bool CheckInput(ALLEGRO_EVENT *ie) noexcept final
     {
-        if (PRIORTY[static_cast<int>(cmd)] > PRIORTY[next_i])
-            next_i = static_cast<int>(cmd);
-        return PRIORTY[static_cast<int>(cmd)] >= 0;
+        if (PRIORTY[ie->user.data1] > PRIORTY[next_i])
+            next_i = ie->user.data1;
+        return PRIORTY[ie->user.data1] >= 0;
     }
 
     bool CheckChange(const STGChange *change, STGCharactor *sc) final
     {
-        if (change->Code == STGStateChangeCode::GO_DIE)
+        if (change->Code == STGStateChangeCode::SSCC_GO_DIE)
             NextDisable->Action(sc);
         return true;
     }
@@ -468,10 +468,10 @@ public:
 
     virtual void Action(STGCharactor *sc) override
     {
-        if (Next[static_cast<int>(next_i)])
+        if (Next[next_i])
         {
-            next_i = static_cast<int>(STGCharCommand::UP);
-            Next[static_cast<int>(next_i)]->Action(sc);
+            Next[next_i]->Action(sc);
+            next_i = STGCharCommand::SCC_UP;
         }
         else
             sc->SPending = this;
@@ -481,7 +481,7 @@ public:
 class SCSMovementStatic : public SCSMovement
 {
 public:
-    ALLEGRO_BITMAP *Texture[static_cast<int>(Movement::NUM)];
+    ALLEGRO_BITMAP *Texture[Movement::MM_NUM];
 
     SCSMovementStatic() = default;
     SCSMovementStatic(const SCSMovementStatic &) = delete;
@@ -493,7 +493,7 @@ public:
     void Init(const STGTexture &texs) final
     {
         init();
-        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
+        for (int i = 0; i < Movement::MM_NUM; i++)
             Texture[i] = ResourceManager::GetTexture(texs.SpriteMovement[i]);
     }
 
@@ -505,11 +505,11 @@ public:
 
     void Action(STGCharactor *sc) final
     {
-        if (Next[static_cast<int>(next_i)])
+        if (Next[next_i])
         {
-            next_i = static_cast<int>(STGCharCommand::UP);
+            Next[next_i]->Action(sc);
+            next_i = STGCharCommand::SCC_UP;
             last_time_where = -1;
-            Next[static_cast<int>(next_i)]->Action(sc);
         }
         else
         {
@@ -524,7 +524,7 @@ public:
 class SCSMovementAnimed : public SCSMovement
 {
 public:
-    Anime Animation[static_cast<int>(Movement::NUM)];
+    Anime Animation[Movement::MM_NUM];
 
     SCSMovementAnimed() = default;
     SCSMovementAnimed(const SCSMovementAnimed &) = delete;
@@ -536,27 +536,28 @@ public:
     void Init(const STGTexture &texs) final
     {
         init();
-        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
+        for (int i = 0; i < Movement::MM_NUM; i++)
             Animation[i] = ResourceManager::GetAnime(texs.SpriteMovement[i]);
     }
 
     void Copy(const SCSMovement *o) final
     {
         init();
-        for (int i = 0; i < static_cast<int>(Movement::NUM); i++)
+        for (int i = 0; i < Movement::MM_NUM; i++)
         {
-            Animation[i] = dynamic_cast<const SCSMovementAnimed *>(o)->Animation[i];
+            Animation[i] = static_cast<const SCSMovementAnimed *>(o)->Animation[i];
             Animation[i].Reset();
         }
     }
 
     void Action(STGCharactor *sc) final
     {
-        if (Next[static_cast<int>(next_i)])
+        if (Next[next_i])
         {
-            next_i = static_cast<int>(STGCharCommand::UP);
+            Next[next_i]->Action(sc);
+            Animation[last_time_where].Reset();
+            next_i = STGCharCommand::SCC_UP;
             last_time_where = -1;
-            Next[static_cast<int>(next_i)]->Action(sc);
         }
         else
         {

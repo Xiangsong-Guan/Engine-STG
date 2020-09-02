@@ -27,7 +27,7 @@ public:
     virtual ~SCS() = default;
 
     virtual void Action(STGCharactor *sc) = 0;
-    virtual bool CheckInput(STGCharCommand cmd) = 0;
+    virtual bool CheckInput(ALLEGRO_EVENT *ie) = 0;
     virtual bool CheckChange(const STGChange *change, STGCharactor *sc) = 0;
 };
 
@@ -70,9 +70,7 @@ private:
     float speed;
     Shooter *shooter;
 
-    static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
-                      static_cast<int>(STGCharCommand::NUM)>
-        commands;
+    static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>, STGCharCommand::SCC_NUM> commands;
 
     void up(const ALLEGRO_EVENT *e) noexcept;
     void down(const ALLEGRO_EVENT *e) noexcept;

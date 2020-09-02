@@ -9,7 +9,7 @@
 #include <lua.hpp>
 #include <allegro5/allegro5.h>
 
-enum class GameState
+enum GameState
 {
     GAME_WORLD,
     GAME_STG,

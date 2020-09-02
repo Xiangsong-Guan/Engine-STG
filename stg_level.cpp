@@ -247,16 +247,16 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     GPlayer.MyChar = ResourceManager::GetSTGChar(SPlayer.Char);
     GPlayer.MyShooters = many_shooters;
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-    GPlayer.MyChar.Phy.FD.shape = GPlayer.MyChar.Phy.Shape == ShapeType::CIRCLE
+    GPlayer.MyChar.Phy.FD.shape = GPlayer.MyChar.Phy.Shape == ShapeType::ST_CIRCLE
                                       ? static_cast<b2Shape *>(&GPlayer.MyChar.Phy.C)
                                       : static_cast<b2Shape *>(&GPlayer.MyChar.Phy.P);
-    GPlayer.MyChar.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
-    GPlayer.MyChar.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER);
-    GPlayer.MyChar.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_ENEMY);
+    GPlayer.MyChar.Phy.FD.filter.groupIndex = CollisionType::G_PLAYER_SIDE;
+    GPlayer.MyChar.Phy.FD.filter.categoryBits = CollisionType::C_PLAYER;
+    GPlayer.MyChar.Phy.FD.filter.maskBits = CollisionType::M_ALL_ENEMY;
     std::queue<Bullet *> bss;
-    f.groupIndex = static_cast<int16>(CollisionType::G_PLAYER_SIDE);
-    f.categoryBits = static_cast<uint16>(CollisionType::C_PLAYER_BULLET);
-    f.maskBits = static_cast<uint16>(CollisionType::C_ENEMY);
+    f.groupIndex = CollisionType::G_PLAYER_SIDE;
+    f.categoryBits = CollisionType::C_PLAYER_BULLET;
+    f.maskBits = CollisionType::C_ENEMY;
     for (const auto &bn : SPlayer.Bulletss)
     {
         if (!loaded_bullets.contains(bn))
@@ -288,21 +288,21 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
      * Some in game feature, like physics, script coroutine, etc. should be initialize
      * in different time: someone in level load phase, someone in stage runtime.
      * Let stage thread first call to initialize whatever, not here. */
-    f.groupIndex = static_cast<int16>(CollisionType::G_ENEMY_SIDE);
-    f.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY_BULLET);
-    f.maskBits = static_cast<uint16>(CollisionType::C_PLAYER);
+    f.groupIndex = CollisionType::G_ENEMY_SIDE;
+    f.categoryBits = CollisionType::C_ENEMY_BULLET;
+    f.maskBits = CollisionType::C_PLAYER;
     for (size_t i = 0; i < (setting.Charactors.size() > MAX_ENTITIES ? MAX_ENTITIES : setting.Charactors.size()); i++)
     {
         standby[i].MyChar = ResourceManager::GetSTGChar(setting.Charactors[i].Char);
 
         /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-        standby[i].MyChar.Phy.FD.shape = standby[i].MyChar.Phy.Shape == ShapeType::CIRCLE
+        standby[i].MyChar.Phy.FD.shape = standby[i].MyChar.Phy.Shape == ShapeType::ST_CIRCLE
                                              ? static_cast<b2Shape *>(&standby[i].MyChar.Phy.C)
                                              : static_cast<b2Shape *>(&standby[i].MyChar.Phy.P);
         /* Tune the filter, here we can tishu. */
-        standby[i].MyChar.Phy.FD.filter.groupIndex = static_cast<int16>(CollisionType::G_ENEMY_SIDE);
-        standby[i].MyChar.Phy.FD.filter.categoryBits = static_cast<uint16>(CollisionType::C_ENEMY);
-        standby[i].MyChar.Phy.FD.filter.maskBits = static_cast<uint16>(CollisionType::M_ALL_PLAYER);
+        standby[i].MyChar.Phy.FD.filter.groupIndex = CollisionType::G_ENEMY_SIDE;
+        standby[i].MyChar.Phy.FD.filter.categoryBits = CollisionType::C_ENEMY;
+        standby[i].MyChar.Phy.FD.filter.maskBits = CollisionType::M_ALL_PLAYER;
 
         /* Make shooter */
         standby[i].MyShooters = nullptr;
@@ -379,14 +379,14 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     pd.ai = player_watching;
     onstage_charactors[0].Enable(p_id, GPlayer.MyChar, player, GPlayer.MyShooters, GPlayer.MyEnter);
     sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
-    onstage_thinkers[0].Active(p_id, SCPatternsCode::CONTROLLED, std::move(pd), player);
+    onstage_thinkers[0].Active(p_id, SCPatternsCode::SCPC_CONTROLLED, std::move(pd), player);
     /* Player always just has two shooters, and they are loop. */
     GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
     GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
     /* id record */
-    records[p_id][static_cast<int>(STGCompType::CHARACTOR)] = 0;
-    records[p_id][static_cast<int>(STGCompType::RENDER)] = 0;
-    records[p_id][static_cast<int>(STGCompType::THINKER)] = 0;
+    records[p_id][STGCompType::SCT_CHARACTOR] = 0;
+    records[p_id][STGCompType::SCT_RENDER] = 0;
+    records[p_id][STGCompType::SCT_THINKER] = 0;
     /* Update information for update loop. */
     charactors_n = 1;
     thinkers_n = 1;
@@ -403,7 +403,7 @@ ALLEGRO_EVENT_QUEUE *STGLevel::InputConnectionTerminal() const noexcept
 {
     /* Player directly connects to game's input processor. */
     /* Gamer always at first of stage. */
-    return onstage_charactors[records[0][static_cast<int>(STGCompType::CHARACTOR)]].InputTerminal;
+    return onstage_charactors[records[0][STGCompType::SCT_CHARACTOR]].InputTerminal;
 }
 
 /*************************************************************************************************
@@ -462,34 +462,34 @@ void STGLevel::Update()
 
         switch (disabled_t[i])
         {
-        case STGCompType::CHARACTOR:
-            flaw = records[id][static_cast<int>(STGCompType::CHARACTOR)];
-            records[id][static_cast<int>(STGCompType::CHARACTOR)] = -1;
+        case STGCompType::SCT_CHARACTOR:
+            flaw = records[id][STGCompType::SCT_CHARACTOR];
+            records[id][STGCompType::SCT_CHARACTOR] = -1;
 
             world->DestroyBody(onstage_charactors[flaw].Physics);
 
             onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
-            records[onstage_charactors[flaw].ID][static_cast<int>(STGCompType::CHARACTOR)] = flaw;
+            records[onstage_charactors[flaw].ID][STGCompType::SCT_CHARACTOR] = flaw;
             charactors_n -= 1;
 
             return_id(id);
             break;
 
-        case STGCompType::RENDER:
-            flaw = records[id][static_cast<int>(STGCompType::RENDER)];
-            records[id][static_cast<int>(STGCompType::RENDER)] = -1;
+        case STGCompType::SCT_RENDER:
+            flaw = records[id][STGCompType::SCT_RENDER];
+            records[id][STGCompType::SCT_RENDER] = -1;
 
             sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
-            records[sprite_renderers[flaw].ID][static_cast<int>(STGCompType::RENDER)] = flaw;
+            records[sprite_renderers[flaw].ID][STGCompType::SCT_RENDER] = flaw;
             sprite_renderers_n -= 1;
             break;
 
-        case STGCompType::THINKER:
-            flaw = records[id][static_cast<int>(STGCompType::THINKER)];
-            records[id][static_cast<int>(STGCompType::THINKER)] = -1;
+        case STGCompType::SCT_THINKER:
+            flaw = records[id][STGCompType::SCT_THINKER];
+            records[id][STGCompType::SCT_THINKER] = -1;
 
             onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
-            records[onstage_thinkers[flaw].ID][static_cast<int>(STGCompType::THINKER)] = flaw;
+            records[onstage_thinkers[flaw].ID][STGCompType::SCT_THINKER] = flaw;
             thinkers_n -= 1;
             break;
         }
@@ -722,7 +722,7 @@ void STGLevel::Debut(int id, float x, float y)
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
     /* Thinker */
-    if (standby[id].MyPtn != SCPatternsCode::STAY)
+    if (standby[id].MyPtn != SCPatternsCode::SCPC_STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_thinkers[thinkers_n].InputMaster);
@@ -731,7 +731,7 @@ void STGLevel::Debut(int id, float x, float y)
 
         onstage_thinkers[thinkers_n].Active(real_id, standby[id].MyPtn, standby[id].MyPD, b);
 
-        records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
+        records[real_id][STGCompType::SCT_THINKER] = thinkers_n;
         thinkers_n += 1;
     }
 
@@ -749,12 +749,12 @@ void STGLevel::Debut(int id, float x, float y)
     {
         sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
         al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
-        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        records[real_id][STGCompType::SCT_RENDER] = sprite_renderers_n;
         sprite_renderers_n += 1;
     }
 
     onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b, standby[id].MyShooters, standby[id].MyEnter);
-    records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
+    records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
 }
 
@@ -769,7 +769,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         b->CreateFixture(&standby[id].MyChar.Phy.FD);
 
     /* Thinker */
-    if (ptn != SCPatternsCode::STAY)
+    if (ptn != SCPatternsCode::SCPC_STAY)
     {
         al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
                                  onstage_thinkers[thinkers_n].InputMaster);
@@ -779,7 +779,7 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         process_pattern_data(ptn, pd);
 
         onstage_thinkers[thinkers_n].Active(real_id, ptn, std::move(pd), b);
-        records[real_id][static_cast<int>(STGCompType::THINKER)] = thinkers_n;
+        records[real_id][STGCompType::SCT_THINKER] = thinkers_n;
         thinkers_n += 1;
     }
 
@@ -799,14 +799,14 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     {
         sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
         al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
-        records[real_id][static_cast<int>(STGCompType::RENDER)] = sprite_renderers_n;
+        records[real_id][STGCompType::SCT_RENDER] = sprite_renderers_n;
         sprite_renderers_n += 1;
     }
 
     /* Charactor, on stage things must contain characotrs (expect bullet). */
     onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b, my_shooters,
                                             all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs));
-    records[real_id][static_cast<int>(STGCompType::CHARACTOR)] = charactors_n;
+    records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
 }
 
@@ -823,35 +823,35 @@ void STGLevel::DisableAll(int id)
 #endif
 
     disabled[disabled_n] = id;
-    disabled_t[disabled_n] = STGCompType::CHARACTOR;
+    disabled_t[disabled_n] = STGCompType::SCT_CHARACTOR;
     disabled_n += 1;
 
-    if (records[id][static_cast<int>(STGCompType::RENDER)] > -1)
+    if (records[id][STGCompType::SCT_RENDER] > -1)
     {
         al_unregister_event_source(
-            sprite_renderers[records[id][static_cast<int>(STGCompType::RENDER)]].Recv,
-            onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].RendererMaster);
+            sprite_renderers[records[id][STGCompType::SCT_RENDER]].Recv,
+            onstage_charactors[records[id][STGCompType::SCT_CHARACTOR]].RendererMaster);
 
         disabled[disabled_n] = id;
-        disabled_t[disabled_n] = STGCompType::RENDER;
+        disabled_t[disabled_n] = STGCompType::SCT_RENDER;
         disabled_n += 1;
     }
 
-    if (records[id][static_cast<int>(STGCompType::THINKER)] > -1)
+    if (records[id][STGCompType::SCT_THINKER] > -1)
         DisableThr(id);
 }
 
 void STGLevel::DisableThr(int id)
 {
     al_unregister_event_source(
-        onstage_thinkers[records[id][static_cast<int>(STGCompType::THINKER)]].Recv,
-        onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].KneeJump);
+        onstage_thinkers[records[id][STGCompType::SCT_THINKER]].Recv,
+        onstage_charactors[records[id][STGCompType::SCT_CHARACTOR]].KneeJump);
     al_unregister_event_source(
-        onstage_charactors[records[id][static_cast<int>(STGCompType::CHARACTOR)]].InputTerminal,
-        onstage_thinkers[records[id][static_cast<int>(STGCompType::THINKER)]].InputMaster);
+        onstage_charactors[records[id][STGCompType::SCT_CHARACTOR]].InputTerminal,
+        onstage_thinkers[records[id][STGCompType::SCT_THINKER]].InputMaster);
 
     disabled[disabled_n] = id;
-    disabled_t[disabled_n] = STGCompType::THINKER;
+    disabled_t[disabled_n] = STGCompType::SCT_THINKER;
     disabled_n += 1;
 }
 

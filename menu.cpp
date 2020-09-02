@@ -10,7 +10,7 @@ static inline void nothing(Menu *m) noexcept {}
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(Menu *)>, static_cast<size_t>(InputAction::NUM)> Menu::commands;
+std::array<std::function<void(Menu *)>, InputAction::IA_NUM> Menu::commands;
 
 void Menu::up() noexcept
 {
@@ -82,9 +82,9 @@ void Menu::stg_return() const
 void Menu::InitMenuStaff()
 {
     commands.fill(std::function<void(Menu *)>(nothing));
-    commands[static_cast<int>(InputAction::MOVE_UP)] = std::mem_fn(&Menu::up);
-    commands[static_cast<int>(InputAction::MOVE_DOWN)] = std::mem_fn(&Menu::down);
-    commands[static_cast<int>(InputAction::ACTION)] = std::mem_fn(&Menu::confirm);
+    commands[InputAction::IA_MOVE_UP] = std::mem_fn(&Menu::up);
+    commands[InputAction::IA_MOVE_DOWN] = std::mem_fn(&Menu::down);
+    commands[InputAction::IA_ACTION] = std::mem_fn(&Menu::confirm);
 
     menu_cmds["start"] = std::mem_fn(&Menu::test_start);
     menu_cmds["quit"] = std::mem_fn(&Menu::test_end);

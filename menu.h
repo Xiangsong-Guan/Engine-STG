@@ -56,7 +56,7 @@ private:
     int cursor;
 
     /* Menu input commands */
-    static std::array<std::function<void(Menu *)>, static_cast<size_t>(InputAction::NUM)> commands;
+    static std::array<std::function<void(Menu *)>, InputAction::IA_NUM> commands;
     void up() noexcept;
     void down() noexcept;
     void confirm();

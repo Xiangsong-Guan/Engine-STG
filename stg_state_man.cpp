@@ -4,9 +4,9 @@
 
 #define CONSTRUCT_EVERYTHING(p, s, a, n, _s, _a, _n) \
     {                                                \
-        p[static_cast<int>(SpriteType::STATIC)] = s; \
-        p[static_cast<int>(SpriteType::ANIMED)] = a; \
-        p[static_cast<int>(SpriteType::NONE)] = n;   \
+        p[SpriteType::SPT_STATIC] = s;               \
+        p[SpriteType::SPT_ANIMED] = a;               \
+        p[SpriteType::SPT_NONE] = n;                 \
                                                      \
         for (int i = 0; i < MAX_STATE_NUM - 1; i++)  \
         {                                            \
@@ -23,12 +23,12 @@ STGStateMan::STGStateMan()
     CONSTRUCT_EVERYTHING(sdp, disabled_s, disabled_a, disabled_n, _disabled_s, _disabled_a, _disabled_n);
 }
 
-#define MAKE_EVERYTHING(single, p, n, type)                                \
-    {                                                                      \
-        single = *(p[static_cast<int>(type)] + n[static_cast<int>(type)]); \
-        n[static_cast<int>(type)] += 1;                                    \
-        assert(n[static_cast<int>(type)] < MAX_STATE_NUM);                 \
-        single->Init(texs);                                                \
+#define MAKE_EVERYTHING(single, p, n, type) \
+    {                                       \
+        single = *(p[type] + n[type]);      \
+        n[type] += 1;                       \
+        assert(n[type] < MAX_STATE_NUM);    \
+        single->Init(texs);                 \
     }
 
 SCSBorn *STGStateMan::MakeChar(const STGTexture &texs)
@@ -48,12 +48,12 @@ SCSBorn *STGStateMan::MakeChar(const STGTexture &texs)
     return b;
 }
 
-#define COPY_EVERYTHING(single, p, n, type, source)                        \
-    {                                                                      \
-        single = *(p[static_cast<int>(type)] + n[static_cast<int>(type)]); \
-        n[static_cast<int>(type)] += 1;                                    \
-        assert(n[static_cast<int>(type)] < MAX_STATE_NUM);                 \
-        single->Copy(source);                                              \
+#define COPY_EVERYTHING(single, p, n, type, source) \
+    {                                               \
+        single = *(p[type] + n[type]);              \
+        n[type] += 1;                               \
+        assert(n[type] < MAX_STATE_NUM);            \
+        single->Copy(source);                       \
     }
 
 SCSBorn *STGStateMan::CopyChar(const SCSBorn *enter, const STGTexture &texs)

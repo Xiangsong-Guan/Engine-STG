@@ -60,7 +60,7 @@ public:
     {
         const b2Color yellow = b2Color(1.f, 1.f, 0.f);
         const b2Vec2 front = b2Vec2(0.f, -1.f);
-        if (code == SSPatternsCode::TRACK)
+        if (code == SSPatternsCode::SSPC_TRACK)
             DebugDraw->DrawSegment(physical->GetPosition() + my_xf.p,
                                    physical->GetPosition() + 30.f * b2Mul(my_xf, front), yellow);
         for (int s = 0; s < luncher_n; s++)
@@ -106,7 +106,7 @@ private:
     lua_State *AI;
     SSPatternsCode sub_ptn;
 
-    static std::function<void(Shooter *)> patterns[static_cast<int>(SSPatternsCode::NUM)];
+    static std::function<void(Shooter *)> patterns[SSPatternsCode::SSPC_NUM];
     void controlled();
     void stay();
     void total_turn();

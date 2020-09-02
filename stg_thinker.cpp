@@ -56,12 +56,12 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     ID = id;
     where = 0;
 
-    if (ptn == SCPatternsCode::GO_ROUND)
+    if (ptn == SCPatternsCode::SCPC_GO_ROUND)
         data.round.R_SQ = (body->GetPosition() - data.round.P).LengthSquared();
 
     /* Save AI out of data union. AI can use data to execute sub pattern. */
     ai = data.ai;
-    sub_ptn = SCPatternsCode::CONTROLLED;
+    sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
 }
 
 /*************************************************************************************************
@@ -129,15 +129,15 @@ void STGThinker::Move(float x, float y)
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<bool(STGThinker *)> STGThinker::patterns[static_cast<int>(SCPatternsCode::NUM)];
+std::function<bool(STGThinker *)> STGThinker::patterns[SCPatternsCode::SCPC_NUM];
 
 void STGThinker::InitSCPattern()
 {
-    patterns[static_cast<int>(SCPatternsCode::GO_ROUND)] = std::mem_fn(&STGThinker::go_round);
-    patterns[static_cast<int>(SCPatternsCode::MOVE_LAST)] = std::mem_fn(&STGThinker::move_last);
-    patterns[static_cast<int>(SCPatternsCode::MOVE_TO)] = std::mem_fn(&STGThinker::move_to);
-    patterns[static_cast<int>(SCPatternsCode::MOVE_PASSBY)] = std::mem_fn(&STGThinker::move_passby);
-    patterns[static_cast<int>(SCPatternsCode::CONTROLLED)] = std::mem_fn(&STGThinker::controlled);
+    patterns[SCPatternsCode::SCPC_GO_ROUND] = std::mem_fn(&STGThinker::go_round);
+    patterns[SCPatternsCode::SCPC_MOVE_LAST] = std::mem_fn(&STGThinker::move_last);
+    patterns[SCPatternsCode::SCPC_MOVE_TO] = std::mem_fn(&STGThinker::move_to);
+    patterns[SCPatternsCode::SCPC_MOVE_PASSBY] = std::mem_fn(&STGThinker::move_passby);
+    patterns[SCPatternsCode::SCPC_CONTROLLED] = std::mem_fn(&STGThinker::controlled);
     /* Pattern "STAY" will not has thinker obj. */
 }
 
@@ -151,11 +151,11 @@ bool STGThinker::controlled()
     lua_pushlightuserdata(ai, this);
 
     /* Execute sub-pattern, if exists. */
-    if (sub_ptn != SCPatternsCode::CONTROLLED)
-        if (patterns[static_cast<int>(sub_ptn)](this))
+    if (sub_ptn != SCPatternsCode::SCPC_CONTROLLED)
+        if (patterns[sub_ptn](this))
         {
-            sub_ptn = SCPatternsCode::CONTROLLED;
-            EventBit |= static_cast<unsigned int>(STGCharEvent::SUB_PATTERN_DONE);
+            sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
+            Communication.EventBits |= STGCharEvent::SCE_SUB_PATTERN_DONE;
         }
 
     /* Hold STG char events */
@@ -192,7 +192,7 @@ bool STGThinker::move_to()
     if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+        event.user.data1 = STGCharCommand::SCC_MOVE_XY;
         event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
@@ -205,7 +205,7 @@ bool STGThinker::move_to()
 bool STGThinker::move_last()
 {
     ALLEGRO_EVENT event;
-    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data1 = STGCharCommand::SCC_MOVE_XY;
     event.user.data2 = reinterpret_cast<intptr_t>(&data.vec);
     al_emit_user_event(InputMaster, &event, nullptr);
 
@@ -219,7 +219,7 @@ bool STGThinker::move_passby()
     if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+        event.user.data1 = STGCharCommand::SCC_MOVE_XY;
         event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
         al_emit_user_event(InputMaster, &event, nullptr);
     }
@@ -251,7 +251,7 @@ bool STGThinker::go_round()
         vec4u = data.round.Dir > 0.f ? b2MulT(ADJUST, vec4u) : b2Mul(ADJUST, vec4u);
 
     ALLEGRO_EVENT event;
-    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
+    event.user.data1 = STGCharCommand::SCC_MOVE_XY;
     event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
     al_emit_user_event(InputMaster, &event, nullptr);
 

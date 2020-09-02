@@ -18,22 +18,22 @@
  *                                                                                               *
  *************************************************************************************************/
 
-enum class ShapeType
+enum ShapeType
 {
-    CIRCLE,
-    BOX
+    ST_CIRCLE,
+    ST_BOX
 };
 
 const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX"};
 
-enum class SpriteType
+enum SpriteType
 {
-    STATIC,
-    ANIMED,
-    NONE
+    SPT_STATIC,
+    SPT_ANIMED,
+    SPT_NONE
 };
 
-enum class CollisionType
+enum CollisionType
 {
     /* Groups */
     G_PLAYER_SIDE = -1,
@@ -77,7 +77,7 @@ struct STGTexture
 {
     std::string SpriteBorn;
     SpriteType SpriteBornType;
-    std::string SpriteMovement[static_cast<int>(Movement::NUM)];
+    std::string SpriteMovement[Movement::MM_NUM];
     SpriteType SpriteMovementType;
     std::string SpriteShooting;
     SpriteType SpriteShootingType;
@@ -131,15 +131,15 @@ struct KinematicSeq
 
 constexpr int MAX_LUNCHERS_NUM = 8;
 
-enum class SSPatternsCode
+enum SSPatternsCode
 {
-    CONTROLLED,
-    STAY,
-    TOTAL_TURN,
-    SPLIT_TURN,
-    TRACK,
+    SSPC_CONTROLLED,
+    SSPC_STAY,
+    SSPC_TOTAL_TURN,
+    SSPC_SPLIT_TURN,
+    SSPC_TRACK,
 
-    NUM
+    SSPC_NUM
 };
 
 const char *const SS_PATTERNS_CODE[] =
@@ -202,18 +202,18 @@ struct STGCharactorSetting
     STGTexture Texs;
 };
 
-enum class SCPatternsCode
+enum SCPatternsCode
 {
-    CONTROLLED,
-    MOVE_TO,
-    MOVE_LAST,
-    MOVE_PASSBY,
-    GO_ROUND,
+    SCPC_CONTROLLED,
+    SCPC_MOVE_TO,
+    SCPC_MOVE_LAST,
+    SCPC_MOVE_PASSBY,
+    SCPC_GO_ROUND,
 
-    NUM,
+    SCPC_NUM,
 
     /* DO NOTHING */
-    STAY
+    SCPC_STAY
 };
 
 const char *const SC_PATTERNS_CODE[] =
@@ -291,12 +291,12 @@ struct TextItem
  *                                                                                               *
  *************************************************************************************************/
 
-enum class STGStateChangeCode
+enum STGStateChangeCode
 {
-    JUST_HURT,
-    GO_DIE,
+    SSCC_JUST_HURT,
+    SSCC_GO_DIE,
 
-    NUM
+    SSCC_NUM
 };
 
 const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE"};

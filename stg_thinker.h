@@ -52,7 +52,7 @@ private:
     lua_State *ai;
     SCPatternsCode sub_ptn;
 
-    static std::function<bool(STGThinker *)> patterns[static_cast<int>(SCPatternsCode::NUM)];
+    static std::function<bool(STGThinker *)> patterns[SCPatternsCode::SCPC_NUM];
     bool controlled();
     bool move_to();
     bool move_last();

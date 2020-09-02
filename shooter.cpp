@@ -16,8 +16,8 @@ inline void Shooter::init()
     firing = false;
     rate = 100;
 
-    sub_ptn = SSPatternsCode::CONTROLLED;
-    if (code == SSPatternsCode::CONTROLLED)
+    sub_ptn = SSPatternsCode::SSPC_CONTROLLED;
+    if (code == SSPatternsCode::SSPC_CONTROLLED)
     {
         int good, rn;
 
@@ -48,7 +48,7 @@ Shooter &Shooter::operator=(const Shooter &o)
     std::memcpy(bullets, o.bullets, sizeof(Bullet *) * ammo_slot_n);
 
     code = o.code;
-    pattern = patterns[static_cast<int>(code)];
+    pattern = patterns[code];
     data = o.data;
 
     init();
@@ -84,7 +84,7 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     }
 
     code = setting.Pattern;
-    pattern = patterns[static_cast<int>(code)];
+    pattern = patterns[code];
     data = setting.Data;
 
     init();
@@ -101,7 +101,7 @@ Shooter *Shooter::Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexc
 /* Player are special, need get target from world. */
 void Shooter::MyDearPlayer() noexcept
 {
-    if (code == SSPatternsCode::TRACK)
+    if (code == SSPatternsCode::SSPC_TRACK)
         pattern = std::mem_fn(&Shooter::track_enemy);
 }
 

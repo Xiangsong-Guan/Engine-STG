@@ -91,7 +91,7 @@ void STGCharactor::Update()
 
     ALLEGRO_EVENT event;
     while (al_get_next_event(InputTerminal, &event))
-        if (SNow->CheckInput(static_cast<STGCharCommand>(event.user.data1)))
+        if (SNow->CheckInput(&event))
             commands[event.user.data1](this, &event);
 
     Velocity.Normalize();
@@ -147,22 +147,19 @@ void STGCharactor::Hurt(const STGChange *c)
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
-           static_cast<int>(STGCharCommand::NUM)>
-    STGCharactor::commands;
+std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>, STGCharCommand::SCC_NUM> STGCharactor::commands;
 
 void STGCharactor::InitInputCmd()
 {
     commands.fill(std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>(nothing));
-    commands[static_cast<int>(STGCharCommand::UP)] = std::mem_fn(&STGCharactor::up);
-    commands[static_cast<int>(STGCharCommand::DOWN)] = std::mem_fn(&STGCharactor::down);
-    commands[static_cast<int>(STGCharCommand::LEFT)] = std::mem_fn(&STGCharactor::left);
-    commands[static_cast<int>(STGCharCommand::RIGHT)] = std::mem_fn(&STGCharactor::right);
-    commands[static_cast<int>(STGCharCommand::STG_FIRE)] = std::mem_fn(&STGCharactor::shoot);
-    commands[static_cast<int>(STGCharCommand::STG_CEASE)] = std::mem_fn(&STGCharactor::cease);
-    commands[static_cast<int>(STGCharCommand::STG_CHANGE)] = std::mem_fn(&STGCharactor::shift);
-    commands[static_cast<int>(STGCharCommand::STG_SYNC)] = std::mem_fn(&STGCharactor::sync);
-    commands[static_cast<int>(STGCharCommand::MOVE_XY)] = std::mem_fn(&STGCharactor::move_xy);
+    commands[STGCharCommand::SCC_UP] = std::mem_fn(&STGCharactor::up);
+    commands[STGCharCommand::SCC_DOWN] = std::mem_fn(&STGCharactor::down);
+    commands[STGCharCommand::SCC_LEFT] = std::mem_fn(&STGCharactor::left);
+    commands[STGCharCommand::SCC_RIGHT] = std::mem_fn(&STGCharactor::right);
+    commands[STGCharCommand::SCC_STG_FIRE] = std::mem_fn(&STGCharactor::shoot);
+    commands[STGCharCommand::SCC_STG_CEASE] = std::mem_fn(&STGCharactor::cease);
+    commands[STGCharCommand::SCC_STG_CHANGE] = std::mem_fn(&STGCharactor::shift);
+    commands[STGCharCommand::SCC_MOVE_XY] = std::mem_fn(&STGCharactor::move_xy);
 }
 
 void STGCharactor::up(const ALLEGRO_EVENT *e) noexcept
