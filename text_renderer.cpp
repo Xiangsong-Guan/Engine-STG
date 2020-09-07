@@ -14,6 +14,11 @@ void TextRenderer::SetText(TextItem t) noexcept
     y = SCREEN_HEIGHT * t.Y;
 }
 
+const std::string &TextRenderer::GetContent() const noexcept
+{
+    return text.Text;
+}
+
 void TextRenderer::ChangeText(float f, int w)
 {
     text.Text = std::to_string(f);

@@ -67,7 +67,7 @@ inline bool InputProcessor::check_button_just_pressed(
     if (keys[commands[button]] && !state[button])
     {
 #ifdef _DEBUG
-        std::cout << "Button pressed: " << button << "\n";
+        std::cout << "Button pressed: " << al_keycode_to_name(button) << "\n";
 #endif
 
         return true;
@@ -82,7 +82,7 @@ inline bool InputProcessor::check_button_just_released(
     if (!keys[commands[button]] && state[button])
     {
 #ifdef _DEBUG
-        std::cout << "Button released: " << button << "\n";
+        std::cout << "Button released: " << al_keycode_to_name(button) << "\n";
 #endif
 
         return true;

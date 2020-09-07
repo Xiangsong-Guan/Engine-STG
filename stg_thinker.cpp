@@ -2,6 +2,7 @@
 
 #include "game_event.h"
 #include "cppsuckdef.h"
+#include "llauxlib.h"
 
 #include <lua.hpp>
 
@@ -37,6 +38,10 @@ STGThinker::~STGThinker()
 
 void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Thinker-" << o.ID << " is moving, while " << ID << " is flawed.\n";
+#endif
+
     this->ID = o.ID;
     this->physics = o.physics;
     this->data = o.data;
@@ -50,7 +55,11 @@ void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
 
 void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Body *body) noexcept
 {
-    pattern = patterns[static_cast<int>(ptn)];
+#ifdef _DEBUG
+    std::cout << "Activing thinker: ID: " << id << "; Pattern: " << SC_PATTERNS_CODE[ptn] << ";\n";
+#endif
+
+    pattern = patterns[ptn];
     data = std::move(pd);
     physics = body;
     ID = id;
@@ -73,7 +82,13 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
 void STGThinker::Think()
 {
     if (pattern(this))
+    {
+#ifdef _DEBUG
+        std::cout << "Thinker-" << ID << " stop thinking.\n";
+#endif
+
         Con->DisableThr(ID);
+    }
 }
 
 /*************************************************************************************************
@@ -154,6 +169,10 @@ bool STGThinker::controlled()
     if (sub_ptn != SCPatternsCode::SCPC_CONTROLLED)
         if (patterns[sub_ptn](this))
         {
+#ifdef _DEBUG
+            std::cout << "Thinker-" << ID << " sub-pattern done: " << SC_PATTERNS_CODE[sub_ptn] << "\n";
+#endif
+
             sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
             Communication.EventBits |= STGCharEvent::SCE_SUB_PATTERN_DONE;
         }

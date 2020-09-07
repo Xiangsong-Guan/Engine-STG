@@ -30,6 +30,9 @@ enum SpriteType
 {
     SPT_STATIC,
     SPT_ANIMED,
+
+    SPT_NUM,
+
     SPT_NONE
 };
 

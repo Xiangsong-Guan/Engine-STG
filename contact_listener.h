@@ -17,7 +17,9 @@ public:
     CollisionHandler &operator=(CollisionHandler &&) = delete;
     virtual ~CollisionHandler() = default;
 
+    /* Called by contact listener with the other thing. */
     virtual void Hit(CollisionHandler *) = 0;
+    /* Called by the other with its collision effection. */
     virtual void Hurt(const STGChange *) = 0;
 };
 
@@ -38,8 +40,16 @@ public:
         CollisionHandler *a = reinterpret_cast<CollisionHandler *>(fa->GetBody()->GetUserData());
         CollisionHandler *b = reinterpret_cast<CollisionHandler *>(fb->GetBody()->GetUserData());
 
+#ifdef _DEBUG
+        std::cout << "Collision detected!\n";
+#endif
+
         if (a != nullptr && b != nullptr)
         {
+#ifdef _DEBUG
+            std::cout << "Collision with effect!\n";
+#endif
+
             a->Hit(b);
             b->Hit(a);
         }

@@ -32,6 +32,8 @@ public:
 
     GameFlowController *GameCon;
 
+    std::string CodeName;
+
     Menu();
     Menu(const Menu &) = delete;
     Menu(Menu &&) = delete;
@@ -40,7 +42,7 @@ public:
     ~Menu();
 
     void Setup(const std::vector<TextItem> &items, const std::vector<std::string> &funcs,
-               int width, int height);
+               int width, int height, const std::string &code_name);
     void Attach() noexcept;
     void Detach() noexcept;
 

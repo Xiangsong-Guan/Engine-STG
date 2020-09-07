@@ -1,6 +1,7 @@
 #include "stg_level.h"
 
 #include "resource_manger.h"
+#include "llauxlib.h"
 
 #include <unordered_map>
 #include <iostream>
@@ -12,100 +13,12 @@
  *                                                                                               *
  *************************************************************************************************/
 
-/* Aux Functions */
-
-static inline void load_pattern(lua_State *L, int pd_idx, SCPatternsCode *ptn, SCPatternData *data)
-{
-#ifdef STG_LUA_API_ARG_CHECK
-    *ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, nullptr, SC_PATTERNS_CODE));
-    switch (*ptn)
-    {
-    case SCPatternsCode::CONTROLLED:
-        luaL_checktype(L, pd_idx + 1, LUA_TTHREAD);
-        data->ai = lua_tothread(L, pd_idx + 1);
-        break;
-
-    case SCPatternsCode::MOVE_TO:
-    case SCPatternsCode::MOVE_LAST:
-        data->vec.x = luaL_checknumber(L, pd_idx + 1);
-        data->vec.y = luaL_checknumber(L, pd_idx + 2);
-        break;
-
-    case SCPatternsCode::MOVE_PASSBY:
-        luaL_checktype(L, pd_idx + 1, LUA_TBOOLEAN);
-        data->passby.Loop = lua_toboolean(L, pd_idx + 1);
-        data->passby.Num = 0;
-        for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
-            if (lua_isnumber(L, i))
-            {
-                data->passby.Vec[data->passby.Num].x = luaL_checknumber(L, i);
-                data->passby.Vec[data->passby.Num].y = luaL_checknumber(L, i + 1);
-                data->passby.Num += 1;
-            }
-            else
-                break;
-        break;
-
-    case SCPatternsCode::GO_ROUND:
-        data->round.P.x = luaL_checknumber(L, pd_idx + 1);
-        data->round.P.y = luaL_checknumber(L, pd_idx + 2);
-        data->round.Dir = luaL_checknumber(L, pd_idx + 3);
-        break;
-
-    default:
-        /* STAY will be the default. Not thinking. */
-        *ptn = SCPatternsCode::STAY;
-        return;
-    }
-#else
-    *ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, nullptr, SC_PATTERNS_CODE));
-    switch (*ptn)
-    {
-    case SCPatternsCode::CONTROLLED:
-        data->ai = lua_tothread(L, pd_idx + 1);
-        break;
-
-    case SCPatternsCode::MOVE_TO:
-    case SCPatternsCode::MOVE_LAST:
-        data->vec.x = lua_tonumber(L, pd_idx + 1);
-        data->vec.y = lua_tonumber(L, pd_idx + 2);
-        break;
-
-    case SCPatternsCode::MOVE_PASSBY:
-        data->passby.Loop = lua_toboolean(L, pd_idx + 1);
-        data->passby.Num = 0;
-        for (int i = pd_idx + 2; i < pd_idx + 2 + 8; i += 2)
-            if (lua_isnumber(L, i) && lua_isnumber(L, i + 1))
-            {
-                data->passby.Vec[data->passby.Num].x = lua_tonumber(L, i);
-                data->passby.Vec[data->passby.Num].y = lua_tonumber(L, i + 1);
-                data->passby.Num += 1;
-            }
-            else
-                break;
-        break;
-
-    case SCPatternsCode::GO_ROUND:
-        data->round.P.x = lua_tonumber(L, pd_idx + 1);
-        data->round.P.y = lua_tonumber(L, pd_idx + 2);
-        data->round.Dir = lua_tonumber(L, pd_idx + 3);
-        break;
-
-    default:
-        /* STAY will be the default. Not thinking. */
-        *ptn = SCPatternsCode::STAY;
-        return;
-    }
-#endif
-}
-
 /* Tell game to further load a charactor. It must debut at sometime. 
  * 1=level, 2=char_id, 3=pattern, 4...=pd
  * no return */
 static int further_load(lua_State *L)
 {
     int id;
-    SCPatternsCode ptn;
     SCPatternData pd;
     STGLevel *level;
 
@@ -115,10 +28,9 @@ static int further_load(lua_State *L)
 #else
     id = lua_tointeger(L, 2) - 1;
 #endif
-    level = static_cast<STGLevel *>(lua_touserdata(L, 1));
+    level = reinterpret_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    load_pattern(L, 3, &ptn, &pd);
-    level->FillMind(id, ptn, std::move(pd));
+    level->FillMind(id, use_sc_pattern(L, 3, pd), std::move(pd));
 
     return 0;
 }
@@ -142,7 +54,7 @@ static int debut(lua_State *L)
     x = lua_tonumber(L, 3);
     y = lua_tonumber(L, 4);
 #endif
-    level = static_cast<STGLevel *>(lua_touserdata(L, 1));
+    level = reinterpret_cast<STGLevel *>(lua_touserdata(L, 1));
 
     level->Debut(id, x, y);
 
@@ -156,7 +68,6 @@ static int airborne(lua_State *L)
 {
     int id;
     float x, y;
-    SCPatternsCode ptn;
     SCPatternData pd;
     STGLevel *level;
 
@@ -170,10 +81,9 @@ static int airborne(lua_State *L)
     x = lua_tonumber(L, 3);
     y = lua_tonumber(L, 4);
 #endif
-    level = static_cast<STGLevel *>(lua_touserdata(L, 1));
+    level = reinterpret_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    load_pattern(L, 5, &ptn, &pd);
-    level->Airborne(id, x, y, ptn, std::move(pd));
+    level->Airborne(id, x, y, use_sc_pattern(L, 5, pd), std::move(pd));
 
     return 0;
 }
@@ -447,7 +357,7 @@ void STGLevel::Update()
         else /* out of field die with no mercy */
         {
 #ifdef _DEBUG
-            std::cout << "Char-" << onstage_charactors[i].ID << " becomes outsider!\n";
+            std::cout << "Char-" << onstage_charactors[i].CodeName << " becomes outsider!\n";
 #endif
 
             onstage_charactors[i].Farewell();
@@ -466,6 +376,10 @@ void STGLevel::Update()
             flaw = records[id][STGCompType::SCT_CHARACTOR];
             records[id][STGCompType::SCT_CHARACTOR] = -1;
 
+#ifdef _DEBUG
+            std::cout << "Charactor final disable: " << id << "-" << onstage_charactors[flaw].CodeName << ".\n";
+#endif
+
             world->DestroyBody(onstage_charactors[flaw].Physics);
 
             onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
@@ -479,6 +393,10 @@ void STGLevel::Update()
             flaw = records[id][STGCompType::SCT_RENDER];
             records[id][STGCompType::SCT_RENDER] = -1;
 
+#ifdef _DEBUG
+            std::cout << "Render final disable: " << id << ".\n";
+#endif
+
             sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
             records[sprite_renderers[flaw].ID][STGCompType::SCT_RENDER] = flaw;
             sprite_renderers_n -= 1;
@@ -487,6 +405,10 @@ void STGLevel::Update()
         case STGCompType::SCT_THINKER:
             flaw = records[id][STGCompType::SCT_THINKER];
             records[id][STGCompType::SCT_THINKER] = -1;
+
+#ifdef _DEBUG
+            std::cout << "Thinker final disable: " << id << ".\n";
+#endif
 
             onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
             records[onstage_thinkers[flaw].ID][STGCompType::SCT_THINKER] = flaw;
@@ -632,7 +554,7 @@ inline int STGLevel::get_id() noexcept
             used_record[i] = true;
 
 #ifdef _DEBUG
-            std::cout << "ID get: " << i << "\n";
+            std::cout << "ID get: " << i << ".\n";
 #endif
             return i;
         }
@@ -647,7 +569,7 @@ inline int STGLevel::get_id() noexcept
             used_record[i] = true;
 
 #ifdef _DEBUG
-            std::cout << "ID get: " << i << "\n";
+            std::cout << "ID get: " << i << ".\n";
 #endif
             return i;
         }
@@ -669,7 +591,7 @@ inline void STGLevel::return_id(int id) noexcept
     used_record[id] = false;
 
 #ifdef _DEBUG
-    std::cout << "ID returned: " << id << "\n";
+    std::cout << "ID returned: " << id << ".\n";
 #endif
 }
 
@@ -679,40 +601,19 @@ inline void STGLevel::return_id(int id) noexcept
  *                                                                                               *
  *************************************************************************************************/
 
-inline void STGLevel::process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept
-{
-    switch (ptn)
-    {
-    case SCPatternsCode::MOVE_TO:
-        pd.vec.x *= PHYSICAL_WIDTH;
-        pd.vec.y *= PHYSICAL_HEIGHT;
-        break;
-
-    case SCPatternsCode::MOVE_PASSBY:
-        for (int i = 0; i < pd.passby.Num; i++)
-        {
-            pd.passby.Vec[i].x *= PHYSICAL_WIDTH;
-            pd.passby.Vec[i].y *= PHYSICAL_HEIGHT;
-        }
-        break;
-
-    case SCPatternsCode::GO_ROUND:
-        pd.round.P.x *= PHYSICAL_WIDTH;
-        pd.round.P.y *= PHYSICAL_HEIGHT;
-        break;
-    }
-}
-
 /* Prepare pattern for it. */
 void STGLevel::FillMind(int id, SCPatternsCode ptn, SCPatternData pd) noexcept
 {
-    process_pattern_data(ptn, pd);
     standby[id].MyPtn = ptn;
     standby[id].MyPD = std::move(pd);
 }
 
 void STGLevel::Debut(int id, float x, float y)
 {
+#ifdef _DEBUG
+    std::cout << "Debut: " << standby[id].MyChar.CodeName << ".\n";
+#endif
+
     int real_id = get_id();
 
     bd.position.Set(x * PHYSICAL_WIDTH, y * PHYSICAL_HEIGHT);
@@ -756,10 +657,18 @@ void STGLevel::Debut(int id, float x, float y)
     onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b, standby[id].MyShooters, standby[id].MyEnter);
     records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
+
+    assert(charactors_n <= MAX_ON_STAGE);
+    assert(sprite_renderers_n <= MAX_ON_STAGE);
+    assert(thinkers_n <= MAX_ON_STAGE);
 }
 
 void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternData pd)
 {
+#ifdef _DEBUG
+    std::cout << "Airborne: " << standby[id].MyChar.CodeName << ".\n";
+#endif
+
     int real_id = get_id();
 
     bd.position.Set(x * PHYSICAL_WIDTH, y * PHYSICAL_HEIGHT);
@@ -775,8 +684,6 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
                                  onstage_thinkers[thinkers_n].InputMaster);
         al_register_event_source(onstage_thinkers[thinkers_n].Recv,
                                  onstage_charactors[charactors_n].KneeJump);
-
-        process_pattern_data(ptn, pd);
 
         onstage_thinkers[thinkers_n].Active(real_id, ptn, std::move(pd), b);
         records[real_id][STGCompType::SCT_THINKER] = thinkers_n;
@@ -808,6 +715,10 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
                                             all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs));
     records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
+
+    assert(charactors_n <= MAX_ON_STAGE);
+    assert(sprite_renderers_n <= MAX_ON_STAGE);
+    assert(thinkers_n <= MAX_ON_STAGE);
 }
 
 void STGLevel::Pause() const
@@ -819,7 +730,8 @@ void STGLevel::Pause() const
 void STGLevel::DisableAll(int id)
 {
 #ifdef _DEBUG
-    std::cout << "Char-" << id << " will be diabled!\n";
+    std::cout << "Char-" << onstage_charactors[records[id][STGCompType::SCT_CHARACTOR]].CodeName
+              << " ID: " << id << " will be diabled!\n";
 #endif
 
     disabled[disabled_n] = id;
@@ -853,6 +765,10 @@ void STGLevel::DisableThr(int id)
     disabled[disabled_n] = id;
     disabled_t[disabled_n] = STGCompType::SCT_THINKER;
     disabled_n += 1;
+
+#ifdef _DEBUG
+    std::cout << "Thinker disabled for " << id << ".\n";
+#endif
 }
 
 /* Only called from shooter inside (in stage). */
@@ -865,7 +781,7 @@ void STGLevel::EnableSht(Shooter *ss) noexcept
     shooters_p = ss;
 
 #ifdef _DEBUG
-    std::cout << "Shooter enabled: " << ss - many_shooters << ".\n";
+    std::cout << "Shooter enabled: " << ss->CodeName << ".\n";
 #endif
 
 #ifdef STG_DEBUG_PHY_DRAW
@@ -886,7 +802,7 @@ void STGLevel::DisableSht(Shooter *ss) noexcept
         ss->Next->Prev = ss->Prev;
 
 #ifdef _DEBUG
-    std::cout << "Shooter disabled: " << ss - many_shooters << ".\n";
+    std::cout << "Shooter disabled: " << ss->CodeName << ".\n";
 #endif
 }
 
@@ -899,6 +815,10 @@ Shooter *STGLevel::copy_shooters(const Shooter *first)
 
     do
     {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << sp->CodeName << " be copied.\n";
+#endif
+
         many_shooters[shooters_n + copied_shooters_n] = *sp;
         many_shooters[shooters_n + copied_shooters_n].Shift = many_shooters + shooters_n + copied_shooters_n + 1;
         sp = sp->Shift;
@@ -907,6 +827,8 @@ Shooter *STGLevel::copy_shooters(const Shooter *first)
     many_shooters[shooters_n + copied_shooters_n - 1].Shift = many_shooters + shooters_n;
 
     shooters_n += copied_shooters_n;
+
+    assert(shooters_n <= MAX_ENTITIES * 2);
 
     return ret;
 }
@@ -919,7 +841,7 @@ void STGLevel::EnableBullet(Bullet *b)
     bullets_p = b;
 
 #ifdef _DEBUG
-    std::cout << "Bullet enabled: " << b - bullets << "\n";
+    std::cout << "Bullet enabled: " << b->CodeName << ".\n";
 #endif
 }
 

@@ -2,6 +2,8 @@
 
 #include "resource_manger.h"
 
+#include <iostream>
+
 inline static void cpp_class_sucks(Bullet *bullet, const BulletCollisionHandler *who)
 {
     bullet->Disappear(who);
@@ -9,6 +11,10 @@ inline static void cpp_class_sucks(Bullet *bullet, const BulletCollisionHandler 
 
 inline static void cpp_class_sucks_forever(Bullet *bullet, CollisionHandler *who)
 {
+#ifdef _DEBUG
+    std::cout << "Bullet-" << bullet->CodeName << " hit!\n";
+#endif
+
     who->Hurt(&bullet->Change);
 }
 
@@ -84,32 +90,72 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 
     phy.FD.filter = f;
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-    phy.FD.shape = phy.Shape == ShapeType::CIRCLE ? static_cast<b2Shape *>(&phy.C) : static_cast<b2Shape *>(&phy.P);
+    phy.FD.shape = phy.Shape == ShapeType::ST_CIRCLE ? static_cast<b2Shape *>(&phy.C) : static_cast<b2Shape *>(&phy.P);
 
     if (ks.Track)
         /* Different side never use same bullet! */
         if (ks.Dir)
-            pattern = phy.FD.filter.groupIndex == static_cast<int16>(CollisionType::G_ENEMY_SIDE)
+        {
+#ifdef _DEBUG
+            std::cout << "Pattern: Track with dir. ";
+#endif
+
+            pattern = phy.FD.filter.groupIndex == CollisionType::G_ENEMY_SIDE
                           ? std::mem_fn(&Bullet::track_player_d)
                           : std::mem_fn(&Bullet::track_enemy_d);
+        }
         else
-            pattern = phy.FD.filter.groupIndex == static_cast<int16>(CollisionType::G_ENEMY_SIDE)
+        {
+#ifdef _DEBUG
+            std::cout << "Pattern: Track without dir. ";
+#endif
+
+            pattern = phy.FD.filter.groupIndex == CollisionType::G_ENEMY_SIDE
                           ? std::mem_fn(&Bullet::track_player)
                           : std::mem_fn(&Bullet::track_enemy);
+        }
     else if (ks.SeqSize == 1)
         if (ks.Dir)
+        {
+#ifdef _DEBUG
+            std::cout << "Pattern: Statical with dir. ";
+#endif
+
             pattern = std::mem_fn(&Bullet::statical_d);
+        }
         else
+        {
+#ifdef _DEBUG
+            std::cout << "Pattern: Statical without dir. ";
+#endif
+
             pattern = std::mem_fn(&Bullet::statical);
+        }
     else if (ks.Dir)
+    {
+#ifdef _DEBUG
+        std::cout << "Pattern: Kinematic with dir. ";
+#endif
+
         pattern = std::mem_fn(&Bullet::kinematic_d);
+    }
     else
+    {
+#ifdef _DEBUG
+        std::cout << "Pattern: Kinematic without dir. ";
+#endif
+
         pattern = std::mem_fn(&Bullet::kinematic);
+    }
 
     float final_angular_velocity = 0.f;
     for (int i = 0; i < ks.SeqSize; i++)
         final_angular_velocity += ks.Seq[i].VR;
     need_adjust_front_for_flt = (final_angular_velocity != 0.f);
+
+#ifdef _DEBUG
+    std::cout << "Final angular velocity: " << final_angular_velocity << "\n";
+#endif
 
     reset_proxy();
     lost = true;
@@ -155,6 +201,10 @@ Bullet *Bullet::Update()
 
     if (just_bullets_n + fly_bullets_n + flt_bullets_n + dead_bullets_n == 0)
     {
+#ifdef _DEBUG
+        std::cout << "Bullet-" << CodeName << " lost all!\n";
+#endif
+
         lost = true;
         Con->DisableBullet(this);
     }
@@ -211,10 +261,14 @@ void Bullet::Bang(const b2Vec2 &world_pos, float world_angle, int mp)
     just_bullets[just_bullets_n].ATimer = -1;
     just_bullets_n += 1;
 
-    assert(just_bullets_n < MAX_JUST_BULLETS);
+    assert(just_bullets_n <= MAX_JUST_BULLETS);
 
     if (lost)
     {
+#ifdef _DEBUG
+        std::cout << "Bullet-" << CodeName << " works!\n";
+#endif
+
         lost = false;
         Con->EnableBullet(this);
     }
@@ -229,11 +283,11 @@ void Bullet::Bang(const b2Vec2 &world_pos, float world_angle, int mp)
 /* DO NOT CHANGE PHYSICAL STATE HERE! LEAVE TO DEAD PROCESS IN UPDATE LOOP. */
 void Bullet::Disappear(const BulletCollisionHandler *who)
 {
-    const int flaw = who->PhysicsIndex;
-
 #ifdef _DEBUG
-    std::cout << "Disapper: " << who->PhysicsIndex << " - " << who - collision_proxy << "\n";
+    std::cout << "Bullet-" << CodeName << " hit one will lost!\n";
 #endif
+
+    const int flaw = who->PhysicsIndex;
 
     if (who->IsStatical)
     {
@@ -268,7 +322,7 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
 
     return_proxy(who - collision_proxy);
     dead_bullets_n += 1;
-    assert(dead_bullets_n < MAX_DEAD_BULLETS);
+    assert(dead_bullets_n <= MAX_DEAD_BULLETS);
 }
 
 /*************************************************************************************************
@@ -285,10 +339,6 @@ inline int Bullet::get_proxy() noexcept
         {
             proxy_hint = (i + 1) % MAX_BULLETS;
             used_proxy[i] = true;
-
-#ifdef _DEBUG
-            std::cout << "Bullet proxy get: " << i << "\n";
-#endif
             return i;
         }
     }
@@ -300,10 +350,6 @@ inline int Bullet::get_proxy() noexcept
         {
             proxy_hint = (i + 1) % MAX_BULLETS;
             used_proxy[i] = true;
-
-#ifdef _DEBUG
-            std::cout << "Bullet proxy get: " << i << "\n";
-#endif
             return i;
         }
     }
@@ -321,10 +367,6 @@ inline void Bullet::reset_proxy() noexcept
 inline void Bullet::return_proxy(int id) noexcept
 {
     used_proxy[id] = false;
-
-#ifdef _DEBUG
-    std::cout << "Bullet proxy returned: " << id << "\n";
-#endif
 }
 
 /*************************************************************************************************
@@ -380,7 +422,7 @@ inline void Bullet::move_from_fly_to_flt_with_cp(int s)
     fly_bullets[s] = fly_bullets[fly_bullets_n - 1];
     fly_bullets_n -= 1;
 
-    assert(flt_bullets_n < MAX_BULLETS);
+    assert(flt_bullets_n <= MAX_BULLETS);
 }
 
 inline void Bullet::move_from_just_to_flt(int i)
@@ -391,7 +433,7 @@ inline void Bullet::move_from_just_to_flt(int i)
     just_bullets[i] = just_bullets[just_bullets_n - 1];
     just_bullets_n -= 1;
 
-    assert(flt_bullets_n < MAX_BULLETS);
+    assert(flt_bullets_n <= MAX_BULLETS);
 }
 
 inline void Bullet::move_from_just_to_fly(int i)
@@ -404,7 +446,7 @@ inline void Bullet::move_from_just_to_fly(int i)
     just_bullets[i] = just_bullets[just_bullets_n - 1];
     just_bullets_n -= 1;
 
-    assert(fly_bullets_n < MAX_BULLETS);
+    assert(fly_bullets_n <= MAX_BULLETS);
 }
 
 inline void Bullet::track_a_part()

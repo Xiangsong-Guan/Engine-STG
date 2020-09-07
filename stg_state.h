@@ -10,8 +10,7 @@
 
 #include <allegro5/allegro5.h>
 
-constexpr int BORN_TIME = UPDATE_PER_SEC / 2; /* .5 sec. */
-constexpr int DEAD_TIME = 3;                  /* Juesi. */
+#include <iostream>
 
 static inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE *s)
 {
@@ -22,7 +21,6 @@ static inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE 
 }
 
 class SCSMovement;
-class SCSBorn;
 class SCSDisabled;
 
 /*************************************************************************************************

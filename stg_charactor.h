@@ -76,11 +76,12 @@ private:
     void down(const ALLEGRO_EVENT *e) noexcept;
     void left(const ALLEGRO_EVENT *e) noexcept;
     void right(const ALLEGRO_EVENT *e) noexcept;
-    void shoot(const ALLEGRO_EVENT *e);
-    void cease(const ALLEGRO_EVENT *e);
+    void shoot(const ALLEGRO_EVENT *e) const noexcept;
+    void cease(const ALLEGRO_EVENT *e) const noexcept;
     void shift(const ALLEGRO_EVENT *e);
-    void sync(const ALLEGRO_EVENT *e);
     void move_xy(const ALLEGRO_EVENT *e) noexcept;
+    void chain(const ALLEGRO_EVENT *e);
+    void unchain(const ALLEGRO_EVENT *e);
 };
 
 #endif

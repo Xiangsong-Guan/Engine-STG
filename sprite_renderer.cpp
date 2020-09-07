@@ -29,6 +29,10 @@ SpriteRenderer::~SpriteRenderer()
 
 void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Thinker-" << o.ID << " is moving, while " << ID << " is flawed.\n";
+#endif
+
     this->ID = o.ID;
     this->Sprite = o.Sprite;
     this->Color = o.Color;

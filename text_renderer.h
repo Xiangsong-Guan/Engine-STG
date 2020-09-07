@@ -26,7 +26,8 @@ public:
 
     void Draw() const;
     void SetText(TextItem t) noexcept;
-    
+    const std::string &GetContent() const noexcept;
+
     void ChangeText(float f, int w);
     void ChangeText(int i);
 

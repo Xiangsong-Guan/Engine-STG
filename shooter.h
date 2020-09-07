@@ -34,7 +34,7 @@ public:
     ~Shooter() = default;
 
     void Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss);
-    Shooter *Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
+    Shooter *Undershift(const b2Body *body) noexcept;
     void MyDearPlayer() noexcept;
     Shooter *Update();
 
@@ -81,7 +81,6 @@ private:
 
     const b2Body *physical;
     const b2Body *target;
-    ALLEGRO_EVENT_SOURCE *render_master;
 
     /* Update per movement (only used to update lunchers' attitude)
      * local rot in charactor's local coodinate, not in world. */

@@ -1,6 +1,7 @@
 #include "resource_manger.h"
 
 #include "cppsuckdef.h"
+#include "llauxlib.h"
 
 #include <nlohmann/json.hpp>
 
@@ -8,19 +9,6 @@
 #include <fstream>
 #include <vector>
 #include <filesystem>
-#include <cmath>
-
-inline int luaNOERROR_checkoption(lua_State *L, int arg, const char *def, const char *const lst[])
-{
-    /* From lauxlib.c */
-    const char *name = (def) ? luaL_optstring(L, arg, def) : luaL_checkstring(L, arg);
-    int i;
-    for (i = 0; lst[i]; i++)
-        if (strcmp(lst[i], name) == 0)
-            return i;
-
-    return -1;
-}
 
 /* Instantiate static variables */
 std::unordered_map<std::string, ALLEGRO_BITMAP *> ResourceManager::textures;

@@ -3,8 +3,6 @@
 
 #include "data_struct.h"
 
-#include <lua.hpp>
-
 class Shooter;
 class Bullet;
 

@@ -1,7 +1,6 @@
 #include "shooter.h"
 
 #include "resource_manger.h"
-#include "game_event.h"
 
 #include <lua.hpp>
 
@@ -68,7 +67,6 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     assert(ammo_slot_n <= MAX_B_TYPES);
     assert(luncher_n <= MAX_LUNCHERS_NUM);
 
-    const b2Vec2 front = b2Vec2(0.f, -1.f);
     for (int s = 0; s < luncher_n; s++)
     {
         lunchers[s] = setting.Lunchers[s];
@@ -90,10 +88,13 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     init();
 }
 
-Shooter *Shooter::Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
+Shooter *Shooter::Undershift(const b2Body *body) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " undershift. Up: " << ShiftUp->CodeName << "; Down: " << ShiftDown->CodeName << ".\n";
+#endif
+
     physical = body;
-    render_master = rm;
 
     return Shift;
 }
@@ -214,15 +215,15 @@ void Shooter::Destroy()
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<void(Shooter *)> Shooter::patterns[static_cast<int>(SSPatternsCode::NUM)];
+std::function<void(Shooter *)> Shooter::patterns[SSPatternsCode::SSPC_NUM];
 
 void Shooter::InitSSPattern()
 {
-    patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&Shooter::controlled);
-    patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&Shooter::stay);
-    patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&Shooter::track_player);
-    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&Shooter::total_turn);
-    patterns[static_cast<int>(SSPatternsCode::SPLIT_TURN)] = std::mem_fn(&Shooter::split_turn);
+    patterns[SSPatternsCode::SSPC_CONTROLLED] = std::mem_fn(&Shooter::controlled);
+    patterns[SSPatternsCode::SSPC_STAY] = std::mem_fn(&Shooter::stay);
+    patterns[SSPatternsCode::SSPC_TRACK] = std::mem_fn(&Shooter::track_player);
+    patterns[SSPatternsCode::SSPC_TOTAL_TURN] = std::mem_fn(&Shooter::total_turn);
+    patterns[SSPatternsCode::SSPC_SPLIT_TURN] = std::mem_fn(&Shooter::split_turn);
 }
 
 void Shooter::controlled()

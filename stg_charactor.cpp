@@ -39,6 +39,10 @@ STGCharactor::~STGCharactor()
 
 void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << o.CodeName << "-" << o.ID << " is moving, while " << CodeName << "-" << ID << " is flawed.\n";
+#endif
+
     this->ID = o.ID;
     this->Name = o.Name;
     this->CodeName = o.CodeName;
@@ -55,6 +59,10 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 /* Do something when char is loaded. */
 void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter)
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << sc.CodeName << " enabel. ID: " << id << ".\n";
+#endif
+
     ID = id;
     Name = sc.Name;
     CodeName = sc.CodeName;
@@ -64,17 +72,23 @@ void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, S
     body->SetUserData(this);
 
     /* Prepare the enter state & shooter */
-    speed = sc.DefaultSpeed;
     SPending = enter;
     shooter = sht;
     if (shooter != nullptr)
-        speed = shooter->ShiftIn(false);
+        speed = shooter->ShiftIn();
+    else
+        speed = sc.DefaultSpeed;
 }
 
 /* This is the final disable. Release the things need to be set free (such as shooter). Pass the point of no return. */
 void STGCharactor::Farewell() const noexcept
 {
-    shooter->ShiftOut();
+#ifdef _DEBUG
+    std::cout << "Charactor-" << CodeName << " sayonara! ID: " << ID << ".\n";
+#endif
+
+    if (shooter != nullptr)
+        shooter->ShiftOut(false);
     Con->DisableAll(ID);
 }
 
@@ -112,6 +126,10 @@ void STGCharactor::Update()
 
 void STGCharactor::Hit(CollisionHandler *o)
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << CodeName << " was hitten, hurt back.\n";
+#endif
+
     o->Hurt(nullptr);
 }
 
@@ -182,13 +200,13 @@ void STGCharactor::right(const ALLEGRO_EVENT *e) noexcept
     Velocity.x += 1.f;
 }
 
-void STGCharactor::shoot(const ALLEGRO_EVENT *e)
+void STGCharactor::shoot(const ALLEGRO_EVENT *e) const noexcept
 {
     if (shooter != nullptr)
         shooter->Fire();
 }
 
-void STGCharactor::cease(const ALLEGRO_EVENT *e)
+void STGCharactor::cease(const ALLEGRO_EVENT *e) const noexcept
 {
     if (shooter != nullptr)
         shooter->Cease();
