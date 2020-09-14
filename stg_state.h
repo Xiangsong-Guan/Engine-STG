@@ -12,7 +12,7 @@
 
 #include <iostream>
 
-static inline void change_texture(const ALLEGRO_BITMAP *t, ALLEGRO_EVENT_SOURCE *s)
+static inline void change_texture(const SpriteItem *t, ALLEGRO_EVENT_SOURCE *s)
 {
     ALLEGRO_EVENT event;
     event.user.data1 = GameRenderCommand::GRC_CHANGE_TEXTURE;
@@ -479,7 +479,7 @@ public:
 class SCSMovementStatic : public SCSMovement
 {
 public:
-    ALLEGRO_BITMAP *Texture[Movement::MM_NUM];
+    SpriteItem Texture[Movement::MM_NUM];
 
     SCSMovementStatic() = default;
     SCSMovementStatic(const SCSMovementStatic &) = delete;
@@ -498,7 +498,7 @@ public:
     void Copy(const SCSMovement *o) final
     {
         init();
-        std::memcpy(Texture, dynamic_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
+        std::memcpy(Texture, static_cast<const SCSMovementStatic *>(o)->Texture, sizeof(Texture));
     }
 
     void Action(STGCharactor *sc) final

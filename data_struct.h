@@ -2,7 +2,6 @@
 #define GAME_DATA_STRUCT_H
 
 #include "game_event.h"
-#include "anime.h"
 
 #include <lua.hpp>
 #include <box2d/box2d.h>
@@ -72,6 +71,19 @@ struct PhysicalFixture
 
 /*************************************************************************************************
  *                                                                                               *
+ *                                   Sprite Render Setting                                       *
+ *                                                                                               *
+ *************************************************************************************************/
+
+struct SpriteItem
+{
+    ALLEGRO_BITMAP *Sprite;
+    float CX;
+    float CY;
+};
+
+/*************************************************************************************************
+ *                                                                                               *
  *                                  STG Used Texture Group                                       *
  *                                                                                               *
  *************************************************************************************************/
@@ -95,7 +107,7 @@ struct STGTexture
     std::string SpriteDisable;
     SpriteType SpriteDisableType;
 
-    ALLEGRO_BITMAP *VeryFirstTex;
+    SpriteItem VeryFirstTex;
 };
 
 /*************************************************************************************************

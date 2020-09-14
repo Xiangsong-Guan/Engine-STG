@@ -11,7 +11,7 @@
 #include <filesystem>
 
 /* Instantiate static variables */
-std::unordered_map<std::string, ALLEGRO_BITMAP *> ResourceManager::textures;
+std::unordered_map<std::string, SpriteItem> ResourceManager::textures;
 std::unordered_map<std::string, Anime> ResourceManager::animations;
 std::vector<ALLEGRO_BITMAP *> ResourceManager::sheets;
 std::unordered_map<std::string, STGLevelSetting> ResourceManager::stg_levels;
@@ -60,10 +60,11 @@ void ResourceManager::LoadTexture(const std::string &name)
     if (image == nullptr)
         std::cerr << "Couldn't load image: " << name << std::endl;
     else
-        textures.emplace(name, image);
+        textures.emplace(name, SpriteItem{image, static_cast<float>(al_get_bitmap_width(image) / 2.f),
+                                          static_cast<float>(al_get_bitmap_height(image) / 2.f)});
 }
 
-ALLEGRO_BITMAP *ResourceManager::GetTexture(const std::string &name)
+const SpriteItem &ResourceManager::GetTexture(const std::string &name)
 {
     return textures.at(name);
 }
@@ -105,7 +106,8 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
                 if (textures.contains(tag_name))
                     continue;
 
-                const auto &frame = frames[tag["from"].get<int>()].at("frame");
+                const auto &one_sprite = frames[tag["from"].get<int>()];
+                const auto &frame = one_sprite.at("frame");
                 ALLEGRO_BITMAP *sub_image =
                     al_create_sub_bitmap(anime_sheet,
                                          frame.at("x"), frame.at("y"),
@@ -116,7 +118,16 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
                     return;
                 }
 
-                textures.emplace(tag_name, sub_image);
+                /* CX & CY. */
+                const auto &sprite_source_size = one_sprite.at("spriteSourceSize");
+                const auto &source_size = one_sprite.at("sourceSize");
+
+                textures.emplace(tag_name,
+                                 SpriteItem{sub_image,
+                                            (static_cast<float>(source_size.at("w").get<int>()) / 2.f) -
+                                                static_cast<float>(sprite_source_size.at("x").get<int>()),
+                                            (static_cast<float>(source_size.at("h").get<int>()) / 2.f) -
+                                                static_cast<float>(sprite_source_size.at("y").get<int>())});
             }
             else
             {
@@ -125,7 +136,7 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
                     continue;
 
                 /* load this tag anime */
-                std::vector<ALLEGRO_BITMAP *> ani;
+                std::vector<SpriteItem> ani;
                 for (int i = tag["from"]; i <= tag["to"]; i++)
                 {
                     int dur = frames[i].at("duration") / MS_PRE_ANIME_FRAME;
@@ -139,7 +150,17 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
                         std::cerr << "Failed to create sub-image for " << file << std::endl;
                         return;
                     }
-                    ani.insert(ani.end(), dur, sub_image);
+
+                    /* CX & CY. */
+                    const auto &sprite_source_size = frames[i].at("spriteSourceSize");
+                    const auto &source_size = frames[i].at("sourceSize");
+
+                    ani.insert(ani.end(), dur,
+                               {sub_image,
+                                (static_cast<float>(source_size.at("w").get<int>()) / 2.f) -
+                                    static_cast<float>(sprite_source_size.at("x").get<int>()),
+                                (static_cast<float>(source_size.at("h").get<int>()) / 2.f) -
+                                    static_cast<float>(sprite_source_size.at("y").get<int>())});
                 }
                 if (tag.at("direction") == "pingpong")
                 {
@@ -727,7 +748,7 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     if (lua_getfield(L_main, -1, "sprites") != LUA_TSTRING)
     {
         lua_pop(L_main, 1);
-        st.VeryFirstTex = nullptr;
+        st.VeryFirstTex = {nullptr, 0.f, 0.f};
         st.SpriteBornType = SpriteType::SPT_NONE;
         st.SpriteShootingType = SpriteType::SPT_NONE;
         st.SpriteShiftType = SpriteType::SPT_NONE;
@@ -821,7 +842,7 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
     case SpriteType::SPT_ANIMED:
         ta = GetAnime(st.SpriteBorn);
         ta.Forward();
-        st.VeryFirstTex = ta.Playing;
+        st.VeryFirstTex = *ta.Playing;
         break;
     default:
         switch (st.SpriteMovementType)
@@ -832,7 +853,7 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         case SpriteType::SPT_ANIMED:
             ta = GetAnime(st.SpriteMovement[Movement::MM_IDLE]);
             ta.Forward();
-            st.VeryFirstTex = ta.Playing;
+            st.VeryFirstTex = *ta.Playing;
             break;
         }
         break;

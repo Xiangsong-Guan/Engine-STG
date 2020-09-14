@@ -26,7 +26,7 @@ private:
     static lua_State *L_main;
 
     /* Resource storage */
-    static std::unordered_map<std::string, ALLEGRO_BITMAP *> textures;
+    static std::unordered_map<std::string, SpriteItem> textures;
     static std::unordered_map<std::string, Anime> animations;
     static std::vector<ALLEGRO_BITMAP *> sheets;
     static std::unordered_map<std::string, STGLevelSetting> stg_levels;
@@ -59,7 +59,7 @@ public:
     /* Texture */
     static void LoadTexture(const std::string &name);
     static void LoadSpriteSheet(const std::string &name);
-    static ALLEGRO_BITMAP *GetTexture(const std::string &name);
+    static const SpriteItem &GetTexture(const std::string &name);
     static const Anime &GetAnime(const std::string &name);
 
     /* STG Level */

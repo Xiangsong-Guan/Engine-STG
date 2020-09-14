@@ -12,7 +12,7 @@ static inline void nothing(SpriteRenderer *r, const ALLEGRO_EVENT *e) noexcept {
  *                                                                                               *
  *************************************************************************************************/
 
-SpriteRenderer::SpriteRenderer() : Color(al_map_rgb_f(1.f, 1.f, 1.f))
+SpriteRenderer::SpriteRenderer()
 {
     Recv = al_create_event_queue();
     if (!Recv)
@@ -30,7 +30,7 @@ SpriteRenderer::~SpriteRenderer()
 void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Thinker-" << o.ID << " is moving, while " << ID << " is flawed.\n";
+    std::cout << "Renderer-" << o.ID << " is moving, while " << ID << " is flawed.\n";
 #endif
 
     this->ID = o.ID;
@@ -40,11 +40,12 @@ void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
     std::swap(this->Recv, o.Recv);
 }
 
-void SpriteRenderer::Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept
+void SpriteRenderer::Show(int id, b2Body *body, const SpriteItem &first) noexcept
 {
     ID = id;
     physics = body;
     Sprite = first;
+    Color = al_map_rgb_f(1.f, 1.f, 1.f);
 }
 
 /*************************************************************************************************
@@ -70,10 +71,7 @@ void SpriteRenderer::Draw(float forward_time)
         commands[event.user.data1](this, &event);
 
     /* begin to draw */
-    al_draw_tinted_rotated_bitmap(Sprite, Color,
-                                  static_cast<float>(al_get_bitmap_width(Sprite)) / 2.f,
-                                  static_cast<float>(al_get_bitmap_height(Sprite)) / 2.f,
-                                  position.x, position.y, rotate, 0);
+    al_draw_tinted_rotated_bitmap(Sprite.Sprite, Color, Sprite.CX, Sprite.CY, position.x, position.y, rotate, 0);
 }
 
 /*************************************************************************************************
@@ -92,5 +90,5 @@ void SpriteRenderer::InitRndrCmd()
 
 void SpriteRenderer::change_texture(const ALLEGRO_EVENT *e) noexcept
 {
-    Sprite = reinterpret_cast<ALLEGRO_BITMAP *>(e->user.data2);
+    Sprite = *reinterpret_cast<const SpriteItem *>(e->user.data2);
 }
