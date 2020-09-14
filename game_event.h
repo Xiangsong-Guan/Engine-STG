@@ -97,7 +97,8 @@ enum STGCharEvent
 const char *const STG_CHAR_EVENT[] = {
     "GAME_OVER",
     "SUB_PATTERN_DONE",
-    "OPREATIONAL"};
+    "OPREATIONAL",
+    NULL};
 
 const unsigned int STG_CHAR_EVENT_BIT[] = {
     STGCharEvent::SCE_GAME_OVER,

@@ -23,7 +23,7 @@ enum ShapeType
     ST_BOX
 };
 
-const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX"};
+const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX", NULL};
 
 enum SpriteType
 {
@@ -163,7 +163,8 @@ const char *const SS_PATTERNS_CODE[] =
      "STAY",
      "TOTAL_TURN",
      "SPLIT_TURN",
-     "TRACK"};
+     "TRACK",
+     NULL};
 
 union SSPatternData
 {
@@ -221,15 +222,13 @@ struct STGCharactorSetting
 enum SCPatternsCode
 {
     SCPC_CONTROLLED,
+    SCPC_STAY,
     SCPC_MOVE_TO,
     SCPC_MOVE_LAST,
     SCPC_MOVE_PASSBY,
     SCPC_GO_ROUND,
 
-    SCPC_NUM,
-
-    /* DO NOTHING */
-    SCPC_STAY
+    SCPC_NUM
 };
 
 const char *const SC_PATTERNS_CODE[] =
@@ -238,7 +237,8 @@ const char *const SC_PATTERNS_CODE[] =
      "MOVE_TO",
      "MOVE_LAST",
      "MOVE_PASSBY",
-     "GO_ROUND"};
+     "GO_ROUND",
+     NULL};
 
 union SCPatternData
 {
@@ -315,7 +315,7 @@ enum STGStateChangeCode
     SSCC_NUM
 };
 
-const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE"};
+const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE", NULL};
 
 /* SHOULD ALWAYS BE CONTAINED AT FIRST */
 #define STGCHANGE_HEADER     \

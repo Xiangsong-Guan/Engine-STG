@@ -428,9 +428,9 @@ STGCharactorSetting &ResourceManager::GetSTGChar(const std::string &name)
 
 #define INVALID_BULLET(name, why, un)                               \
     {                                                               \
-        lua_settop(L_main, (un));                                   \
         std::cerr << "Failed to load STG Bullet " << (name) << ": " \
                   << (why) << std::endl;                            \
+        lua_settop(L_main, (un));                                   \
         return;                                                     \
     }
 
@@ -490,9 +490,9 @@ STGBulletSetting &ResourceManager::GetSTGBullet(const std::string &name)
 
 #define INVALID_SHOOTER(name, why, un)                               \
     {                                                                \
-        lua_settop(L_main, (un));                                    \
         std::cerr << "Failed to load STG Shooter " << (name) << ": " \
                   << (why) << std::endl;                             \
+        lua_settop(L_main, (un));                                    \
         return;                                                      \
     }
 
@@ -554,7 +554,7 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     case SSPatternsCode::SSPC_TOTAL_TURN:
         if (lua_getfield(L_main, -1, "data") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid total turn speed!", balance_top)
-        ss.Data.turn_speed = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+        ss.Data.turn_speed = lua_tonumber(L_main, -1) / static_cast<float>(UPDATE_PER_SEC);
         lua_pop(L_main, 1);
         break;
 
@@ -565,14 +565,10 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         {
             if (lua_geti(L_main, -1, i + 1) != LUA_TNUMBER)
                 INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top);
-            ss.Data.turn_speeds[i] = lua_tonumber(L_main, -1) / UPDATE_PER_SEC;
+            ss.Data.turn_speeds[i] = lua_tonumber(L_main, -1) / static_cast<float>(UPDATE_PER_SEC);
             lua_pop(L_main, 1);
         }
         lua_pop(L_main, 1);
-        break;
-
-    default:
-        ss.Pattern = SSPatternsCode::SSPC_STAY;
         break;
     }
 
@@ -662,9 +658,9 @@ ALLEGRO_FONT *ResourceManager::GetFont(const std::string &name)
 
 #define INVALID_PHYSICS(name, why, un)                               \
     {                                                                \
-        lua_settop(L_main, (un));                                    \
         std::cerr << "Failed to load fixture for " << (name) << ": " \
                   << (why) << std::endl;                             \
+        lua_settop(L_main, (un));                                    \
         return PhysicalFixture();                                    \
     }
 
@@ -721,8 +717,6 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
             pf.P.SetAsBox(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1), b2Vec2(x, y), 0.f);
             lua_pop(L_main, 3);
             break;
-        default:
-            INVALID_PHYSICS(name, "invalid physical shape!", balance_top);
         }
     }
 
@@ -806,7 +800,7 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
         st.SpriteHitType = SpriteType::SPT_ANIMED;
     else
         st.SpriteHitType = SpriteType::SPT_NONE;
-    st.SpriteDisable = art_name + "disable";
+    st.SpriteDisable = art_name + "_disable";
     if (textures.contains(st.SpriteDisable))
         st.SpriteDisableType = SpriteType::SPT_STATIC;
     else if (animations.contains(st.SpriteDisable))
@@ -869,9 +863,9 @@ STGTexture ResourceManager::load_stg_texture(const std::string &name)
 
 #define INVALID_KINEMATIC_PHASES(name, why, un)                           \
     {                                                                     \
-        lua_settop(L_main, (un));                                         \
         std::cerr << "Failed to load kinematic phases " << (name) << ": " \
                   << (why) << std::endl;                                  \
+        lua_settop(L_main, (un));                                         \
         return KinematicSeq();                                            \
     }
 

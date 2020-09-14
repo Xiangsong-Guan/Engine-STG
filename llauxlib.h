@@ -22,7 +22,7 @@ inline SCPatternsCode use_sc_pattern(lua_State *L, int pd_idx, SCPatternData &da
     SCPatternsCode ptn;
 
 #ifdef STG_LUA_API_ARG_CHECK
-    ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, "STAY", SC_PATTERNS_CODE));
+    ptn = static_cast<SCPatternsCode>(luaNOERROR_checkoption(L, pd_idx, "STAY", SC_PATTERNS_CODE));
     switch (ptn)
     {
     case SCPatternsCode::SCPC_CONTROLLED:
