@@ -12,6 +12,9 @@
 
 class STGThinker
 {
+    friend static int use_pattern(lua_State *L);
+    friend static int move(lua_State *L);
+
 public:
     int ID;
     STGFlowController *Con;
@@ -20,9 +23,6 @@ public:
     static void HandoverController(lua_State *L);
     /* Make STG Charactor Pattern functions */
     static void InitSCPattern();
-
-    /* Lua AI commands */
-    void Move(float x, float y);
 
     STGThinker();
     STGThinker(const STGThinker &) = delete;
@@ -37,8 +37,13 @@ public:
 
     ALLEGRO_EVENT_SOURCE *InputMaster;
     ALLEGRO_EVENT_QUEUE *Recv;
-    
-    unsigned int EventBit;
+
+    struct
+    {
+        int WaitTime;
+        unsigned int EventBits;
+        unsigned int NotifyMask;
+    } Communication;
 
 private:
     const b2Body *physics;

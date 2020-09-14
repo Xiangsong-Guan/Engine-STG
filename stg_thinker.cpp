@@ -49,6 +49,7 @@ void STGThinker::CPPSuckSwap(STGThinker &o) noexcept
     this->where = o.where;
     this->ai = o.ai;
     this->sub_ptn = o.sub_ptn;
+    this->Communication = o.Communication;
     std::swap(this->InputMaster, o.InputMaster);
     std::swap(this->Recv, o.Recv);
 }
@@ -63,14 +64,19 @@ void STGThinker::Active(int id, SCPatternsCode ptn, SCPatternData pd, const b2Bo
     data = std::move(pd);
     physics = body;
     ID = id;
+
     where = 0;
+    /* Game over event always notified. */
+    Communication = {0, 0u, 0b1u};
 
     if (ptn == SCPatternsCode::SCPC_GO_ROUND)
         data.round.R_SQ = (body->GetPosition() - data.round.P).LengthSquared();
-
-    /* Save AI out of data union. AI can use data to execute sub pattern. */
-    ai = data.ai;
-    sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
+    else if (ptn == SCPatternsCode::SCPC_CONTROLLED)
+    {
+        /* Save AI out of data union. AI can use data to execute sub pattern. */
+        ai = data.ai;
+        sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
+    }
 }
 
 /*************************************************************************************************
@@ -102,11 +108,228 @@ void STGThinker::Think()
  * no return */
 static int move(lua_State *L)
 {
-#ifndef STG_LUA_API_ARG_CHECK
+#ifdef STG_LUA_API_ARG_CHECK
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
-    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(luaL_checknumber(L, 2), luaL_checknumber(L, 3));
-#else
-    static_cast<STGThinker *>(lua_touserdata(L, 1))->Move(lua_tointeger(L, 2), lua_tonumber(L, 3));
+    luaL_checknumber(L, 2);
+    luaL_checknumber(L, 3);
+#endif
+
+    STGThinker *thinker = reinterpret_cast<STGThinker *>(lua_touserdata(L, 1));
+    thinker->vec4u.Set(luaL_checknumber(L, 2), luaL_checknumber(L, 3));
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_MOVE_XY;
+    event.user.data2 = reinterpret_cast<intptr_t>(&thinker->vec4u);
+    al_emit_user_event(thinker->InputMaster, &event, nullptr);
+
+    return 0;
+}
+
+/* Tell charactor to fire
+ * 1=thinker
+ * no return */
+static int fire(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_STG_FIRE;
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to fire.\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to hold fire
+ * 1=thinker
+ * no return */
+static int cease(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_STG_CEASE;
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to cease fire.\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to chain the shooters.
+ * 1=thinker, 2=num
+ * no return */
+static int chain(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checkinteger(L, 2);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_STG_CHAIN;
+    event.user.data2 = lua_tointeger(L, 2);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to chain " << event.user.data2 << " shooters.\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to disconnect the shooters chain.
+ * 1=thinker
+ * no return */
+static int unchain(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_STG_UNCHAIN;
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to unchain shooters.\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to shift
+ * 1=thinker
+ * no return */
+static int shift(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_STG_CHANGE;
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to shift.\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to not die yet.
+ * 1=thinker, 2=pre_load_id
+ * no return */
+static int respwan(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checkinteger(L, 2);
+#endif
+
+    ALLEGRO_EVENT event;
+    event.user.data1 = STGCharCommand::SCC_RESPAWN;
+    event.user.data2 = lua_tointeger(L, 2) - 1;
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to respwan with resource-" << event.user.data2 << ".\n";
+#endif
+
+    return 0;
+}
+
+/* Event happenned?
+ * 1=thinker, 2=event_bit_string
+ * return true if happenned */
+static int is_now(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+    luaL_checktype(L, 2, LUA_TSTRING);
+#endif
+
+    lua_pushboolean(L, reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->Communication.EventBits &
+                           STG_CHAR_EVENT_BIT[luaL_checkoption(L, 2, nullptr, STG_CHAR_EVENT)]);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " asked for event \"" << lua_tostring(L, 2) << "\". The answer is " << lua_toboolean(L, -1) << ".\n";
+#endif
+
+    return 1;
+}
+
+/* Wait by time or specific event. No para means wait to die.
+ * 1=thinker, [2=time/event_str, 3=event_str...]
+ * no return */
+static int wait(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to wait. ";
+#endif
+
+    auto &c = reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->Communication;
+
+    int i = 3;
+    if (lua_isnumber(L, 2))
+    {
+        c.WaitTime = std::lroundf(lua_tonumber(L, 2));
+
+#ifdef _DEBUG
+        std::cout << "For time: " << c.WaitTime << "; ";
+#endif
+    }
+    else
+        i = 2;
+
+    for (; i <= lua_gettop(L); i++)
+    {
+        c.NotifyMask += STG_CHAR_EVENT_BIT[luaL_checkoption(L, i, nullptr, STG_CHAR_EVENT)];
+
+#ifdef _DEBUG
+        std::cout << "\"" << lua_tostring(L, i) << "\"; ";
+#endif
+    }
+
+#ifdef _DEBUG
+    std::cout << "\n";
+#endif
+
+    return 0;
+}
+
+/* Tell charactor to use pattern.
+ * 1=thinker (just use aux function)
+ * no return */
+static int use_pattern(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    STGThinker *thinker = reinterpret_cast<STGThinker *>(lua_touserdata(L, 1));
+    thinker->sub_ptn = use_sc_pattern(L, 2, thinker->data);
+
+#ifdef _DEBUG
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to use sub-pattern: " << lua_tostring(L, 2) << "\n";
 #endif
 
     return 0;
@@ -114,28 +337,21 @@ static int move(lua_State *L)
 
 static const luaL_Reg mind_con[] = {
     {"move", move},
+    {"fire", fire},
+    {"cease", cease},
+    {"chain", chain},
+    {"unchain", unchain},
+    {"shift", shift},
+    {"respwan", respwan},
+
+    {"is_now", is_now},
+    {"wait", wait},
+    {"use_pattern", use_pattern},
     {NULL, NULL}};
 
 void STGThinker::HandoverController(lua_State *L)
 {
     luaL_newlib(L, mind_con);
-}
-
-/*************************************************************************************************
- *                                                                                               *
- *                                       AI Commands                                             *
- *                                                                                               *
- *************************************************************************************************/
-
-void STGThinker::Move(float x, float y)
-{
-    ALLEGRO_EVENT event;
-
-    vec4u.Set(x, y);
-
-    event.user.data1 = static_cast<intptr_t>(STGCharCommand::MOVE_XY);
-    event.user.data2 = reinterpret_cast<intptr_t>(&vec4u);
-    al_emit_user_event(InputMaster, &event, nullptr);
 }
 
 /*************************************************************************************************
@@ -158,12 +374,9 @@ void STGThinker::InitSCPattern()
 
 bool STGThinker::controlled()
 {
-    int good;
-    int rn = 1;
+    int good = LUA_YIELD;
+    int rn = 0;
     ALLEGRO_EVENT event;
-
-    /* Pass porxy firstly. */
-    lua_pushlightuserdata(ai, this);
 
     /* Execute sub-pattern, if exists. */
     if (sub_ptn != SCPatternsCode::SCPC_CONTROLLED)
@@ -179,25 +392,45 @@ bool STGThinker::controlled()
 
     /* Hold STG char events */
     while (al_get_next_event(Recv, &event))
-        EventBit |= event.user.data1;
-
-    /* If something happenned, notify lua. Lua will ask what happenned when it is thinking. */
-    if (EventBit > 0u)
     {
-        lua_pushboolean(ai, 1);
-        rn = 2;
+#ifdef _DEBUG
+        std::cout << "Thinker-" << ID << " event: " << event.user.data1 << "\n";
+#endif
+
+        Communication.EventBits |= event.user.data1;
     }
 
-    /* AI online. If AI return, means no need to further thinking. */
-    good = lua_resume(ai, nullptr, rn, &rn);
-    /* Event just stay one loop for lua. */
-    EventBit = 0u;
+#ifdef _DEBUG
+    if (Communication.WaitTime == 0)
+        std::cout << "Thinker-" << ID << " time wait done.\n";
+#endif
+
+    /* If something happenned, notify lua. Lua will ask what happenned when it is thinking. */
+    if (Communication.EventBits & Communication.NotifyMask || Communication.WaitTime == 0)
+    {
+#ifdef _DEBUG
+        std::cout << "Thinker-" << ID << " will resume the AI.\n";
+#endif
+
+        /* Pass porxy firstly. */
+        lua_pushlightuserdata(ai, this);
+
+        /* Death always be notified. */
+        Communication.NotifyMask = 0b1u;
+        Communication.WaitTime = -1;
+        good = lua_resume(ai, nullptr, 1, &rn);
+        /* Event just stay one loop for lua. */
+        Communication.EventBits = 0u;
+    }
+    else if (Communication.WaitTime > 0)
+        Communication.WaitTime -= 1;
 
 #ifdef STG_LUA_API_ARG_CHECK
     if (good != LUA_OK && good != LUA_YIELD)
         std::cerr << "STG thinker lua error: " << lua_tostring(ai, -1) << std::endl;
 #endif
 
+    /* AI online. If AI return, means no need to further thinking. */
     if (good != LUA_YIELD)
         return true;
 
