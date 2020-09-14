@@ -8,7 +8,7 @@
 class PhysicalDraw : public b2Draw
 {
 private:
-    static constexpr float TKN_ON_TOP = 2.f;
+    static constexpr float TKN_ON_TOP = 1.f;
     static constexpr float ALP_ON_TOP = .5f;
 
     float physcale;

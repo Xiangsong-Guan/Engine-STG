@@ -696,8 +696,8 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
         if (lua_getfield(L_main, -1, "pos") != LUA_TTABLE ||
             lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
             INVALID_PHYSICS(name, "invalid pos!", balance_top);
-        float x = lua_tonumber(L_main, -2);
-        float y = lua_tonumber(L_main, -1);
+        float x = lua_tonumber(L_main, -2) * M_PRE_PIXIL;
+        float y = lua_tonumber(L_main, -1) * M_PRE_PIXIL;
         lua_pop(L_main, 3);
 
         if (lua_getfield(L_main, -1, "size") != LUA_TTABLE)
@@ -708,13 +708,13 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER)
                 INVALID_PHYSICS(name, "invalid size!", balance_top);
             pf.C.m_p.Set(x, y);
-            pf.C.m_radius = lua_tonumber(L_main, -1);
+            pf.C.m_radius = lua_tonumber(L_main, -1) * M_PRE_PIXIL;
             lua_pop(L_main, 2);
             break;
         case ShapeType::ST_BOX:
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
                 INVALID_PHYSICS(name, "invalid size!", balance_top);
-            pf.P.SetAsBox(lua_tonumber(L_main, -2), lua_tonumber(L_main, -1), b2Vec2(x, y), 0.f);
+            pf.P.SetAsBox(lua_tonumber(L_main, -2) * M_PRE_PIXIL, lua_tonumber(L_main, -1) * M_PRE_PIXIL, b2Vec2(x, y), 0.f);
             lua_pop(L_main, 3);
             break;
         }
