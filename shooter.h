@@ -38,19 +38,20 @@ public:
     void MyDearPlayer() noexcept;
     Shooter *Update();
 
-    void Fire() noexcept;
-    void Cease() noexcept;
-    bool ShiftOut() noexcept;
-    float ShiftIn(bool firing) noexcept;
-    void Sync();
-    void FSync();
+    bool IsFiring() const noexcept;
+    void SetFire(bool f) noexcept;
+    Shooter *ShiftOut(bool need_ret = true) noexcept;
+    float ShiftIn() noexcept;
+    void LinkChain(int n) noexcept;
+    int Breakchain() noexcept;
 
-    void Heal(int curing);
-    bool Hurt(int damage);
-    void Destroy();
+    bool IsConnected() const noexcept;
+    void Heal(int curing) noexcept;
+    bool Hurt(int damage) noexcept;
 
     Shooter *Prev, *Next;
-    Shooter *Shift;
+    Shooter *ShiftDown, *ShiftUp;
+    Shooter *Chain;
 
     STGFlowController *Con;
 
