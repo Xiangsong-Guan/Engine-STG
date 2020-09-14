@@ -488,7 +488,8 @@ void Shooter::track_player()
                 if (imada)
                 {
                     target = Con->TrackPlayer();
-                    track();
+                    if (target != nullptr)
+                        track();
                     imada = false;
                 }
                 recalc_lunchers_attitude_cache(s);

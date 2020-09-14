@@ -565,31 +565,34 @@ void STGLevel::Update()
      * body's specific function with each other's infomation */
 
     /* Keep Player controlled in field. */
-    b2Vec2 pp, pv;
-    float dx, dy;
-    pp = player->GetPosition();
-    pv = player->GetLinearVelocity();
-    dx = pp.x + (pv.x * time_step);
-    dy = pp.y + (pv.y * time_step);
-    if (dx < 0.f)
+    if (player != nullptr)
     {
-        pv.x = -pp.x / time_step;
-        player->SetLinearVelocity(pv);
-    }
-    else if (dx > PHYSICAL_WIDTH)
-    {
-        pv.x = (PHYSICAL_WIDTH - pp.x) / time_step;
-        player->SetLinearVelocity(pv);
-    }
-    if (dy < 0.f)
-    {
-        pv.y = -pp.y / time_step;
-        player->SetLinearVelocity(pv);
-    }
-    else if (dy > PHYSICAL_HEIGHT)
-    {
-        pv.y = (PHYSICAL_HEIGHT - pp.y) / time_step;
-        player->SetLinearVelocity(pv);
+        b2Vec2 pp, pv;
+        float dx, dy;
+        pp = player->GetPosition();
+        pv = player->GetLinearVelocity();
+        dx = pp.x + (pv.x * time_step);
+        dy = pp.y + (pv.y * time_step);
+        if (dx < 0.f)
+        {
+            pv.x = -pp.x / time_step;
+            player->SetLinearVelocity(pv);
+        }
+        else if (dx > PHYSICAL_WIDTH)
+        {
+            pv.x = (PHYSICAL_WIDTH - pp.x) / time_step;
+            player->SetLinearVelocity(pv);
+        }
+        if (dy < 0.f)
+        {
+            pv.y = -pp.y / time_step;
+            player->SetLinearVelocity(pv);
+        }
+        else if (dy > PHYSICAL_HEIGHT)
+        {
+            pv.y = (PHYSICAL_HEIGHT - pp.y) / time_step;
+            player->SetLinearVelocity(pv);
+        }
     }
 
     /* Physic sim, colloisions happen and event happen (damage, state change...).
@@ -1017,6 +1020,7 @@ void STGLevel::PlayerDying()
     std::cout << "STG-" << CodeName << " player is dying!\n";
 #endif
 
+    player = nullptr;
     al_add_timer_count(count_down, 2);
     al_start_timer(count_down);
 }

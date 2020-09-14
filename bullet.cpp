@@ -190,8 +190,7 @@ Bullet *Bullet::Update()
         else
         {
             world->DestroyBody(dead_bullets[i].Physics);
-            if (i + 1 != dead_bullets_n)
-                dead_bullets[i] = dead_bullets[dead_bullets_n - 1];
+            dead_bullets[i] = dead_bullets[dead_bullets_n - 1];
             dead_bullets_n -= 1;
         }
     }
