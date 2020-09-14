@@ -625,9 +625,10 @@ STGShooterSetting &ResourceManager::GetSTGShooter(const std::string &name)
 void ResourceManager::LoadSave()
 {
     // For now ...
-    LoadSTGChar("test_player");
-    LoadSTGShooter("test_shooter");
-    LoadSTGShooter("test_shooter_slow");
+    LoadSTGChar("player");
+    LoadSTGBullet("bytri");
+    LoadSTGShooter("player_shooter");
+    LoadSTGShooter("player_shooter_slow");
 }
 
 void ResourceManager::LoadFont()
