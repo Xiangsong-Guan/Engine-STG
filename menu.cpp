@@ -66,7 +66,7 @@ std::unordered_map<std::string, std::function<void(Menu *)>> Menu::menu_cmds;
 void Menu::test_start() const
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << "link start executed!\n";
+    std::cout << "Menu-" << CodeName << " link start executed!\n";
 #endif
 
     GameCon->LinkStart();
@@ -84,7 +84,7 @@ void Menu::test_end() const
 void Menu::stg_resume() const
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << "STG resume executed!\n";
+    std::cout << "Menu-" << CodeName << " STG resume executed!\n";
 #endif
 
     GameCon->STGResume();
@@ -93,7 +93,7 @@ void Menu::stg_resume() const
 void Menu::stg_return() const
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << "STG return executed!\n";
+    std::cout << "Menu-" << CodeName << " STG return executed!\n";
 #endif
 
     GameCon->STGReturn(false);
@@ -137,7 +137,7 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
                  int width, int height, const std::string &code_name)
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << " setup.\n";
+    std::cout << "Menu-" << code_name << " setup.\n";
 #endif
 
     CodeName = code_name;
@@ -164,7 +164,7 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
 void Menu::Attach() noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << "attached!\n";
+    std::cout << "Menu-" << CodeName << " attached!\n";
 #endif
 
     cursor = 0;
@@ -174,7 +174,7 @@ void Menu::Attach() noexcept
 void Menu::Detach() noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << "deattached!\n";
+    std::cout << "Menu-" << CodeName << " deattached!\n";
 #endif
 
     items[cursor].TR->Color = al_map_rgb_f(1.f, 1.f, 1.f);

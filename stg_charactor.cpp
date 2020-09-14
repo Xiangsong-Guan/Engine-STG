@@ -60,7 +60,7 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter)
 {
 #ifdef _DEBUG
-    std::cout << "Charactor-" << sc.CodeName << " enabel. ID: " << id << ".\n";
+    std::cout << "Charactor-" << sc.CodeName << " enable. ID: " << id << ".\n";
 #endif
 
     ID = id;
@@ -107,6 +107,10 @@ void STGCharactor::Update()
     while (al_get_next_event(InputTerminal, &event))
         if (SNow->CheckInput(&event))
             commands[event.user.data1](this, &event);
+#ifdef _DEBUG
+        else
+            std::cout << "Charactor-" << CodeName << " reject command: " << event.user.data1 << "\n";
+#endif
 
     Velocity.Normalize();
     Velocity *= speed;
@@ -202,18 +206,30 @@ void STGCharactor::right(const ALLEGRO_EVENT *e) noexcept
 
 void STGCharactor::shoot(const ALLEGRO_EVENT *e) const noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << CodeName << " shoot!\n";
+#endif
+
     if (shooter != nullptr)
         shooter->Fire();
 }
 
 void STGCharactor::cease(const ALLEGRO_EVENT *e) const noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << CodeName << " stop shooting.\n";
+#endif
+
     if (shooter != nullptr)
         shooter->Cease();
 }
 
 void STGCharactor::shift(const ALLEGRO_EVENT *e)
 {
+#ifdef _DEBUG
+    std::cout << "Charactor-" << CodeName << " shift.\n";
+#endif
+
     if (shooter != nullptr)
     {
         bool firing = shooter->ShiftOut();

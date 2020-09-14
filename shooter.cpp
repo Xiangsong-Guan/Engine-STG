@@ -50,6 +50,10 @@ Shooter &Shooter::operator=(const Shooter &o)
     pattern = patterns[code];
     data = o.data;
 
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " copy with pattern: " << SS_PATTERNS_CODE[code] << "\n";
+#endif
+
     init();
 
     return *this;
@@ -84,6 +88,10 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     code = setting.Pattern;
     pattern = patterns[code];
     data = setting.Data;
+
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " load with pattern: " << SS_PATTERNS_CODE[code] << "\n";
+#endif
 
     init();
 }
