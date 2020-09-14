@@ -30,7 +30,8 @@ static int further_load(lua_State *L)
 #endif
     level = reinterpret_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    level->FillMind(id, use_sc_pattern(L, 3, pd), std::move(pd));
+    SCPatternsCode ptn = use_sc_pattern(L, 3, pd);
+    level->FillMind(id, ptn, std::move(pd));
 
     return 0;
 }
@@ -83,7 +84,8 @@ static int airborne(lua_State *L)
 #endif
     level = reinterpret_cast<STGLevel *>(lua_touserdata(L, 1));
 
-    level->Airborne(id, x, y, use_sc_pattern(L, 5, pd), std::move(pd));
+    SCPatternsCode ptn = use_sc_pattern(L, 5, pd);
+    level->Airborne(id, x, y, ptn, std::move(pd));
 
     return 0;
 }
@@ -115,6 +117,18 @@ STGLevel::STGLevel()
         many_shooters[i].Con = this;
     for (int i = 0; i < MAX_ENTITIES; i++)
         bullets[i].Con = this;
+
+    count_down = al_create_timer(1.);
+    if (!count_down)
+    {
+        std::cerr << "Failed to initialize STG Level's count down timer!\n";
+        std::abort();
+    }
+}
+
+STGLevel::~STGLevel()
+{
+    al_destroy_timer(count_down);
 }
 
 void STGLevel::Load(float time_step, const STGLevelSetting &setting)
@@ -123,6 +137,8 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("m+10r_10"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
     tr_bn.SetText({"", ResourceManager::GetFont("m+10r_10"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
 #endif
+
+    timer = 0;
 
     Name = setting.Name;
     CodeName = setting.CodeName;
@@ -147,6 +163,9 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     bullets_p = nullptr;
     bullets_n = 0;
     all_state.Reset();
+    charactors_n = 0;
+    thinkers_n = 0;
+    sprite_renderers_n = 0;
 
     /* Recording which bullet has been loaded. */
     b2Filter f;
@@ -201,7 +220,10 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     f.groupIndex = CollisionType::G_ENEMY_SIDE;
     f.categoryBits = CollisionType::C_ENEMY_BULLET;
     f.maskBits = CollisionType::C_PLAYER;
-    for (size_t i = 0; i < (setting.Charactors.size() > MAX_ENTITIES ? MAX_ENTITIES : setting.Charactors.size()); i++)
+
+    assert(setting.Charactors.size() <= MAX_ENTITIES);
+
+    for (size_t i = 0; i < setting.Charactors.size(); i++)
     {
         standby[i].MyChar = ResourceManager::GetSTGChar(setting.Charactors[i].Char);
 
@@ -225,6 +247,7 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
                 bullets[bullets_n].Load(ResourceManager::GetSTGBullet(bn), f, world);
                 loaded_bullets.emplace(bn, bullets + bullets_n);
                 bullets_n += 1;
+                assert(bullets_n <= MAX_ENTITIES / 2);
             }
 
             bss.push(loaded_bullets[bn]);
@@ -243,6 +266,8 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
         }
         shooters_n += my_shooters_n;
 
+        assert(shooters_n <= MAX_ENTITIES * 2);
+
         /* Make state */
         standby[i].MyEnter = all_state.MakeChar(standby[i].MyChar.Texs);
     }
@@ -256,28 +281,27 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     STGThinker::HandoverController(L_stage);
     luaL_newlib(L_stage, level_con);
     lua_pushlightuserdata(L_stage, this);
+    lua_pushinteger(L_stage, UPDATE_PER_SEC);
     /* So here the stage thread first call will tell game to further init some charactors
      * who can be compelet initialized at this phase (mainly thinker). */
 #ifdef STG_LUA_API_ARG_CHECK
-    int good = lua_resume(L_stage, nullptr, 3, &rn);
+    int good = lua_resume(L_stage, nullptr, 4, &rn);
     if (good != LUA_YIELD)
         std::cerr << "STG stage Lua preload error: "
                   << (good == LUA_OK ? "it just return." : lua_tostring(L_stage, -1))
                   << std::endl;
-    if (rn != 1 || !lua_isthread(L_stage, -1))
+    if (!lua_isthread(L_stage, -1))
         std::cerr << "STG stage Lua did not return player watching!\n";
 #else
-    lua_resume(L_stage, nullptr, 3, &rn);
+    lua_resume(L_stage, nullptr, 4, &rn);
 #endif
-    if (!lua_isthread(L_stage, -1))
-        return;
     player_watching = lua_tothread(L_stage, -1);
     lua_pop(L_stage, rn);
 
     /* Connect player's comps. */
-    al_register_event_source(onstage_charactors[0].InputTerminal, onstage_thinkers[0].InputMaster);
-    al_register_event_source(sprite_renderers[0].Recv, onstage_charactors[0].RendererMaster);
-    al_register_event_source(onstage_thinkers[0].Recv, onstage_charactors[0].KneeJump);
+    al_register_event_source(onstage_charactors[charactors_n].InputTerminal, onstage_thinkers[thinkers_n].InputMaster);
+    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+    al_register_event_source(onstage_thinkers[thinkers_n].Recv, onstage_charactors[charactors_n].KneeJump);
     /* Make body and tune fixture for player */
     bd.position.Set(PHYSICAL_WIDTH * .5f, PHYSICAL_HEIGHT * .75f);
     player = world->CreateBody(&bd);
@@ -287,33 +311,29 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     /* Player on stage. */
     SCPatternData pd;
     pd.ai = player_watching;
-    onstage_charactors[0].Enable(p_id, GPlayer.MyChar, player, GPlayer.MyShooters, GPlayer.MyEnter);
-    sprite_renderers[0].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
-    onstage_thinkers[0].Active(p_id, SCPatternsCode::SCPC_CONTROLLED, std::move(pd), player);
-    /* Player always just has two shooters, and they are loop. */
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
-    GPlayer.MyShooters = GPlayer.MyShooters->Undershift(player, onstage_charactors[0].RendererMaster);
+    onstage_charactors[charactors_n].Enable(p_id, GPlayer.MyChar, player, GPlayer.MyShooters, GPlayer.MyEnter);
+    sprite_renderers[sprite_renderers_n].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
+    onstage_thinkers[thinkers_n].Active(p_id, SCPatternsCode::SCPC_CONTROLLED, std::move(pd), player);
+    Shooter *sp = GPlayer.MyShooters;
+    do
+        sp = sp->Undershift(player);
+    while (sp != GPlayer.MyShooters);
+    /* Export player's input terminal. */
+    PlayerInputTerminal = onstage_charactors[charactors_n].InputTerminal;
     /* id record */
-    records[p_id][STGCompType::SCT_CHARACTOR] = 0;
-    records[p_id][STGCompType::SCT_RENDER] = 0;
-    records[p_id][STGCompType::SCT_THINKER] = 0;
+    records[p_id][STGCompType::SCT_CHARACTOR] = charactors_n;
+    records[p_id][STGCompType::SCT_RENDER] = thinkers_n;
+    records[p_id][STGCompType::SCT_THINKER] = sprite_renderers_n;
     /* Update information for update loop. */
-    charactors_n = 1;
-    thinkers_n = 1;
-    sprite_renderers_n = 1;
+    charactors_n += 1;
+    thinkers_n += 1;
+    sprite_renderers_n += 1;
 }
 
 /* ONLY call by outside. */
 void STGLevel::Unload()
 {
     delete world;
-}
-
-ALLEGRO_EVENT_QUEUE *STGLevel::InputConnectionTerminal() const noexcept
-{
-    /* Player directly connects to game's input processor. */
-    /* Gamer always at first of stage. */
-    return onstage_charactors[records[0][STGCompType::SCT_CHARACTOR]].InputTerminal;
 }
 
 /*************************************************************************************************
@@ -324,6 +344,10 @@ ALLEGRO_EVENT_QUEUE *STGLevel::InputConnectionTerminal() const noexcept
 
 void STGLevel::Update()
 {
+    _ASSERTE(_CrtCheckMemory());
+
+    timer += 1;
+    lua_pushinteger(L_stage, timer);
     /* Stage update. Level event pass in here. New things on stage
      * here, controled by Lua. */
     int rn = 0;
@@ -333,8 +357,15 @@ void STGLevel::Update()
         std::cerr << "STG stage lua error: " << lua_tostring(L_stage, -1) << std::endl;
 #endif
     /* STG game over, just notify game. */
-    if (good != LUA_YIELD)
+    if (good != LUA_YIELD || al_get_timer_count(count_down) == 5)
+    {
+        al_stop_timer(count_down);
+        al_set_timer_count(count_down, 0);
         GameCon->STGReturn(true);
+        return;
+    }
+
+    _ASSERTE(_CrtCheckMemory());
 
     /* Thinking... Disable has not been submit to flow controller can be cancel here. */
     /* Disable can be invoked by AI thinker (I think I am dead...). Thinker will notify charactor,
@@ -343,6 +374,8 @@ void STGLevel::Update()
      * do reaction. So they do not save disable. */
     for (int i = 0; i < thinkers_n; i++)
         onstage_thinkers[i].Think();
+
+    _ASSERTE(_CrtCheckMemory());
 
     /* Disable happnned here. Disable state will be set when dead, but not action instantly.
      * Because dead by "collision" in physical world step, the state action will be
@@ -363,6 +396,8 @@ void STGLevel::Update()
             onstage_charactors[i].Farewell();
         }
     }
+
+    _ASSERTE(_CrtCheckMemory());
 
     /* Disable Execution */
     for (int i = 0; i < disabled_n; i++)
@@ -418,24 +453,58 @@ void STGLevel::Update()
     }
     disabled_n = 0;
 
+    _ASSERTE(_CrtCheckMemory());
+
     /* Shooting & Bullet management */
+#ifdef _DEBUG
+    int lock_free = 0;
+#endif
+
     Shooter *sp = shooters_p;
     while (sp != nullptr)
+    {
+#ifdef _DEBUG
+        lock_free += 1;
+        if (lock_free > 100)
+        {
+            std::cerr << "Shooters list was locked!\n";
+            Pause();
+            return;
+        }
+#endif
+
         sp = sp->Update();
+    }
 
 #ifdef STG_PERFORMENCE_SHOW
     int i_bn = 0;
 #endif
 
+#ifdef _DEBUG
+    lock_free = 0;
+#endif
+
     Bullet *b = bullets_p;
     while (b != nullptr)
     {
+#ifdef _DEBUG
+        lock_free += 1;
+        if (lock_free > 100)
+        {
+            std::cerr << "Bullet list was locked!\n";
+            Pause();
+            return;
+        }
+#endif
+
 #ifdef STG_PERFORMENCE_SHOW
         i_bn += b->GetBulletNum();
 #endif
 
         b = b->Update();
     }
+
+    _ASSERTE(_CrtCheckMemory());
 
 #ifdef STG_PERFORMENCE_SHOW
     tr_bn.ChangeText(i_bn);

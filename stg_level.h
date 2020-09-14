@@ -53,6 +53,7 @@ public:
     std::string CodeName;
 
     GameFlowController *GameCon;
+    ALLEGRO_EVENT_QUEUE *PlayerInputTerminal;
 
     /* Store the Player's stg status. */
     StageCharRes SPlayer;
@@ -64,7 +65,7 @@ public:
     STGLevel(STGLevel &&) = delete;
     STGLevel &operator=(const STGLevel &) = delete;
     STGLevel &operator=(STGLevel &&) = delete;
-    ~STGLevel() = default;
+    ~STGLevel();
 
     /* Self constructor */
     void Load(float time_step, const STGLevelSetting &setting);
@@ -73,9 +74,6 @@ public:
     /* GameLoop */
     void Update();
     void Render(float forward_time);
-
-    /* Provied Player's input terminal to input processor. */
-    ALLEGRO_EVENT_QUEUE *InputConnectionTerminal() const noexcept;
 
     /* Stage flow control API */
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
@@ -125,7 +123,11 @@ private:
     b2Body *player;
 
     /* Lua Things. */
+    lua_Integer timer;
     lua_State *L_stage;
+
+    /* Count down. */
+    ALLEGRO_TIMER *count_down;
 
     /* ID System */
     int records[MAX_ON_STAGE][STGCompType::SCT_NUM];
@@ -141,7 +143,6 @@ private:
     int disabled_n;
 
     /* AUX Function */
-    inline void process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept;
     Shooter *copy_shooters(const Shooter *first);
 
 #ifdef STG_DEBUG_PHY_DRAW
