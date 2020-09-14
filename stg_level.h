@@ -90,6 +90,10 @@ public:
     const b2Body *TrackEnemy() const noexcept final;
     const b2Body *TrackPlayer() const noexcept final;
 
+    void HelpRespwan(int preload_id, int real_id) final;
+    void PlayerWin();
+    void PlayerDying();
+
 private:
     /* Also directly used in game. */
     STGStateMan all_state;

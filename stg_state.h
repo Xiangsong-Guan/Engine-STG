@@ -173,51 +173,6 @@ public:
     }
 };
 
-// class SCSSync : public SCS
-// {
-// public:
-//     SCSSync() = default;
-//     SCSSync(const SCSSync &) = delete;
-//     SCSSync(SCSSync &&) = delete;
-//     SCSSync &operator=(const SCSSync &) = delete;
-//     SCSSync &operator=(SCSSync &&) = delete;
-//     ~SCSSync() = default;
-
-//     void Action(STGCharactor *sc) final;
-//     void Enter(STGCharactor *sc) final;
-//     void Leave(STGCharactor *sc) final;
-// };
-
-// class SCSFSync : public SCS
-// {
-// public:
-//     SCSFSync() = default;
-//     SCSFSync(const SCSFSync &) = delete;
-//     SCSFSync(SCSFSync &&) = delete;
-//     SCSFSync &operator=(const SCSFSync &) = delete;
-//     SCSFSync &operator=(SCSFSync &&) = delete;
-//     ~SCSFSync() = default;
-
-//     void Action(STGCharactor *sc) final;
-//     void Enter(STGCharactor *sc) final;
-//     void Leave(STGCharactor *sc) final;
-// };
-
-// class SCSShift : public SCS
-// {
-// public:
-//     SCSShift() = default;
-//     SCSShift(const SCSShift &) = delete;
-//     SCSShift(SCSShift &&) = delete;
-//     SCSShift &operator=(const SCSShift &) = delete;
-//     SCSShift &operator=(SCSShift &&) = delete;
-//     ~SCSShift() = default;
-
-//     void Action(STGCharactor *sc) final;
-//     void Enter(STGCharactor *sc) final;
-//     void Leave(STGCharactor *sc) final;
-// };
-
 /*************************************************************************************************
  *                                                                                               *
  *                                          Disable                                              *
@@ -227,59 +182,64 @@ public:
 class SCSDisabled : public SCS
 {
 protected:
-    bool tomaranaizoooooo;
-    int timer;
+    int respwan_id;
 
 public:
-    int Duration;
-    SCSBorn *Next;
-
-    SCSDisabled() = default;
+    SCSDisabled()
+    {
+        respwan_id = -1;
+    };
     SCSDisabled(const SCSDisabled &) = delete;
     SCSDisabled(SCSDisabled &&) = delete;
     SCSDisabled &operator=(const SCSDisabled &) = delete;
     SCSDisabled &operator=(SCSDisabled &&) = delete;
     virtual ~SCSDisabled() = default;
 
-    inline void init() noexcept
+    virtual void Action(STGCharactor *sc) override
     {
-        timer = -1;
-        tomaranaizoooooo = false;
-        Duration = DEAD_TIME;
-    }
-
-    virtual void Init(const STGTexture &texs) { init(); }
-
-    virtual void Copy(const SCSDisabled *o) { init(); }
-
-    virtual void Action(STGCharactor *sc)
-    {
-        timer += 1;
-        if (timer == 0)
+        if (sc->SNow != this)
         {
+#ifdef _DEBUG
+            std::cout << "Charactor-" << sc->CodeName << " disable (one frame).\n";
+#endif
+
             sc->SPending = this;
             sc->SNow = this;
         }
-        else if (timer == 1)
-            sc->Physics->SetActive(false);
-        else if (timer == Duration)
-            if (tomaranaizoooooo)
+        else
+        {
+            if (respwan_id < 0)
             {
-                timer = -1;
-                sc->SPending = Next;
-                sc->Physics->SetActive(true);
+#ifdef _DEBUG
+                std::cout << "Charactor-" << sc->CodeName << " disable (one frame) end.\n";
+#endif
+
+                sc->Farewell();
             }
             else
-                sc->Farewell();
+            {
+#ifdef _DEBUG
+                std::cout << "Charactor-" << sc->CodeName << " need to respwan (one frame): " << respwan_id << ".\n";
+#endif
+
+                sc->Con->HelpRespwan(respwan_id, sc->ID);
+                respwan_id = -1;
+            }
+        }
     }
 
     bool CheckInput(ALLEGRO_EVENT *ie) final
     {
-        if (cmd != STGCharCommand::RESPAWN)
-            return false;
-        else
-            tomaranaizoooooo = true;
-        return true;
+        if (ie->user.data1 == STGCharCommand::SCC_RESPAWN)
+        {
+            respwan_id = ie->user.data2;
+
+#ifdef _DEBUG
+            std::cout << "Will respwan form disable:" << respwan_id << "\n";
+#endif
+        }
+
+        return false;
     }
 
     bool CheckChange(const STGChange *change, STGCharactor *sc) final { return false; }
@@ -316,6 +276,10 @@ public:
         timer += 1;
         if (timer == 0)
         {
+#ifdef _DEBUG
+            std::cout << "Charactor-" << sc->CodeName << " disable.\n";
+#endif
+
             sc->SPending = this;
             sc->SNow = this;
         }
@@ -329,63 +293,28 @@ public:
         }
         else
         {
-            if (tomaranaizoooooo)
+            if (respwan_id < 0)
             {
-                timer = -1;
-                Animation.Reset();
-                sc->SPending = Next;
-                sc->Physics->SetActive(true);
+#ifdef _DEBUG
+                std::cout << "Charactor-" << sc->CodeName << " disable end.\n";
+#endif
+
+                sc->Farewell();
             }
             else
-                sc->Farewell();
-        }
-    }
-};
-
-class SCSDisabledStatic : public SCSDisabled
-{
-public:
-    ALLEGRO_BITMAP *Texture;
-
-    SCSDisabledStatic() = default;
-    SCSDisabledStatic(const SCSDisabledStatic &) = delete;
-    SCSDisabledStatic(SCSDisabledStatic &&) = delete;
-    SCSDisabledStatic &operator=(const SCSDisabledStatic &) = delete;
-    SCSDisabledStatic &operator=(SCSDisabledStatic &&) = delete;
-    ~SCSDisabledStatic() = default;
-
-    virtual void Init(const STGTexture &texs) final
-    {
-        init();
-        Texture = ResourceManager::GetTexture(texs.SpriteDisable);
-    }
-
-    virtual void Copy(const SCSDisabled *o) final
-    {
-        init();
-        Texture = dynamic_cast<const SCSDisabledStatic *>(o)->Texture;
-    }
-
-    virtual void Action(STGCharactor *sc) final
-    {
-        timer += 1;
-        if (timer == 0)
-        {
-            sc->SPending = this;
-            sc->SNow = this;
-            change_texture(Texture, sc->RendererMaster);
-        }
-        else if (timer == 1)
-            sc->Physics->SetActive(false);
-        else if (timer == Duration)
-            if (tomaranaizoooooo)
             {
-                timer = -1;
-                sc->SPending = Next;
+#ifdef _DEBUG
+                std::cout << "Charactor-" << sc->CodeName << " need to respwan: " << respwan_id << ".\n";
+#endif
+
+                sc->Con->HelpRespwan(respwan_id, sc->ID);
                 sc->Physics->SetActive(true);
+                respwan_id = -1;
             }
-            else
-                sc->Farewell();
+
+            timer = -1;
+            Animation.Reset();
+        }
     }
 };
 

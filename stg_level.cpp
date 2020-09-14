@@ -90,10 +90,37 @@ static int airborne(lua_State *L)
     return 0;
 }
 
+/* Tell game play is winner.
+ * 1=level
+ * no return */
+int player_win(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    reinterpret_cast<STGLevel *>(lua_touserdata(L, 1))->PlayerWin();
+
+    return 0;
+}
+
+int player_dying(lua_State *L)
+{
+#ifdef STG_LUA_API_ARG_CHECK
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
+#endif
+
+    reinterpret_cast<STGLevel *>(lua_touserdata(L, 1))->PlayerDying();
+
+    return 0;
+}
+
 static const luaL_Reg level_con[] = {
     {"further_load", further_load},
     {"debut", debut},
     {"airborne", airborne},
+    {"player_win", player_win},
+    {"player_dying", player_dying},
     {NULL, NULL}};
 
 /*************************************************************************************************
@@ -925,6 +952,51 @@ void STGLevel::DisableBullet(Bullet *b)
         b->Next->Prev = b->Prev;
 
 #ifdef _DEBUG
-    std::cout << "Bullet disabled: " << b - bullets << "\n";
+    std::cout << "Bullet disabled: " << b->CodeName << ".\n";
 #endif
+}
+
+void STGLevel::HelpRespwan(int preload_id, int real_id)
+{
+#ifdef _DEBUG
+    std::cout << "STG-" << CodeName << " respwan charactor-" << real_id << " with pre-load ID: " << preload_id << ".\n";
+#endif
+
+    STGCharactor &rc = onstage_charactors[records[real_id][STGCompType::SCT_CHARACTOR]];
+
+    /* Re-Attach fixture. */
+    rc.Physics->DestroyFixture(rc.Physics->GetFixtureList());
+    if (standby[preload_id].MyChar.Phy.Physical)
+        rc.Physics->CreateFixture(&standby[preload_id].MyChar.Phy.FD);
+
+    /* Shooter */
+    if (standby[preload_id].MyShooters != nullptr)
+    {
+        Shooter *sp = standby[preload_id].MyShooters;
+        do
+            sp = sp->Undershift(rc.Physics);
+        while (sp != standby[preload_id].MyShooters);
+    }
+
+    rc.Enable(real_id, standby[preload_id].MyChar, rc.Physics,
+              standby[preload_id].MyShooters, standby[preload_id].MyEnter);
+}
+
+void STGLevel::PlayerWin()
+{
+#ifdef _DEBUG
+    std::cout << "STG-" << CodeName << " player is winning!\n";
+#endif
+
+    al_start_timer(count_down);
+}
+
+void STGLevel::PlayerDying()
+{
+#ifdef _DEBUG
+    std::cout << "STG-" << CodeName << " player is dying!\n";
+#endif
+
+    al_add_timer_count(count_down, 2);
+    al_start_timer(count_down);
 }
