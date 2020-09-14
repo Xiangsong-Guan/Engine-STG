@@ -43,7 +43,7 @@ struct StageCharInfo
     Shooter *MyShooters;        /* copy in airborne */
     SCPatternsCode MyPtn;       /* change in airborne */
     SCPatternData MyPD;         /* change in airborne */
-    SCSBorn *MyEnter;           /* copy in airborne */
+    SCS *MyEnter;               /* copy in airborne */
 };
 
 class STGLevel : public Scene, public STGFlowController

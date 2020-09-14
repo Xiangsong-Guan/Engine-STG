@@ -29,26 +29,19 @@ class SCSDisabled;
  *                                                                                               *
  *************************************************************************************************/
 
-class SCSBorn : public SCS
+class SCSBornAnimed : public SCS
 {
-protected:
+private:
     bool FILTER[STGCharCommand::SCC_NUM];
-
-    inline void init()
-    {
-        /* When use pending to change, make change happens in advance one frame. */
-        Duration = BORN_TIME - 1;
-        Next = nullptr;
-        Timer = -1;
-    }
+    int timer;
 
 public:
+    Anime Animation;
     int Duration;
-    int Timer;
 
     SCSMovement *Next;
 
-    SCSBorn()
+    SCSBornAnimed()
     {
         for (int i = 0; i < STGCharCommand::SCC_NUM; i++)
             FILTER[i] = false;
@@ -57,68 +50,45 @@ public:
         FILTER[STGCharCommand::SCC_LEFT] = true;
         FILTER[STGCharCommand::SCC_RIGHT] = true;
         FILTER[STGCharCommand::SCC_MOVE_XY] = true;
-    }
-    SCSBorn(const SCSBorn &) = delete;
-    SCSBorn(SCSBorn &&) = delete;
-    SCSBorn &operator=(const SCSBorn &) = delete;
-    SCSBorn &operator=(SCSBorn &&) = delete;
-    virtual ~SCSBorn() = default;
-
-    bool CheckInput(ALLEGRO_EVENT *ie) noexcept final { return FILTER[ie->user.data1]; }
-
-    bool CheckChange(const STGChange *change, STGCharactor *sc) final { return false; }
-
-    virtual void Init(const STGTexture &texs) { init(); }
-
-    virtual void Copy(const SCSBorn *o) { init(); }
-
-    virtual void Action(STGCharactor *sc) override
-    {
-        Timer += 1;
-        if (Timer == 0)
-            sc->SPending = this;
-        else if (Timer == Duration)
-        {
-            Timer = -1;
-            sc->SPending = reinterpret_cast<SCS *>(Next);
-        }
-    }
-};
-
-class SCSBornAnimed : public SCSBorn
-{
-public:
-    Anime Animation;
-
-    SCSBornAnimed() = default;
+    };
     SCSBornAnimed(const SCSBornAnimed &) = delete;
     SCSBornAnimed(SCSBornAnimed &&) = delete;
     SCSBornAnimed &operator=(const SCSBornAnimed &) = delete;
     SCSBornAnimed &operator=(SCSBornAnimed &&) = delete;
     ~SCSBornAnimed() = default;
 
-    void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs)
     {
-        init();
         Animation = ResourceManager::GetAnime(texs.SpriteBorn);
-        /* Born time should be same with born animation time */
+        /* When use pending to change, make change happens in advance one frame. */
         Duration = Animation.LG_DURATION - 1;
+        timer = -1;
     }
 
-    void Copy(const SCSBorn *o) final
+    void Copy(const SCSBornAnimed *o)
     {
-        init();
-        Animation = dynamic_cast<const SCSBornAnimed *>(o)->Animation;
+        Animation = o->Animation;
         Animation.Reset();
-        /* Born time should be same with born animation time */
+        /* When use pending to change, make change happens in advance one frame. */
         Duration = Animation.LG_DURATION - 1;
+        timer = -1;
     }
+
+    bool CheckInput(ALLEGRO_EVENT *ie) noexcept final { return FILTER[ie->user.data1]; }
+
+    bool CheckChange(const STGChange *change, STGCharactor *sc) final { return false; }
 
     void Action(STGCharactor *sc) final
     {
-        Timer += 1;
+        timer += 1;
+
+#ifdef _DEBUG
+        if (timer == 0)
+            std::cout << "Charactor-" << sc->CodeName << " born.\n";
+#endif
+
         /* Last animation frame (in logic) must return false. */
-        if (Timer < Duration)
+        if (timer < Duration)
         {
             sc->SPending = this;
             if (Animation.Forward())
@@ -126,49 +96,18 @@ public:
         }
         else
         {
-            Timer = -1;
+#ifdef _DEBUG
+            std::cout << "Charactor-" << sc->CodeName << " will transform to normal state.\n";
+#endif
+
+            timer = -1;
             Animation.Reset();
             sc->SPending = reinterpret_cast<SCS *>(Next);
-        }
-    }
-};
 
-class SCSBornStatic : public SCSBorn
-{
-public:
-    ALLEGRO_BITMAP *Texture;
-
-    SCSBornStatic() = default;
-    SCSBornStatic(const SCSBornStatic &) = delete;
-    SCSBornStatic(SCSBornStatic &&) = delete;
-    SCSBornStatic &operator=(const SCSBornStatic &) = delete;
-    SCSBornStatic &operator=(SCSBornStatic &&) = delete;
-    ~SCSBornStatic() = default;
-
-    void Init(const STGTexture &texs) final
-    {
-        Texture = ResourceManager::GetTexture(texs.SpriteBorn);
-        init();
-    }
-
-    void Copy(const SCSBorn *o) final
-    {
-        Texture = dynamic_cast<const SCSBornStatic *>(o)->Texture;
-        init();
-    }
-
-    void Action(STGCharactor *sc) final
-    {
-        Timer += 1;
-        if (Timer == Duration)
-        {
-            Timer = -1;
-            sc->SPending = reinterpret_cast<SCS *>(Next);
-        }
-        else if (Timer == 0)
-        {
-            sc->SPending = this;
-            change_texture(Texture, sc->RendererMaster);
+            /* Notify */
+            ALLEGRO_EVENT event;
+            event.user.data1 = STGCharEvent::SCE_OPREATIONAL;
+            al_emit_user_event(sc->KneeJump, &event, nullptr);
         }
     }
 };
@@ -247,8 +186,12 @@ public:
 
 class SCSDisabledAnimed : public SCSDisabled
 {
+private:
+    int timer;
+
 public:
     Anime Animation;
+    int Duration;
 
     SCSDisabledAnimed() = default;
     SCSDisabledAnimed(const SCSDisabledAnimed &) = delete;
@@ -257,17 +200,19 @@ public:
     SCSDisabledAnimed &operator=(SCSDisabledAnimed &&) = delete;
     ~SCSDisabledAnimed() = default;
 
-    virtual void Init(const STGTexture &texs) final
+    void Init(const STGTexture &texs)
     {
-        init();
+        timer = -1;
+        respwan_id = -1;
         Animation = ResourceManager::GetAnime(texs.SpriteDisable);
         Duration = Animation.LG_DURATION;
     }
 
-    virtual void Copy(const SCSDisabled *o) final
+    void Copy(const SCSDisabledAnimed *o)
     {
-        init();
-        Animation = dynamic_cast<const SCSDisabledAnimed *>(o)->Animation;
+        timer = -1;
+        respwan_id = -1;
+        Animation = o->Animation;
         Duration = Animation.LG_DURATION;
     }
 
@@ -389,20 +334,8 @@ public:
         return true;
     }
 
-    virtual void Init(const STGTexture &texs) { init(); }
-
-    virtual void Copy(const SCSMovement *o) { init(); }
-
-    virtual void Action(STGCharactor *sc) override
-    {
-        if (Next[next_i])
-        {
-            Next[next_i]->Action(sc);
-            next_i = STGCharCommand::SCC_UP;
-        }
-        else
-            sc->SPending = this;
-    }
+    virtual void Init(const STGTexture &texs) = 0;
+    virtual void Copy(const SCSMovement *o) = 0;
 };
 
 class SCSMovementStatic : public SCSMovement
@@ -443,7 +376,10 @@ public:
             sc->SPending = this;
             int where = move_check(sc->Velocity);
             if (last_time_where != where)
-                change_texture(Texture[last_time_where = where], sc->RendererMaster);
+            {
+                last_time_where = where;
+                change_texture(Texture + where, sc->RendererMaster);
+            }
         }
     }
 };
@@ -492,9 +428,10 @@ public:
             int where = move_check(sc->Velocity);
             if (last_time_where != where)
             {
-                Animation[last_time_where = where].Reset();
+                Animation[last_time_where].Reset();
                 Animation[where].Forward();
                 change_texture(Animation[where].Playing, sc->RendererMaster);
+                last_time_where = where;
             }
             else if (Animation[where].Forward())
                 change_texture(Animation[where].Playing, sc->RendererMaster);
