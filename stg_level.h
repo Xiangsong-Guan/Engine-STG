@@ -106,7 +106,7 @@ private:
     Shooter many_shooters[MAX_ENTITIES * 2];
     Shooter *shooters_p;
     int shooters_n;
-    Bullet bullets[MAX_ENTITIES];
+    Bullet bullets[MAX_ENTITIES / 2];
     Bullet *bullets_p;
     int bullets_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];

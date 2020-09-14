@@ -1,5 +1,7 @@
 #include "text_renderer.h"
 
+#include "cppsuckdef.h"
+
 TextRenderer::TextRenderer() : Color(al_map_rgb_f(1.f, 1.f, 1.f)) {}
 
 void TextRenderer::Draw() const

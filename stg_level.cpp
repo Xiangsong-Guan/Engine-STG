@@ -142,7 +142,7 @@ STGLevel::STGLevel()
     }
     for (int i = 0; i < MAX_ENTITIES * 2; i++)
         many_shooters[i].Con = this;
-    for (int i = 0; i < MAX_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES / 2; i++)
         bullets[i].Con = this;
 
     count_down = al_create_timer(1.);
@@ -161,8 +161,10 @@ STGLevel::~STGLevel()
 void STGLevel::Load(float time_step, const STGLevelSetting &setting)
 {
 #ifdef STG_PERFORMENCE_SHOW
-    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("m+10r_10"), 0.f, 0.f, ALLEGRO_ALIGN_LEFT});
-    tr_bn.SetText({"", ResourceManager::GetFont("m+10r_10"), tr_bullets_n.GetWidth(), 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("m+10r_10"),
+                          0.f, 0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bn.SetText({"", ResourceManager::GetFont("m+10r_10"), tr_bullets_n.GetWidth(),
+                   0.f, ALLEGRO_ALIGN_LEFT});
 #endif
 
     timer = 0;
@@ -228,14 +230,18 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     {
         many_shooters[shooters_n + player_shooters_n].Load(bound, ResourceManager::GetSTGShooter(sn), bss);
         many_shooters[shooters_n + player_shooters_n].MyDearPlayer();
-        many_shooters[shooters_n + player_shooters_n].Shift = &many_shooters[shooters_n + player_shooters_n + 1];
+        many_shooters[shooters_n + player_shooters_n].ShiftDown =
+            many_shooters + shooters_n + player_shooters_n + 1;
+        many_shooters[shooters_n + player_shooters_n].ShiftUp =
+            many_shooters + shooters_n + player_shooters_n - 1;
         player_shooters_n += 1;
     }
     if (player_shooters_n > 0)
     {
-        GPlayer.MyShooters = &many_shooters[shooters_n];
+        GPlayer.MyShooters = many_shooters + shooters_n;
         /* Shooters shift in a circle. */
-        many_shooters[shooters_n + player_shooters_n - 1].Shift = &many_shooters[shooters_n];
+        many_shooters[shooters_n + player_shooters_n - 1].ShiftDown = many_shooters + shooters_n;
+        many_shooters[shooters_n].ShiftUp = many_shooters + shooters_n + player_shooters_n - 1;
     }
     shooters_n += player_shooters_n;
     GPlayer.MyEnter = all_state.MakeChar(GPlayer.MyChar.Texs);
@@ -282,14 +288,16 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
         for (const auto &sn : setting.Charactors[i].Shooters)
         {
             many_shooters[shooters_n + my_shooters_n].Load(bound, ResourceManager::GetSTGShooter(sn), bss);
-            many_shooters[shooters_n + my_shooters_n].Shift = &many_shooters[shooters_n + my_shooters_n + 1];
+            many_shooters[shooters_n + my_shooters_n].ShiftDown = many_shooters + shooters_n + my_shooters_n + 1;
+            many_shooters[shooters_n + my_shooters_n].ShiftUp = many_shooters + shooters_n + my_shooters_n - 1;
             my_shooters_n += 1;
         }
         if (my_shooters_n > 0)
         {
             standby[i].MyShooters = &many_shooters[shooters_n];
             /* Shooters shift in a circle. */
-            many_shooters[shooters_n + my_shooters_n - 1].Shift = &many_shooters[shooters_n];
+            many_shooters[shooters_n + my_shooters_n - 1].ShiftDown = many_shooters + shooters_n;
+            many_shooters[shooters_n].ShiftUp = many_shooters + shooters_n + my_shooters_n - 1;
         }
         shooters_n += my_shooters_n;
 
@@ -429,7 +437,7 @@ void STGLevel::Update()
     /* Disable Execution */
     for (int i = 0; i < disabled_n; i++)
     {
-        int flaw = -1;
+        int flaw = 0;
         int id = disabled[i];
 
         switch (disabled_t[i])
@@ -444,8 +452,11 @@ void STGLevel::Update()
 
             world->DestroyBody(onstage_charactors[flaw].Physics);
 
-            onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
-            records[onstage_charactors[flaw].ID][STGCompType::SCT_CHARACTOR] = flaw;
+            if (flaw + 1 != charactors_n)
+            {
+                onstage_charactors[flaw].CPPSuckSwap(onstage_charactors[charactors_n - 1]);
+                records[onstage_charactors[flaw].ID][STGCompType::SCT_CHARACTOR] = flaw;
+            }
             charactors_n -= 1;
 
             return_id(id);
@@ -459,8 +470,11 @@ void STGLevel::Update()
             std::cout << "Render final disable: " << id << ".\n";
 #endif
 
-            sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
-            records[sprite_renderers[flaw].ID][STGCompType::SCT_RENDER] = flaw;
+            if (flaw + 1 != sprite_renderers_n)
+            {
+                sprite_renderers[flaw].CPPSuckSwap(sprite_renderers[sprite_renderers_n - 1]);
+                records[sprite_renderers[flaw].ID][STGCompType::SCT_RENDER] = flaw;
+            }
             sprite_renderers_n -= 1;
             break;
 
@@ -472,8 +486,11 @@ void STGLevel::Update()
             std::cout << "Thinker final disable: " << id << ".\n";
 #endif
 
-            onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
-            records[onstage_thinkers[flaw].ID][STGCompType::SCT_THINKER] = flaw;
+            if (flaw + 1 != thinkers_n)
+            {
+                onstage_thinkers[flaw].CPPSuckSwap(onstage_thinkers[thinkers_n - 1]);
+                records[onstage_thinkers[flaw].ID][STGCompType::SCT_THINKER] = flaw;
+            }
             thinkers_n -= 1;
             break;
         }
@@ -737,12 +754,12 @@ void STGLevel::Debut(int id, float x, float y)
     {
         Shooter *sp = standby[id].MyShooters;
         do
-            sp = sp->Undershift(b, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(b);
         while (sp != standby[id].MyShooters);
     }
 
     /* Renderer */
-    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    if (standby[id].MyChar.Texs.VeryFirstTex.Sprite != nullptr)
     {
         sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
         al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
@@ -793,12 +810,12 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
         my_shooters = copy_shooters(standby[id].MyShooters);
         Shooter *sp = my_shooters;
         do
-            sp = sp->Undershift(b, onstage_charactors[charactors_n].RendererMaster);
+            sp = sp->Undershift(b);
         while (sp != my_shooters);
     }
 
     /* Renderer */
-    if (standby[id].MyChar.Texs.VeryFirstTex != nullptr)
+    if (standby[id].MyChar.Texs.VeryFirstTex.Sprite != nullptr)
     {
         sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
         al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
@@ -827,7 +844,7 @@ void STGLevel::DisableAll(int id)
 {
 #ifdef _DEBUG
     std::cout << "Char-" << onstage_charactors[records[id][STGCompType::SCT_CHARACTOR]].CodeName
-              << " ID: " << id << " will be diabled!\n";
+              << " ID: " << id << " will be disabled!\n";
 #endif
 
     disabled[disabled_n] = id;
@@ -863,7 +880,7 @@ void STGLevel::DisableThr(int id)
     disabled_n += 1;
 
 #ifdef _DEBUG
-    std::cout << "Thinker disabled for " << id << ".\n";
+    std::cout << "Thinker will disabled for " << id << ".\n";
 #endif
 }
 
@@ -916,11 +933,13 @@ Shooter *STGLevel::copy_shooters(const Shooter *first)
 #endif
 
         many_shooters[shooters_n + copied_shooters_n] = *sp;
-        many_shooters[shooters_n + copied_shooters_n].Shift = many_shooters + shooters_n + copied_shooters_n + 1;
-        sp = sp->Shift;
+        many_shooters[shooters_n + copied_shooters_n].ShiftDown = many_shooters + shooters_n + copied_shooters_n + 1;
+        many_shooters[shooters_n + copied_shooters_n].ShiftUp = many_shooters + shooters_n + copied_shooters_n - 1;
+        sp = sp->ShiftDown;
         copied_shooters_n += 1;
     } while (sp != first);
-    many_shooters[shooters_n + copied_shooters_n - 1].Shift = many_shooters + shooters_n;
+    many_shooters[shooters_n + copied_shooters_n - 1].ShiftDown = many_shooters + shooters_n;
+    many_shooters[shooters_n].ShiftUp = many_shooters + shooters_n + copied_shooters_n - 1;
 
     shooters_n += copied_shooters_n;
 
@@ -933,6 +952,7 @@ void STGLevel::EnableBullet(Bullet *b)
 {
     if (bullets_p != nullptr)
         bullets_p->Prev = b;
+    b->Prev = nullptr;
     b->Next = bullets_p;
     bullets_p = b;
 
