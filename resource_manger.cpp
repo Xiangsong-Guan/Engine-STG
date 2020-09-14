@@ -922,11 +922,14 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
         if (lua_geti(L_main, -4, 4) != LUA_TNUMBER)
             INVALID_KINEMATIC_PHASES(name, "invalid speed dur!", balance_top);
 
-        kps.Seq[i] = {static_cast<float>(lua_tonumber(L_main, -4)),
-                      static_cast<float>(lua_tonumber(L_main, -3)),
-                      std::lroundf(lua_tonumber(L_main, -2) * static_cast<float>(UPDATE_PER_SEC)),
-                      static_cast<float>(lua_tonumber(L_main, -1))};
-        kps.Seq[i].TransEnd = kps.Seq[i].PhaseTime + (kps.Seq[i].TransTime * static_cast<float>(UPDATE_PER_SEC));
+        float vv = lua_tonumber(L_main, -4);
+        float vr = lua_tonumber(L_main, -3);
+        float start_time = lua_tonumber(L_main, -2);
+        float dur_time = lua_tonumber(L_main, -1);
+
+        kps.Seq[i] = {vv, vr, std::lroundf(start_time * static_cast<float>(UPDATE_PER_SEC)),
+                      dur_time == 0.f ? 0.f : vv / dur_time, dur_time == 0.f ? 0.f : vv / dur_time,
+                      std::lroundf((start_time + dur_time) * static_cast<float>(UPDATE_PER_SEC))};
         lua_pop(L_main, 5);
     }
     kps.SeqSize = luaL_len(L_main, -1);

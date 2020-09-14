@@ -120,9 +120,10 @@ struct KinematicPhase
 {
     float VV;
     float VR;
-    int PhaseTime;   /* frame */
-    float TransTime; /* sec. */
-    int TransEnd;    /* PhaseTime + TransTime * UPDATE_PRE_SEC */
+    int PhaseTime; /* frame */
+    float VAcceleration;
+    float RAcceleration;
+    int TransEnd; /* PhaseTime + TransTime * UPDATE_PRE_SEC */
 };
 
 constexpr int MAX_KINEMATIC_PHASE_NUM = 16;
