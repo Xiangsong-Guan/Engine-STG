@@ -4,18 +4,24 @@
 
 #include <iostream>
 
-inline static void cpp_class_sucks(Bullet *bullet, const BulletCollisionHandler *who)
-{
-    bullet->Disappear(who);
-}
+/*************************************************************************************************
+ *                                                                                               *
+ *                                Collision Proxy Function                                       *
+ *                                                                                               *
+ *************************************************************************************************/
 
-inline static void cpp_class_sucks_forever(Bullet *bullet, CollisionHandler *who)
+void BulletCollisionHandler::Hit(CollisionHandler *o)
 {
 #ifdef _DEBUG
-    std::cout << "Bullet-" << bullet->CodeName << " hit!\n";
+    std::cout << "Bullet-" << Master->CodeName << " hit!\n";
 #endif
 
-    who->Hurt(&bullet->Change);
+    o->Hurt(Master->GetChange(MyPower));
+}
+
+void BulletCollisionHandler::Hurt(const STGChange *c)
+{
+    Master->Disappear(this);
 }
 
 /*************************************************************************************************
@@ -60,23 +66,12 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     else
         idle = Anime(ResourceManager::GetTexture("blank"));
     if (idle.DURATION == 1)
-    {
         idle.Forward();
-        idle.Forward();
-        idle.Forward();
-    }
     if (hit.DURATION == 1)
-    {
         hit.Forward();
-        hit.Forward();
-        hit.Forward();
-    }
     if (born.DURATION == 1)
-    {
         born.Forward();
-        born.Forward();
-        born.Forward();
-    }
+
     /* Usully we count timer from -1, but here renderer takes frame asynchronously (FOR DEAD ONES). So conut from -1 will 
      * make error. Count from 0 and check in end of a frame will cause one frame more in the final end. That
      * is clearly visible. Minus one for total duration to avoid this happens. */
@@ -84,7 +79,8 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 
     world = w;
 
-    Change = bs.Change;
+    basic_power = bs.Change.any.Damage;
+    change = bs.Change;
     phy = bs.Phy;
     ks = bs.KS;
 
@@ -97,7 +93,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
         if (ks.Dir)
         {
 #ifdef _DEBUG
-            std::cout << "Pattern: Track with dir. ";
+            std::cout << "Bullet-" << CodeName << " Pattern: Track with dir. ";
 #endif
 
             pattern = phy.FD.filter.groupIndex == CollisionType::G_ENEMY_SIDE
@@ -107,7 +103,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
         else
         {
 #ifdef _DEBUG
-            std::cout << "Pattern: Track without dir. ";
+            std::cout << "Bullet-" << CodeName << " Pattern: Track without dir. ";
 #endif
 
             pattern = phy.FD.filter.groupIndex == CollisionType::G_ENEMY_SIDE
@@ -118,7 +114,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
         if (ks.Dir)
         {
 #ifdef _DEBUG
-            std::cout << "Pattern: Statical with dir. ";
+            std::cout << "Bullet-" << CodeName << " Pattern: Statical with dir. ";
 #endif
 
             pattern = std::mem_fn(&Bullet::statical_d);
@@ -126,7 +122,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
         else
         {
 #ifdef _DEBUG
-            std::cout << "Pattern: Statical without dir. ";
+            std::cout << "Bullet-" << CodeName << " Pattern: Statical without dir. ";
 #endif
 
             pattern = std::mem_fn(&Bullet::statical);
@@ -134,7 +130,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     else if (ks.Dir)
     {
 #ifdef _DEBUG
-        std::cout << "Pattern: Kinematic with dir. ";
+        std::cout << "Bullet-" << CodeName << " Pattern: Kinematic with dir. ";
 #endif
 
         pattern = std::mem_fn(&Bullet::kinematic_d);
@@ -142,7 +138,7 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     else
     {
 #ifdef _DEBUG
-        std::cout << "Pattern: Kinematic without dir. ";
+        std::cout << "Bullet-" << CodeName << " Pattern: Kinematic without dir. ";
 #endif
 
         pattern = std::mem_fn(&Bullet::kinematic);
@@ -194,7 +190,8 @@ Bullet *Bullet::Update()
         else
         {
             world->DestroyBody(dead_bullets[i].Physics);
-            dead_bullets[i] = dead_bullets[dead_bullets_n - 1];
+            if (i + 1 != dead_bullets_n)
+                dead_bullets[i] = dead_bullets[dead_bullets_n - 1];
             dead_bullets_n -= 1;
         }
     }
@@ -274,11 +271,68 @@ void Bullet::Bang(const b2Vec2 &world_pos, float world_angle, int mp)
     }
 }
 
+/* ONLY called by the bullet's last master shooter. Usully used in stage finale. */
+void Bullet::Farewell()
+{
+#ifdef _DEBUG
+    std::cout << "Bullet-" << CodeName << ", Sayonara!\n";
+#endif
+
+    for (int i = 0; i < just_bullets_n; i++)
+        world->DestroyBody(just_bullets[i].Physics);
+    just_bullets_n = 0;
+    for (int i = 0; i < fly_bullets_n; i++)
+    {
+        /* Note that dead bullets count from 0.*/
+        return_proxy(reinterpret_cast<BulletCollisionHandler *>(fly_bullets[i].SB.Physics->GetUserData()) - collision_proxy);
+        fly_bullets[i].SB.Physics->SetUserData(nullptr);
+
+        if (dead_bullets_n < MAX_DEAD_BULLETS)
+        {
+            fly_bullets[i].SB.ATimer = 0;
+            dead_bullets[dead_bullets_n] = fly_bullets[i].SB;
+            dead_bullets_n += 1;
+        }
+        else
+            world->DestroyBody(fly_bullets[i].SB.Physics);
+    }
+    fly_bullets_n = 0;
+    for (int i = 0; i < flt_bullets_n; i++)
+    {
+        /* Note that dead bullets count from 0.*/
+        return_proxy(reinterpret_cast<BulletCollisionHandler *>(flt_bullets[i].Physics->GetUserData()) - collision_proxy);
+        flt_bullets[i].Physics->SetUserData(nullptr);
+
+        if (dead_bullets_n < MAX_DEAD_BULLETS)
+        {
+            flt_bullets[i].ATimer = 0;
+            dead_bullets[dead_bullets_n] = flt_bullets[i];
+            dead_bullets_n += 1;
+        }
+        else
+            world->DestroyBody(flt_bullets[i].Physics);
+    }
+    flt_bullets_n = 0;
+
+    assert(dead_bullets_n <= MAX_DEAD_BULLETS);
+
+#ifdef _DEBUG
+    if (dead_bullets_n == MAX_DEAD_BULLETS)
+        std::cout << "Bullet-" << CodeName << " not perfect sayonara!\n";
+#endif
+}
+
 /*************************************************************************************************
  *                                                                                               *
  *                                    Disable Things                                             *
  *                                                                                               *
  *************************************************************************************************/
+
+STGChange *Bullet::GetChange(int mp)
+{
+    change.any.Damage = mp * basic_power;
+    return &change;
+}
 
 /* DO NOT CHANGE PHYSICAL STATE HERE! LEAVE TO DEAD PROCESS IN UPDATE LOOP. */
 void Bullet::Disappear(const BulletCollisionHandler *who)
@@ -297,7 +351,7 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
 
         dead_bullets[dead_bullets_n] = flt_bullets[flaw];
 
-        if (flaw != flt_bullets_n - 1)
+        if (flaw + 1 != flt_bullets_n)
         {
             flt_bullets[flaw] = flt_bullets[flt_bullets_n - 1];
             reinterpret_cast<BulletCollisionHandler *>(flt_bullets[flaw].Physics->GetUserData())->PhysicsIndex = flaw;
@@ -312,7 +366,7 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
 
         dead_bullets[dead_bullets_n] = fly_bullets[flaw].SB;
 
-        if (flaw != fly_bullets_n - 1)
+        if (flaw + 1 != fly_bullets_n)
         {
             fly_bullets[flaw] = fly_bullets[fly_bullets_n - 1];
             reinterpret_cast<BulletCollisionHandler *>(fly_bullets[flaw].SB.Physics->GetUserData())->PhysicsIndex = flaw;
@@ -380,7 +434,7 @@ inline void Bullet::outsider_flt(int s)
     return_proxy(reinterpret_cast<BulletCollisionHandler *>(flt_bullets[s].Physics->GetUserData()) - collision_proxy);
     world->DestroyBody(flt_bullets[s].Physics);
 
-    if (s != flt_bullets_n - 1)
+    if (s + 1 != flt_bullets_n)
     {
         flt_bullets[s] = flt_bullets[flt_bullets_n - 1];
         reinterpret_cast<BulletCollisionHandler *>(flt_bullets[s].Physics->GetUserData())->PhysicsIndex = s;
@@ -393,7 +447,7 @@ inline void Bullet::outsider_fly(int s)
     return_proxy(reinterpret_cast<BulletCollisionHandler *>(fly_bullets[s].SB.Physics->GetUserData()) - collision_proxy);
     world->DestroyBody(fly_bullets[s].SB.Physics);
 
-    if (s != fly_bullets_n)
+    if (s + 1 != fly_bullets_n)
     {
         fly_bullets[s] = fly_bullets[fly_bullets_n - 1];
         reinterpret_cast<BulletCollisionHandler *>(fly_bullets[s].SB.Physics->GetUserData())->PhysicsIndex = s;
@@ -407,6 +461,7 @@ inline void Bullet::make_cp_just(int i, bool is_statical, int n)
     int cp = get_proxy();
     collision_proxy[cp].IsStatical = is_statical;
     collision_proxy[cp].PhysicsIndex = n;
+    collision_proxy[cp].MyPower = just_bullets[i].MasterPower;
     just_bullets[i].Physics->SetUserData(collision_proxy + cp);
     just_bullets[i].Physics->CreateFixture(&phy.FD);
 }
@@ -449,24 +504,22 @@ inline void Bullet::move_from_just_to_fly(int i)
     assert(fly_bullets_n <= MAX_BULLETS);
 }
 
-inline void Bullet::track_a_part()
+inline void Bullet::kinematic_a_part()
 {
-    const b2Vec2 front = b2Vec2(0.f, -1.f);
-
     for (int i = just_bullets_n - 1; i >= 0; i--)
     {
         just_bullets[i].ATimer += 1;
         if (just_bullets[i].ATimer == born.LG_DURATION)
         {
-            make_cp_just(i, true, flt_bullets_n);
-            just_bullets[i].Physics->ApplyLinearImpulseToCenter(
-                ks.Seq[0].VV * just_bullets[i].Physics->GetMass() * just_bullets[i].Physics->GetWorldVector(front), true);
-            move_from_just_to_flt(i);
+            make_cp_just(i, false, fly_bullets_n);
+            /* Front always be init front, for not-dir. */
+            just_bullets[i].Front = just_bullets[i].Physics->GetWorldVector(b2Vec2(0.f, -1.f));
+            move_from_just_to_fly(i);
         }
     }
 }
 
-inline void Bullet::kinematic_a_part()
+inline void Bullet::kinematic_d_part()
 {
     for (int i = just_bullets_n - 1; i >= 0; i--)
     {
@@ -488,7 +541,8 @@ inline void Bullet::statical_a_part()
         {
             make_cp_just(i, true, flt_bullets_n);
             /* Only initial v. */
-            kinematic_update(just_bullets[i].Physics, ks.Seq[0]);
+            kinematic_update(just_bullets[i].Physics, ks.Seq[0],
+                             just_bullets[i].Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
             move_from_just_to_flt(i);
         }
     }
@@ -500,25 +554,23 @@ inline void Bullet::statical_a_part()
  *                                                                                               *
  *************************************************************************************************/
 
-inline void Bullet::kinematic_update(b2Body *b, const KinematicPhase &kp)
+inline void Bullet::kinematic_update(b2Body *b, const KinematicPhase &kp, const b2Vec2 &front)
 {
-    const b2Vec2 front = b2Vec2(0.f, -1.f);
-
     if (kp.VV != 0.f)
-        if (kp.TransEnd == 0)
-            b->ApplyLinearImpulseToCenter((kp.VV * b->GetMass()) * b->GetWorldVector(front), true);
+        if (kp.VAcceleration == 0)
+            b->ApplyLinearImpulseToCenter((kp.VV * b->GetMass()) * front, true);
         else
             // float a = kp.VV / kp.TransTime;
             // float f = b->GetMass() * a;
-            b->ApplyForceToCenter((kp.VV / kp.TransTime) * b->GetMass() * b->GetWorldVector(front), true);
+            b->ApplyForceToCenter(kp.VAcceleration * b->GetMass() * front, true);
 
     if (kp.VR != 0.f)
-        if (kp.TransEnd == 0.f)
+        if (kp.RAcceleration == 0.f)
             b->ApplyAngularImpulse(kp.VR * b->GetInertia(), true);
         else
             // float a = kp.VR / kp.TransTime;
             // float t = b->GetInertia() * a;
-            b->ApplyTorque((kp.VR / kp.TransTime) * b->GetInertia(), true);
+            b->ApplyTorque(kp.RAcceleration * b->GetInertia(), true);
 }
 
 inline void Bullet::track_update_nd(b2Body *s, const b2Body *d)
@@ -606,7 +658,7 @@ inline void Bullet::check_flt_nd()
 
 void Bullet::track_player()
 {
-    track_a_part();
+    statical_a_part();
 
     target = Con->TrackPlayer();
     for (int s = flt_bullets_n - 1; s >= 0; s--)
@@ -617,7 +669,7 @@ void Bullet::track_player()
 
 void Bullet::track_enemy()
 {
-    track_a_part();
+    statical_a_part();
 
     target = Con->TrackEnemy();
     if (target != nullptr)
@@ -642,24 +694,32 @@ void Bullet::kinematic()
             fly_bullets[s].SB.ATimer += 1;
 
             /* kinematic update */
-            if (fly_bullets[s].KSI < ks.SeqSize)
+            fly_bullets[s].KTimer += 1;
+
+            if ((fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].PhaseTime &&
+                 fly_bullets[s].KTimer < ks.Seq[fly_bullets[s].KSI].TransEnd) ||
+                fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+
+            while (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].TransEnd)
             {
-                fly_bullets[s].KTimer += 1;
-                if (fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].TransEnd)
-                    fly_bullets[s].KSI += 1;
-                if (fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].PhaseTime &&
-                    fly_bullets[s].KTimer < ks.Seq[fly_bullets[s].KSI].TransEnd)
-                    kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI]);
-            }
-            else if (ks.Loop)
-            {
-                fly_bullets[s].KSI = 0;
-                fly_bullets[s].KTimer = 0;
-                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI]);
                 fly_bullets[s].KSI += 1;
+
+                if (fly_bullets[s].KSI < ks.SeqSize)
+                {
+                    if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+                }
+                else if (ks.Loop)
+                {
+                    fly_bullets[s].KSI = 0;
+                    fly_bullets[s].KTimer = 0;
+                    if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+                }
+                else
+                    move_from_fly_to_flt_with_cp(s);
             }
-            else
-                move_from_fly_to_flt_with_cp(s);
         }
         else
             outsider_fly(s);
@@ -682,7 +742,7 @@ void Bullet::statical()
 
 void Bullet::track_player_d()
 {
-    track_a_part();
+    statical_a_part();
 
     target = Con->TrackPlayer();
     for (int s = flt_bullets_n - 1; s >= 0; s--)
@@ -693,7 +753,7 @@ void Bullet::track_player_d()
 
 void Bullet::track_enemy_d()
 {
-    track_a_part();
+    statical_a_part();
 
     target = Con->TrackEnemy();
     if (target != nullptr)
@@ -708,36 +768,53 @@ void Bullet::track_enemy_d()
 
 void Bullet::kinematic_d()
 {
-    kinematic_a_part();
+    kinematic_d_part();
 
     for (int s = fly_bullets_n - 1; s >= 0; s--)
     {
         const b2Vec2 &p = fly_bullets[s].SB.Physics->GetPosition();
         if (p.y > bound[0] && p.y < bound[1] && p.x > bound[2] && p.x < bound[3])
         {
-            fly_bullets[s].SB.ATimer += 1;
+            bool no_more = false;
 
             /* kinematic update */
-            if (fly_bullets[s].KSI < ks.SeqSize)
-            {
-                fly_bullets[s].KTimer += 1;
-                if (fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].TransEnd)
-                    fly_bullets[s].KSI += 1;
-                if (fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].PhaseTime &&
-                    fly_bullets[s].KTimer < ks.Seq[fly_bullets[s].KSI].TransEnd)
-                    kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI]);
+            fly_bullets[s].KTimer += 1;
 
+            if ((fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].PhaseTime &&
+                 fly_bullets[s].KTimer < ks.Seq[fly_bullets[s].KSI].TransEnd) ||
+                fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                 fly_bullets[s].SB.Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
+
+            while (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].TransEnd)
+            {
+                fly_bullets[s].KSI += 1;
+
+                if (fly_bullets[s].KSI < ks.SeqSize)
+                {
+                    if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                         fly_bullets[s].SB.Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
+                }
+                else if (ks.Loop)
+                {
+                    fly_bullets[s].KSI = 0;
+                    fly_bullets[s].KTimer = 0;
+                    if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                         fly_bullets[s].SB.Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
+                }
+                else
+                    no_more = true;
+            }
+
+            if (no_more)
+                move_from_fly_to_flt_with_cp(s);
+            else
+            {
+                fly_bullets[s].SB.ATimer += 1;
                 adjust_front(fly_bullets[s].SB.Physics);
             }
-            else if (ks.Loop)
-            {
-                fly_bullets[s].KSI = 0;
-                fly_bullets[s].KTimer = 0;
-                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI]);
-                fly_bullets[s].KSI += 1;
-            }
-            else
-                move_from_fly_to_flt_with_cp(s);
         }
         else
             outsider_fly(s);
