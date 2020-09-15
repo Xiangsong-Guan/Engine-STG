@@ -16,6 +16,7 @@ struct StaticBullet
 {
     int ATimer;
     b2Body *Physics;
+    b2Vec2 Front;
     int MasterPower;
 };
 
@@ -27,9 +28,6 @@ struct DynamicBullet
 };
 
 class Bullet;
-class BulletCollisionHandler;
-inline void cpp_class_sucks(Bullet *bullet, const BulletCollisionHandler *who);
-inline void cpp_class_sucks_forever(Bullet *bullet, CollisionHandler *who);
 
 class BulletCollisionHandler : public CollisionHandler
 {
@@ -44,24 +42,18 @@ public:
     int PhysicsIndex;
     bool IsStatical;
     Bullet *Master;
+    int MyPower;
 
-    void Hit(CollisionHandler *o) final
-    {
-        cpp_class_sucks_forever(Master, o);
-    }
-
-    void Hurt(const STGChange *c) final
-    {
-        cpp_class_sucks(Master, this);
-    }
+    void Hit(CollisionHandler *o) final;
+    void Hurt(const STGChange *c) final;
 };
 
 class Bullet
 {
 private:
-    static constexpr int MAX_BULLETS = 1024;
-    static constexpr int MAX_JUST_BULLETS = 512;
-    static constexpr int MAX_DEAD_BULLETS = 128;
+    static constexpr int MAX_BULLETS = 512;
+    static constexpr int MAX_JUST_BULLETS = 256;
+    static constexpr int MAX_DEAD_BULLETS = 256;
 
     float bound[4];
     b2World *world;
@@ -103,11 +95,11 @@ private:
     inline void move_from_fly_to_flt_with_cp(int s);
     inline void move_from_just_to_flt(int i);
     inline void move_from_just_to_fly(int i);
-    inline void track_a_part();
     inline void kinematic_a_part();
+    inline void kinematic_d_part();
     inline void statical_a_part();
 
-    inline void kinematic_update(b2Body *b, const KinematicPhase &kp);
+    inline void kinematic_update(b2Body *b, const KinematicPhase &kp, const b2Vec2 &front);
     inline void track_update_dd(b2Body *s, const b2Body *d);
     inline void track_update_nd(b2Body *s, const b2Body *d);
     inline void adjust_front(b2Body *b);
@@ -124,6 +116,9 @@ private:
     void statical_d();
     std::function<void(Bullet *)> pattern;
 
+    int basic_power;
+    STGChange change;
+
 public:
     std::string Name;
     std::string CodeName;
@@ -131,8 +126,7 @@ public:
     STGFlowController *Con;
     Bullet *Prev, *Next;
 
-    STGChange Change;
-
+    STGChange *GetChange(int mp);
     void Disappear(const BulletCollisionHandler *who);
 
     /* Constructor/Destructor */
@@ -144,10 +138,10 @@ public:
     ~Bullet() = default;
 
     void Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w);
-    void SetScale(float x, float y, float phy, const float b[4]) noexcept;
     Bullet *Update();
     Bullet *Draw(float forward_time);
     void Bang(const b2Vec2 &world_pos, float world_angle, int mp);
+    void Farewell();
 
 #ifdef STG_PERFORMENCE_SHOW
     inline int GetBulletNum() const

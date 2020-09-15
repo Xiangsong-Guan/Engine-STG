@@ -12,7 +12,7 @@ static inline void nothing(SpriteRenderer *r, const ALLEGRO_EVENT *e) noexcept {
  *                                                                                               *
  *************************************************************************************************/
 
-SpriteRenderer::SpriteRenderer() : Color(al_map_rgb_f(1.f, 1.f, 1.f)), xscale(1.f), yscale(1.f)
+SpriteRenderer::SpriteRenderer()
 {
     Recv = al_create_event_queue();
     if (!Recv)
@@ -29,6 +29,10 @@ SpriteRenderer::~SpriteRenderer()
 
 void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Renderer-" << o.ID << " is moving, while " << ID << " is flawed.\n";
+#endif
+
     this->ID = o.ID;
     this->Sprite = o.Sprite;
     this->Color = o.Color;
@@ -36,18 +40,12 @@ void SpriteRenderer::CPPSuckSwap(SpriteRenderer &o) noexcept
     std::swap(this->Recv, o.Recv);
 }
 
-void SpriteRenderer::Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept
+void SpriteRenderer::Show(int id, b2Body *body, const SpriteItem &first) noexcept
 {
     ID = id;
     physics = body;
     Sprite = first;
-}
-
-void SpriteRenderer::SetScale(float x, float y, float phy) noexcept
-{
-    yscale = y;
-    xscale = x;
-    physcale = phy;
+    Color = al_map_rgb_f(1.f, 1.f, 1.f);
 }
 
 /*************************************************************************************************
@@ -66,17 +64,14 @@ void SpriteRenderer::Draw(float forward_time)
 
     /* update render status then */
     position += forward_time * SEC_PER_UPDATE * velocity;
-    position *= physcale;
+    position *= PIXIL_PRE_M;
 
     /* make change */
     while (al_get_next_event(Recv, &event))
         commands[event.user.data1](this, &event);
 
     /* begin to draw */
-    al_draw_tinted_scaled_rotated_bitmap(Sprite, Color,
-                                         static_cast<float>(al_get_bitmap_width(Sprite)) / 2.f,
-                                         static_cast<float>(al_get_bitmap_height(Sprite)) / 2.f,
-                                         position.x, position.y, xscale, yscale, rotate, 0);
+    al_draw_tinted_rotated_bitmap(Sprite.Sprite, Color, Sprite.CX, Sprite.CY, position.x, position.y, rotate, 0);
 }
 
 /*************************************************************************************************
@@ -85,18 +80,15 @@ void SpriteRenderer::Draw(float forward_time)
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
-           static_cast<size_t>(GameRenderCommand::NUM)>
-    SpriteRenderer::commands;
+std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM> SpriteRenderer::commands;
 
 void SpriteRenderer::InitRndrCmd()
 {
     commands.fill(std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>(nothing));
-    commands[static_cast<int>(GameRenderCommand::CHANGE_TEXTURE)] =
-        std::mem_fn(&SpriteRenderer::change_texture);
+    commands[GameRenderCommand::GRC_CHANGE_TEXTURE] = std::mem_fn(&SpriteRenderer::change_texture);
 }
 
 void SpriteRenderer::change_texture(const ALLEGRO_EVENT *e) noexcept
 {
-    Sprite = reinterpret_cast<ALLEGRO_BITMAP *>(e->user.data2);
+    Sprite = *reinterpret_cast<const SpriteItem *>(e->user.data2);
 }

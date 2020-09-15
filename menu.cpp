@@ -10,12 +10,12 @@ static inline void nothing(Menu *m) noexcept {}
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(Menu *)>, static_cast<size_t>(InputAction::NUM)> Menu::commands;
+std::array<std::function<void(Menu *)>, InputAction::IA_NUM> Menu::commands;
 
 void Menu::up() noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Menu cursor before: " << cursor << "\n";
+    std::cout << "Menu-" << CodeName << " cursor before: " << cursor << "\n";
 #endif
 
     items_text[cursor].Color = al_map_rgb_f(1.f, 1.f, 1.f);
@@ -24,14 +24,14 @@ void Menu::up() noexcept
     items_text[cursor].Color = al_map_rgb_f(0.f, 1.f, 0.f);
 
 #ifdef _DEBUG
-    std::cout << "Menu cursor after: " << cursor << "\n";
+    std::cout << "Menu-" << CodeName << " cursor after: " << cursor << "\n";
 #endif
 }
 
 void Menu::down() noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Menu cursor before: " << cursor << "\n";
+    std::cout << "Menu-" << CodeName << " cursor before: " << cursor << "\n";
 #endif
 
     items[cursor].TR->Color = al_map_rgb_f(1.f, 1.f, 1.f);
@@ -40,12 +40,16 @@ void Menu::down() noexcept
     items[cursor].TR->Color = al_map_rgb_f(0.f, 1.f, 0.f);
 
 #ifdef _DEBUG
-    std::cout << "Menu cursor after: " << cursor << "\n";
+    std::cout << "Menu-" << CodeName << " cursor after: " << cursor << "\n";
 #endif
 }
 
 void Menu::confirm()
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " confirmed: \"" << items_text[cursor].GetContent() << "\"\n";
+#endif
+
     /* Highlight the confirm */
     items_text[cursor].Color = al_map_rgb_f(1.f, 0.f, 0.f);
     items[cursor].F(this);
@@ -61,30 +65,46 @@ std::unordered_map<std::string, std::function<void(Menu *)>> Menu::menu_cmds;
 
 void Menu::test_start() const
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " link start executed!\n";
+#endif
+
     GameCon->LinkStart();
 }
 
 void Menu::test_end() const
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " link end executed!\n";
+#endif
+
     GameCon->LinkEnd();
 }
 
 void Menu::stg_resume() const
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " STG resume executed!\n";
+#endif
+
     GameCon->STGResume();
 }
 
 void Menu::stg_return() const
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " STG return executed!\n";
+#endif
+
     GameCon->STGReturn(false);
 }
 
 void Menu::InitMenuStaff()
 {
     commands.fill(std::function<void(Menu *)>(nothing));
-    commands[static_cast<int>(InputAction::MOVE_UP)] = std::mem_fn(&Menu::up);
-    commands[static_cast<int>(InputAction::MOVE_DOWN)] = std::mem_fn(&Menu::down);
-    commands[static_cast<int>(InputAction::ACTION)] = std::mem_fn(&Menu::confirm);
+    commands[InputAction::IA_MOVE_UP] = std::mem_fn(&Menu::up);
+    commands[InputAction::IA_MOVE_DOWN] = std::mem_fn(&Menu::down);
+    commands[InputAction::IA_ACTION] = std::mem_fn(&Menu::confirm);
 
     menu_cmds["start"] = std::mem_fn(&Menu::test_start);
     menu_cmds["quit"] = std::mem_fn(&Menu::test_end);
@@ -114,15 +134,20 @@ Menu::~Menu()
 }
 
 void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string> &funcs,
-                 int width, int height)
+                 int width, int height, const std::string &code_name)
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << code_name << " setup.\n";
+#endif
+
+    CodeName = code_name;
+
     item_n = 0;
     btn_n = 0;
 
     for (auto &&e : its)
     {
         items_text[item_n].SetText(e);
-        items_text[item_n].SetWH(width, height);
 
         if (btn_n < funcs.size())
         {
@@ -134,19 +159,24 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
 
         item_n += 1;
     }
-
-    Width = width;
-    Height = height;
 }
 
 void Menu::Attach() noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " attached!\n";
+#endif
+
     cursor = 0;
     items[cursor].TR->Color = al_map_rgb_f(0.f, 1.f, 0.f);
 }
 
 void Menu::Detach() noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Menu-" << CodeName << " deattached!\n";
+#endif
+
     items[cursor].TR->Color = al_map_rgb_f(1.f, 1.f, 1.f);
 }
 
@@ -161,16 +191,13 @@ void Menu::Update()
     ALLEGRO_EVENT event;
 
     while (al_get_next_event(Recv, &event))
-#ifdef _DEBUG
     {
-        std::cout << "Menu recv input action: " << event.user.data1 << "\n";
+#ifdef _DEBUG
+        std::cout << "Menu-" << CodeName << " recv input action: " << event.user.data1 << "\n";
 #endif
 
         commands[event.user.data1](this);
-
-#ifdef _DEBUG
     }
-#endif
 }
 
 void Menu::Render(float forward_time)

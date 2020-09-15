@@ -1,7 +1,6 @@
 #include "shooter.h"
 
 #include "resource_manger.h"
-#include "game_event.h"
 
 #include <lua.hpp>
 
@@ -14,10 +13,11 @@ inline void Shooter::init()
 
     timer = -1;
     firing = false;
+    Chain = nullptr;
     rate = 100;
 
-    sub_ptn = SSPatternsCode::CONTROLLED;
-    if (code == SSPatternsCode::CONTROLLED)
+    sub_ptn = SSPatternsCode::SSPC_CONTROLLED;
+    if (code == SSPatternsCode::SSPC_CONTROLLED)
     {
         int good, rn;
 
@@ -48,8 +48,12 @@ Shooter &Shooter::operator=(const Shooter &o)
     std::memcpy(bullets, o.bullets, sizeof(Bullet *) * ammo_slot_n);
 
     code = o.code;
-    pattern = patterns[static_cast<int>(code)];
+    pattern = patterns[code];
     data = o.data;
+
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " copy with pattern: " << SS_PATTERNS_CODE[code] << "\n";
+#endif
 
     init();
 
@@ -68,7 +72,6 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     assert(ammo_slot_n <= MAX_B_TYPES);
     assert(luncher_n <= MAX_LUNCHERS_NUM);
 
-    const b2Vec2 front = b2Vec2(0.f, -1.f);
     for (int s = 0; s < luncher_n; s++)
     {
         lunchers[s] = setting.Lunchers[s];
@@ -84,24 +87,31 @@ void Shooter::Load(const float b[4], const STGShooterSetting &setting, std::queu
     }
 
     code = setting.Pattern;
-    pattern = patterns[static_cast<int>(code)];
+    pattern = patterns[code];
     data = setting.Data;
+
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " load with pattern: " << SS_PATTERNS_CODE[code] << "\n";
+#endif
 
     init();
 }
 
-Shooter *Shooter::Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept
+Shooter *Shooter::Undershift(const b2Body *body) noexcept
 {
-    physical = body;
-    render_master = rm;
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " undershift. Up: " << ShiftUp->CodeName << "; Down: " << ShiftDown->CodeName << ".\n";
+#endif
 
-    return Shift;
+    physical = body;
+
+    return ShiftDown;
 }
 
 /* Player are special, need get target from world. */
 void Shooter::MyDearPlayer() noexcept
 {
-    if (code == SSPatternsCode::TRACK)
+    if (code == SSPatternsCode::SSPC_TRACK)
         pattern = std::mem_fn(&Shooter::track_enemy);
 }
 
@@ -145,67 +155,225 @@ inline void Shooter::fire(int s)
  *                                                                                               *
  *************************************************************************************************/
 
-void Shooter::Fire() noexcept
+bool Shooter::IsFiring() const noexcept
 {
-    firing = true;
+    return firing;
 }
 
-void Shooter::Cease() noexcept
+void Shooter::SetFire(bool f) noexcept
 {
-    firing = false;
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " set fire: " << f << "!\n";
+#endif
+
+    firing = f;
+
+    if (Chain != nullptr)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " pass command to chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        Chain->SetFire(f);
+    }
 }
 
-float Shooter::ShiftIn(bool is_firing) noexcept
+float Shooter::ShiftIn() noexcept
 {
-    firing = is_firing;
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " standby!\n";
+#endif
+
     Con->EnableSht(this);
+
+    if (Chain != nullptr)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " pass command to chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        /* Return the slowest speed of the chain. */
+        float ns = Chain->ShiftIn();
+        return speed > ns ? ns : speed;
+    }
+
     return speed;
 }
 
-bool Shooter::ShiftOut() noexcept
+/* Automaitc set the "ret"'s fire state to the same (when needed). */
+Shooter *Shooter::ShiftOut(bool need_ret) noexcept
 {
-    bool ret = firing;
-    firing = false;
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " unload!\n";
+#endif
+
+    Shooter *ret = this;
+    bool f = firing;
+
     Con->DisableSht(this);
+    firing = false;
+
+    /* Handout the end of chain's shift. */
+    if (Chain != nullptr)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " pass command to chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        ret = Chain->ShiftOut(need_ret);
+    }
+    else if (need_ret)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " automatic set shift down's fire: " << f << "\n";
+#endif
+
+        ret = ShiftDown;
+        /* Set the same state to the new shooter. */
+        ret->SetFire(f);
+
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " return " << ret->CodeName << " for the chain.\n";
+#endif
+    }
+
     return ret;
 }
 
-void Shooter::Sync()
+/* Also shift in all chained shooters with the same firing state. */
+void Shooter::LinkChain(int n) noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " chain-" << n << "!\n";
+#endif
+
+    if (n > 1) /* last 2, self and the next one */
+    {
+        /* Avoid circle chain. */
+        if (ShiftDown->Chain != nullptr || ShiftDown == this || Chain != nullptr)
+        {
+#ifdef _DEBUG
+            std::cout << "Shooter-" << CodeName << " chain to chained. Stop!\n";
+#endif
+
+            return;
+        }
+
+        Chain = ShiftDown;
+
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " continue to chain: " << Chain->CodeName << ".\n";
+#endif
+
+        Chain->ShiftIn();
+        Chain->SetFire(firing);
+        Chain->LinkChain(n - 1);
+    }
+#ifdef _DEBUG
+    else
+        std::cout << "Shooter-" << CodeName << " last shooter on the chain!\n";
+#endif
 }
 
-void Shooter::FSync()
+/* Also shift out all shooters, expect the head one. Drop all disconnected. */
+int Shooter::Breakchain() noexcept
 {
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " will break the chain!\n";
+#endif
+
+    int n = 0;
+
+    if (Chain != nullptr)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " continue to break chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        n = Chain->Breakchain();
+
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " last " << n << " shooters still.\n";
+#endif
+
+        /* Do not bother others when break the chain. */
+        Chain->ShiftOut(false);
+        Chain = nullptr;
+    }
+
+    if (rate > 0)
+        return n + 1; /* self */
+    else
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " disconnect from the chain, lost!\n";
+#endif
+
+        ShiftDown->ShiftUp = ShiftUp;
+        ShiftUp->ShiftDown = ShiftDown;
+        return n;
+    }
 }
 
-void Shooter::Heal(int curing)
+bool Shooter::IsConnected() const noexcept
+{
+    return rate > 0;
+}
+
+void Shooter::Heal(int curing) noexcept
 {
     rate += curing;
+
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " take cure:" << curing << "! Now last: " << rate << ".\n";
+#endif
+
+    if (Chain != nullptr)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " pass cure to chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        Chain->Heal(curing);
+    }
 }
 
-bool Shooter::Hurt(int damage)
+/* Return true if shooter is disconnected. When chained, if any shooter disconnects, also return true. */
+bool Shooter::Hurt(int damage) noexcept
 {
+    bool broken = false;
+
     rate -= damage;
 
-    if (damage > 0)
+#ifdef _DEBUG
+    std::cout << "Shooter-" << CodeName << " take damage:" << damage << "! Now last: " << rate << ".\n";
+#endif
+
+    if (Chain != nullptr)
     {
-        if (rate > 0)
-        {
-        }
-        else
-        {
-            return true;
-        }
-    }
-    else if (damage < 0)
-    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " pass damage to chain: " << Chain->CodeName << ".\n";
+#endif
+        assert(Chain == ShiftDown);
+
+        broken = Chain->Hurt(damage);
     }
 
-    return false;
-}
+    if (rate < 1)
+    {
+#ifdef _DEBUG
+        std::cout << "Shooter-" << CodeName << " disconnect!\n";
+#endif
 
-void Shooter::Destroy()
-{
+        return true;
+    }
+    else
+        return broken;
 }
 
 /*************************************************************************************************
@@ -214,15 +382,15 @@ void Shooter::Destroy()
  *                                                                                               *
  *************************************************************************************************/
 
-std::function<void(Shooter *)> Shooter::patterns[static_cast<int>(SSPatternsCode::NUM)];
+std::function<void(Shooter *)> Shooter::patterns[SSPatternsCode::SSPC_NUM];
 
 void Shooter::InitSSPattern()
 {
-    patterns[static_cast<int>(SSPatternsCode::CONTROLLED)] = std::mem_fn(&Shooter::controlled);
-    patterns[static_cast<int>(SSPatternsCode::STAY)] = std::mem_fn(&Shooter::stay);
-    patterns[static_cast<int>(SSPatternsCode::TRACK)] = std::mem_fn(&Shooter::track_player);
-    patterns[static_cast<int>(SSPatternsCode::TOTAL_TURN)] = std::mem_fn(&Shooter::total_turn);
-    patterns[static_cast<int>(SSPatternsCode::SPLIT_TURN)] = std::mem_fn(&Shooter::split_turn);
+    patterns[SSPatternsCode::SSPC_CONTROLLED] = std::mem_fn(&Shooter::controlled);
+    patterns[SSPatternsCode::SSPC_STAY] = std::mem_fn(&Shooter::stay);
+    patterns[SSPatternsCode::SSPC_TRACK] = std::mem_fn(&Shooter::track_player);
+    patterns[SSPatternsCode::SSPC_TOTAL_TURN] = std::mem_fn(&Shooter::total_turn);
+    patterns[SSPatternsCode::SSPC_SPLIT_TURN] = std::mem_fn(&Shooter::split_turn);
 }
 
 void Shooter::controlled()
@@ -319,8 +487,9 @@ void Shooter::track_player()
             {
                 if (imada)
                 {
-                    target = Con->TrackEnemy();
-                    track();
+                    target = Con->TrackPlayer();
+                    if (target != nullptr)
+                        track();
                     imada = false;
                 }
                 recalc_lunchers_attitude_cache(s);

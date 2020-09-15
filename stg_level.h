@@ -25,16 +25,16 @@
 
 #include <string>
 
-enum class STGCompType
+enum STGCompType
 {
-    CHARACTOR,
-    RENDER,
-    THINKER,
+    SCT_CHARACTOR,
+    SCT_RENDER,
+    SCT_THINKER,
 
     /* Count in for management. */
-    NUM,
+    SCT_NUM,
 
-    SHOOTER
+    SCT_SHOOTER
 };
 
 struct StageCharInfo
@@ -43,7 +43,7 @@ struct StageCharInfo
     Shooter *MyShooters;        /* copy in airborne */
     SCPatternsCode MyPtn;       /* change in airborne */
     SCPatternData MyPD;         /* change in airborne */
-    SCSBorn *MyEnter;           /* copy in airborne */
+    SCS *MyEnter;               /* copy in airborne */
 };
 
 class STGLevel : public Scene, public STGFlowController
@@ -53,6 +53,7 @@ public:
     std::string CodeName;
 
     GameFlowController *GameCon;
+    ALLEGRO_EVENT_QUEUE *PlayerInputTerminal;
 
     /* Store the Player's stg status. */
     StageCharRes SPlayer;
@@ -64,18 +65,15 @@ public:
     STGLevel(STGLevel &&) = delete;
     STGLevel &operator=(const STGLevel &) = delete;
     STGLevel &operator=(STGLevel &&) = delete;
-    ~STGLevel() = default;
+    ~STGLevel();
 
     /* Self constructor */
-    void Load(int width, int height, float time_step, const STGLevelSetting &setting);
+    void Load(float time_step, const STGLevelSetting &setting);
     void Unload();
 
     /* GameLoop */
     void Update();
     void Render(float forward_time);
-
-    /* Provied Player's input terminal to input processor. */
-    ALLEGRO_EVENT_QUEUE *InputConnectionTerminal() const noexcept;
 
     /* Stage flow control API */
     void FillMind(int char_id, SCPatternsCode ptn, SCPatternData pd) noexcept;
@@ -92,6 +90,10 @@ public:
     const b2Body *TrackEnemy() const noexcept final;
     const b2Body *TrackPlayer() const noexcept final;
 
+    void HelpRespwan(int preload_id, int real_id) final;
+    void PlayerWin();
+    void PlayerDying();
+
 private:
     /* Also directly used in game. */
     STGStateMan all_state;
@@ -104,7 +106,7 @@ private:
     Shooter many_shooters[MAX_ENTITIES * 2];
     Shooter *shooters_p;
     int shooters_n;
-    Bullet bullets[MAX_ENTITIES];
+    Bullet bullets[MAX_ENTITIES / 2];
     Bullet *bullets_p;
     int bullets_n;
     SpriteRenderer sprite_renderers[MAX_ON_STAGE];
@@ -115,7 +117,6 @@ private:
 
     /* Battle field */
     /* STG Field Buffer Area */
-    static constexpr float STG_FIELD_BOUND_BUFFER = 5.f;
     float bound[4];
     float time_step;
 
@@ -126,10 +127,14 @@ private:
     b2Body *player;
 
     /* Lua Things. */
+    lua_Integer timer;
     lua_State *L_stage;
 
+    /* Count down. */
+    ALLEGRO_TIMER *count_down;
+
     /* ID System */
-    int records[MAX_ON_STAGE][static_cast<int>(STGCompType::NUM)];
+    int records[MAX_ON_STAGE][STGCompType::SCT_NUM];
     bool used_record[MAX_ON_STAGE];
     int record_hint;
     inline int get_id() noexcept;
@@ -137,12 +142,11 @@ private:
     inline void reset_id() noexcept;
 
     /* Memory management */
-    int disabled[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
-    STGCompType disabled_t[MAX_ON_STAGE * static_cast<int>(STGCompType::NUM)];
+    int disabled[MAX_ON_STAGE * STGCompType::SCT_NUM];
+    STGCompType disabled_t[MAX_ON_STAGE * STGCompType::SCT_NUM];
     int disabled_n;
 
     /* AUX Function */
-    inline void process_pattern_data(SCPatternsCode ptn, SCPatternData &pd) const noexcept;
     Shooter *copy_shooters(const Shooter *first);
 
 #ifdef STG_DEBUG_PHY_DRAW

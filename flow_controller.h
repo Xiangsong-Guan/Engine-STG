@@ -3,8 +3,6 @@
 
 #include "data_struct.h"
 
-#include <lua.hpp>
-
 class Shooter;
 class Bullet;
 
@@ -31,6 +29,8 @@ public:
 
     virtual const b2Body *TrackEnemy() const noexcept = 0;
     virtual const b2Body *TrackPlayer() const noexcept = 0;
+
+    virtual void HelpRespwan(int preload_id, int real_id) = 0;
 };
 
 class GameFlowController

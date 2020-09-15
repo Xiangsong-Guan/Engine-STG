@@ -32,6 +32,8 @@ public:
 
     GameFlowController *GameCon;
 
+    std::string CodeName;
+
     Menu();
     Menu(const Menu &) = delete;
     Menu(Menu &&) = delete;
@@ -40,7 +42,7 @@ public:
     ~Menu();
 
     void Setup(const std::vector<TextItem> &items, const std::vector<std::string> &funcs,
-               int width, int height);
+               int width, int height, const std::string &code_name);
     void Attach() noexcept;
     void Detach() noexcept;
 
@@ -50,15 +52,13 @@ public:
 private:
     static constexpr int MAX_MENU_ITEM = 32;
 
-    int Width, Height;
-
     MenuBtn items[MAX_MENU_ITEM];
     TextRenderer items_text[MAX_MENU_ITEM];
     int item_n, btn_n;
     int cursor;
 
     /* Menu input commands */
-    static std::array<std::function<void(Menu *)>, static_cast<size_t>(InputAction::NUM)> commands;
+    static std::array<std::function<void(Menu *)>, InputAction::IA_NUM> commands;
     void up() noexcept;
     void down() noexcept;
     void confirm();

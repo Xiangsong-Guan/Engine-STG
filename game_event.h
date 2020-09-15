@@ -3,7 +3,7 @@
 
 #include <allegro5/allegro5.h>
 
-enum class GameEventType
+enum GameEventType
 {
     // NULL
     NO_MORE = ALLEGRO_GET_EVENT_TYPE('S', 'T', 'G', 'E'),
@@ -24,79 +24,92 @@ enum class GameEventType
 //     NUM
 // };
 
-enum class Movement
+enum Movement
 {
     /*    +1
      * +3  0 -3
      *    -1    */
-    TO_UP = 1,
-    TO_DOWN = -1,
-    TO_LEFT = 3,
-    TO_RIGHT = -3,
-    TO_NUM = 4,
+    MM_TO_UP = 1,
+    MM_TO_DOWN = -1,
+    MM_TO_LEFT = 3,
+    MM_TO_RIGHT = -3,
+    MM_TO_NUM = 4,
 
-    IDLE = 4,
-    UP = IDLE + 1,
-    DOWN = IDLE - 1,
-    LEFT = IDLE + 3,
-    RIGHT = IDLE - 3,
-    UL = IDLE + 1 + 3,
-    UR = IDLE + 1 - 3,
-    DL = IDLE - 1 + 3,
-    DR = IDLE - 1 - 3,
-    NUM = 9
+    MM_IDLE = 4,
+    MM_UP = MM_IDLE + 1,
+    MM_DOWN = MM_IDLE - 1,
+    MM_LEFT = MM_IDLE + 3,
+    MM_RIGHT = MM_IDLE - 3,
+    MM_UL = MM_IDLE + 1 + 3,
+    MM_UR = MM_IDLE + 1 - 3,
+    MM_DL = MM_IDLE - 1 + 3,
+    MM_DR = MM_IDLE - 1 - 3,
+    MM_NUM = 9
 };
 
-enum class InputAction
+enum InputAction
 {
-    MOVE_UP,
-    MOVE_DOWN,
-    MOVE_LEFT,
-    MOVE_RIGHT,
-    ACTION,
-    SHIFT,
-    CANCEL,
-    SPECIAL,
+    IA_MOVE_UP,
+    IA_MOVE_DOWN,
+    IA_MOVE_LEFT,
+    IA_MOVE_RIGHT,
+    IA_ACTION,
+    IA_SHIFT,
+    IA_CANCEL,
+    IA_SPECIAL,
 
-    PAUSE,
+    IA_PAUSE,
 
-    NUM,
+    IA_NUM
 };
 
-enum class STGCharCommand
+enum STGCharCommand
 {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    STG_FIRE,
-    STG_CEASE,
-    STG_CHANGE,
-    STG_SYNC,
-    STG_FORCE_SYNC_REQUEST,
-    STG_FORCE_SYNC_RESPONE,
+    SCC_UP,
+    SCC_DOWN,
+    SCC_LEFT,
+    SCC_RIGHT,
+    SCC_STG_FIRE,
+    SCC_STG_CEASE,
+    SCC_STG_CHANGE,
+    SCC_STG_SYNC,
+    SCC_STG_FORCE_SYNC_REQUEST,
+    SCC_STG_FORCE_SYNC_RESPONE,
 
-    DISABLE,
-    RESPAWN,
+    SCC_STG_CHAIN,
+    SCC_STG_UNCHAIN,
 
-    MOVE_XY,
+    SCC_DISABLE,
+    SCC_RESPAWN,
 
-    NUM
+    SCC_MOVE_XY,
+
+    SCC_NUM
 };
 
-enum class STGCharEvent
+enum STGCharEvent
 {
-    GAME_OVER,
-    HP_DEC,
-
-    NUM
+    SCE_GAME_OVER = 0b1,
+    SCE_SUB_PATTERN_DONE = 0b10,
+    SCE_OPREATIONAL = 0b100,
 };
 
-enum class GameRenderCommand
-{
-    CHANGE_TEXTURE,
+const char *const STG_CHAR_EVENT[] = {
+    "GAME_OVER",
+    "SUB_PATTERN_DONE",
+    "OPREATIONAL",
+    NULL};
 
-    NUM
+const unsigned int STG_CHAR_EVENT_BIT[] = {
+    STGCharEvent::SCE_GAME_OVER,
+    STGCharEvent::SCE_SUB_PATTERN_DONE,
+    STGCharEvent::SCE_OPREATIONAL};
+
+enum GameRenderCommand
+{
+    GRC_CHANGE_TEXTURE,
+
+    GRC_NUM
 };
 
 #endif

@@ -2,6 +2,7 @@
 #define SPRITE_RENDERER_H
 
 #include "game_event.h"
+#include "data_struct.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -15,7 +16,7 @@ public:
     int ID;
 
     /* somr render things */
-    ALLEGRO_BITMAP *Sprite;
+    SpriteItem Sprite;
     ALLEGRO_COLOR Color;
 
     /* Connection with outside */
@@ -30,8 +31,7 @@ public:
     void CPPSuckSwap(SpriteRenderer &) noexcept;
 
     /* Reusable, do not have init/disable function. */
-    void SetScale(float x, float y, float phy) noexcept;
-    void Show(int id, b2Body *body, ALLEGRO_BITMAP *first) noexcept;
+    void Show(int id, b2Body *body, const SpriteItem &first) noexcept;
     void Draw(float forward_time);
 
     /* Init commands list. */
@@ -39,14 +39,10 @@ public:
 
 private:
     const b2Body *physics;
-
-    float xscale;
-    float yscale;
-    float physcale;
+    float cx, cy;
 
     /* Command Things */
-    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
-                      static_cast<size_t>(GameRenderCommand::NUM)>
+    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM>
         commands;
     void change_texture(const ALLEGRO_EVENT *e) noexcept;
 };

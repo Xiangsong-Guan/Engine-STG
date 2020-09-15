@@ -2,7 +2,6 @@
 #define GAME_DATA_STRUCT_H
 
 #include "game_event.h"
-#include "anime.h"
 
 #include <lua.hpp>
 #include <box2d/box2d.h>
@@ -18,22 +17,25 @@
  *                                                                                               *
  *************************************************************************************************/
 
-enum class ShapeType
+enum ShapeType
 {
-    CIRCLE,
-    BOX
+    ST_CIRCLE,
+    ST_BOX
 };
 
-const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX"};
+const char *const SHAPE_TYPE[] = {"CIRCLE", "BOX", NULL};
 
-enum class SpriteType
+enum SpriteType
 {
-    STATIC,
-    ANIMED,
-    NONE
+    SPT_STATIC,
+    SPT_ANIMED,
+
+    SPT_NUM,
+
+    SPT_NONE
 };
 
-enum class CollisionType
+enum CollisionType
 {
     /* Groups */
     G_PLAYER_SIDE = -1,
@@ -69,6 +71,19 @@ struct PhysicalFixture
 
 /*************************************************************************************************
  *                                                                                               *
+ *                                   Sprite Render Setting                                       *
+ *                                                                                               *
+ *************************************************************************************************/
+
+struct SpriteItem
+{
+    ALLEGRO_BITMAP *Sprite;
+    float CX;
+    float CY;
+};
+
+/*************************************************************************************************
+ *                                                                                               *
  *                                  STG Used Texture Group                                       *
  *                                                                                               *
  *************************************************************************************************/
@@ -77,7 +92,7 @@ struct STGTexture
 {
     std::string SpriteBorn;
     SpriteType SpriteBornType;
-    std::string SpriteMovement[static_cast<int>(Movement::NUM)];
+    std::string SpriteMovement[Movement::MM_NUM];
     SpriteType SpriteMovementType;
     std::string SpriteShooting;
     SpriteType SpriteShootingType;
@@ -92,7 +107,7 @@ struct STGTexture
     std::string SpriteDisable;
     SpriteType SpriteDisableType;
 
-    ALLEGRO_BITMAP *VeryFirstTex;
+    SpriteItem VeryFirstTex;
 };
 
 /*************************************************************************************************
@@ -105,9 +120,10 @@ struct KinematicPhase
 {
     float VV;
     float VR;
-    int PhaseTime;   /* frame */
-    float TransTime; /* sec. */
-    int TransEnd;    /* PhaseTime + TransTime * UPDATE_PRE_SEC */
+    int PhaseTime; /* frame */
+    float VAcceleration;
+    float RAcceleration;
+    int TransEnd; /* PhaseTime + TransTime * UPDATE_PRE_SEC */
 };
 
 constexpr int MAX_KINEMATIC_PHASE_NUM = 16;
@@ -131,15 +147,15 @@ struct KinematicSeq
 
 constexpr int MAX_LUNCHERS_NUM = 8;
 
-enum class SSPatternsCode
+enum SSPatternsCode
 {
-    CONTROLLED,
-    STAY,
-    TOTAL_TURN,
-    SPLIT_TURN,
-    TRACK,
+    SSPC_CONTROLLED,
+    SSPC_STAY,
+    SSPC_TOTAL_TURN,
+    SSPC_SPLIT_TURN,
+    SSPC_TRACK,
 
-    NUM
+    SSPC_NUM
 };
 
 const char *const SS_PATTERNS_CODE[] =
@@ -147,7 +163,8 @@ const char *const SS_PATTERNS_CODE[] =
      "STAY",
      "TOTAL_TURN",
      "SPLIT_TURN",
-     "TRACK"};
+     "TRACK",
+     NULL};
 
 union SSPatternData
 {
@@ -202,16 +219,16 @@ struct STGCharactorSetting
     STGTexture Texs;
 };
 
-enum class SCPatternsCode
+enum SCPatternsCode
 {
-    CONTROLLED,
-    STAY,
-    MOVE_TO,
-    MOVE_LAST,
-    MOVE_PASSBY,
-    GO_ROUND,
+    SCPC_CONTROLLED,
+    SCPC_STAY,
+    SCPC_MOVE_TO,
+    SCPC_MOVE_LAST,
+    SCPC_MOVE_PASSBY,
+    SCPC_GO_ROUND,
 
-    NUM
+    SCPC_NUM
 };
 
 const char *const SC_PATTERNS_CODE[] =
@@ -220,14 +237,15 @@ const char *const SC_PATTERNS_CODE[] =
      "MOVE_TO",
      "MOVE_LAST",
      "MOVE_PASSBY",
-     "GO_ROUND"};
+     "GO_ROUND",
+     NULL};
 
 union SCPatternData
 {
     /// Default constructor does nothing (for performance).
     SCPatternData() {}
 
-    lua_State *AI;
+    lua_State *ai;
 
     b2Vec2 vec;
 
@@ -289,15 +307,15 @@ struct TextItem
  *                                                                                               *
  *************************************************************************************************/
 
-enum class STGStateChangeCode
+enum STGStateChangeCode
 {
-    JUST_HURT,
-    GO_DIE,
+    SSCC_JUST_HURT,
+    SSCC_GO_DIE,
 
-    NUM
+    SSCC_NUM
 };
 
-const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE"};
+const char *const STG_STATE_CHANGE_CODE[] = {"JUST_HURT", "GO_DIE", NULL};
 
 /* SHOULD ALWAYS BE CONTAINED AT FIRST */
 #define STGCHANGE_HEADER     \

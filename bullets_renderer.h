@@ -2,6 +2,7 @@
 #define STG_MUTI_RENDERER
 
 #include "cppsuckdef.h"
+#include "data_struct.h"
 
 #include <box2d/box2d.h>
 #include <allegro5/allegro5.h>
@@ -10,10 +11,6 @@ class BulletsRenderer
 {
 private:
     float forward_time;
-
-    float xscale;
-    float yscale;
-    float physcale;
 
 public:
     /* Constructor/Destructor */
@@ -26,13 +23,6 @@ public:
 
     ALLEGRO_COLOR Color;
 
-    inline void SetScale(float x, float y, float phy) noexcept
-    {
-        yscale = y;
-        xscale = x;
-        physcale = phy;
-    }
-
     inline void Reset(float ft)
     {
         Color = al_map_rgb_f(1.f, 1.f, 1.f);
@@ -40,7 +30,7 @@ public:
         al_hold_bitmap_drawing(true);
     }
 
-    inline void Draw(const b2Body *b, ALLEGRO_BITMAP *s_sprite)
+    inline void Draw(const b2Body *b, const SpriteItem *s_sprite)
     {
         b2Vec2 position = b->GetPosition();
         b2Vec2 velocity = b->GetLinearVelocity();
@@ -48,13 +38,10 @@ public:
 
         /* update render status then */
         position += forward_time * SEC_PER_UPDATE * velocity;
-        position *= physcale;
+        position *= PIXIL_PRE_M;
 
         /* begin to draw */
-        al_draw_tinted_scaled_rotated_bitmap(s_sprite, Color,
-                                             static_cast<float>(al_get_bitmap_width(s_sprite)) / 2.f,
-                                             static_cast<float>(al_get_bitmap_height(s_sprite)) / 2.f,
-                                             position.x, position.y, xscale, yscale, rotate, 0);
+        al_draw_tinted_rotated_bitmap(s_sprite->Sprite, Color, s_sprite->CX, s_sprite->CY, position.x, position.y, rotate, 0);
     }
 
     inline void Flush()

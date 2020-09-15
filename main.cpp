@@ -4,8 +4,6 @@
 
 #include <allegro5/allegro5.h>
 
-#include <iostream>
-
 /* al static init before game setup */
 StaticInit s_init;
 
@@ -39,7 +37,7 @@ int main(int argc, char **argv)
 
     STG.Init(al_get_display_width(disp), al_get_display_height(disp), SEC_PER_UPDATE);
 
-    prev_time_sec = static_cast<float>(al_get_time());
+    prev_time_sec = al_get_time();
     while (STG.State != GameState::SHOULD_CLOSE)
     {
         /* poll input & window event */
@@ -59,7 +57,7 @@ int main(int argc, char **argv)
         STG.ProcessInput();
 
         /* time check & logic update */
-        cur_time_sec = static_cast<float>(al_get_time());
+        cur_time_sec = al_get_time();
         lag += cur_time_sec - prev_time_sec;
         prev_time_sec = cur_time_sec;
         while (lag >= SEC_PER_UPDATE)

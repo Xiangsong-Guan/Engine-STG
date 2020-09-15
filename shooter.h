@@ -34,23 +34,24 @@ public:
     ~Shooter() = default;
 
     void Load(const float b[4], const STGShooterSetting &setting, std::queue<Bullet *> &bss);
-    Shooter *Undershift(const b2Body *body, ALLEGRO_EVENT_SOURCE *rm) noexcept;
+    Shooter *Undershift(const b2Body *body) noexcept;
     void MyDearPlayer() noexcept;
     Shooter *Update();
 
-    void Fire() noexcept;
-    void Cease() noexcept;
-    bool ShiftOut() noexcept;
-    float ShiftIn(bool firing) noexcept;
-    void Sync();
-    void FSync();
+    bool IsFiring() const noexcept;
+    void SetFire(bool f) noexcept;
+    Shooter *ShiftOut(bool need_ret = true) noexcept;
+    float ShiftIn() noexcept;
+    void LinkChain(int n) noexcept;
+    int Breakchain() noexcept;
 
-    void Heal(int curing);
-    bool Hurt(int damage);
-    void Destroy();
+    bool IsConnected() const noexcept;
+    void Heal(int curing) noexcept;
+    bool Hurt(int damage) noexcept;
 
     Shooter *Prev, *Next;
-    Shooter *Shift;
+    Shooter *ShiftDown, *ShiftUp;
+    Shooter *Chain;
 
     STGFlowController *Con;
 
@@ -60,7 +61,7 @@ public:
     {
         const b2Color yellow = b2Color(1.f, 1.f, 0.f);
         const b2Vec2 front = b2Vec2(0.f, -1.f);
-        if (code == SSPatternsCode::TRACK)
+        if (code == SSPatternsCode::SSPC_TRACK)
             DebugDraw->DrawSegment(physical->GetPosition() + my_xf.p,
                                    physical->GetPosition() + 30.f * b2Mul(my_xf, front), yellow);
         for (int s = 0; s < luncher_n; s++)
@@ -81,7 +82,6 @@ private:
 
     const b2Body *physical;
     const b2Body *target;
-    ALLEGRO_EVENT_SOURCE *render_master;
 
     /* Update per movement (only used to update lunchers' attitude)
      * local rot in charactor's local coodinate, not in world. */
@@ -106,7 +106,7 @@ private:
     lua_State *AI;
     SSPatternsCode sub_ptn;
 
-    static std::function<void(Shooter *)> patterns[static_cast<int>(SSPatternsCode::NUM)];
+    static std::function<void(Shooter *)> patterns[SSPatternsCode::SSPC_NUM];
     void controlled();
     void stay();
     void total_turn();

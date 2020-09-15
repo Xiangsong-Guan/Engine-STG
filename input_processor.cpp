@@ -8,11 +8,11 @@
  *                                                                                               *
  *************************************************************************************************/
 
-bool InputProcessor::state[static_cast<int>(InputAction::NUM)] = {false};
+bool InputProcessor::state[InputAction::IA_NUM] = {false};
 
 InputProcessor::InputProcessor()
 {
-    for (int i = 0; i < static_cast<int>(InputAction::NUM); i++)
+    for (int i = 0; i < InputAction::IA_NUM; i++)
     {
         filter[i] = true;
         commands[i] = 0;
@@ -30,7 +30,7 @@ void InputProcessor::SetCommand(InputAction define, int key) noexcept
 {
     /* Keys[0] is a unregistered key, means disabled */
     if (key > -1 && key < ALLEGRO_KEY_MAX)
-        commands[static_cast<int>(define)] = key;
+        commands[define] = key;
 }
 
 /*************************************************************************************************
@@ -43,7 +43,7 @@ void InputProcessor::SetCommand(InputAction define, int key) noexcept
 void InputProcessor::Update(const bool keys[])
 {
     /* is gamer make pause or resume? */
-    if (check_button_just_pressed(InputAction::PAUSE, keys))
+    if (check_button_just_pressed(InputAction::IA_PAUSE, keys))
         /* just pause and no need to check buttons */
         GameCon->Esc();
     else
@@ -51,23 +51,23 @@ void InputProcessor::Update(const bool keys[])
         check_buttons(keys);
 
     /* Save state for this turn */
-    for (int i = 0; i < static_cast<int>(InputAction::NUM); i++)
+    for (int i = 0; i < InputAction::IA_NUM; i++)
         state[i] = keys[commands[i]];
 }
 
 void InputProcessor::Flush() noexcept
 {
-    for (int i = 0; i < static_cast<int>(InputAction::NUM); i++)
+    for (int i = 0; i < InputAction::IA_NUM; i++)
         filter[i] = true;
 }
 
 inline bool InputProcessor::check_button_just_pressed(
     InputAction button, const bool keys[]) const noexcept
 {
-    if (keys[commands[static_cast<int>(button)]] && !state[static_cast<int>(button)])
+    if (keys[commands[button]] && !state[button])
     {
 #ifdef _DEBUG
-        std::cout << "Button pressed: " << static_cast<int>(button) << "\n";
+        std::cout << "Button pressed: " << al_keycode_to_name(commands[button]) << "\n";
 #endif
 
         return true;
@@ -79,10 +79,10 @@ inline bool InputProcessor::check_button_just_pressed(
 inline bool InputProcessor::check_button_just_released(
     InputAction button, const bool keys[]) const noexcept
 {
-    if (!keys[commands[static_cast<int>(button)]] && state[static_cast<int>(button)])
+    if (!keys[commands[button]] && state[button])
     {
 #ifdef _DEBUG
-        std::cout << "Button released: " << static_cast<int>(button) << "\n";
+        std::cout << "Button released: " << al_keycode_to_name(commands[button]) << "\n";
 #endif
 
         return true;
@@ -101,75 +101,73 @@ inline bool InputProcessor::check_button_just_released(
 void STGInput::check_buttons(const bool keys[])
 {
     ALLEGRO_EVENT event;
-    event.type = static_cast<ALLEGRO_EVENT_TYPE>(GameEventType::INPUT_COMMAND);
+    // event.type = static_cast<ALLEGRO_EVENT_TYPE>(GameEventType::INPUT_COMMAND);
 
     /* 4-direction move */
-    if (keys[commands[static_cast<int>(InputAction::MOVE_UP)]] &&
-        filter[static_cast<int>(InputAction::MOVE_UP)])
+    if (keys[commands[InputAction::IA_MOVE_UP]] &&
+        filter[InputAction::IA_MOVE_UP])
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::UP);
+        event.user.data1 = STGCharCommand::SCC_UP;
         al_emit_user_event(&InputMaster, &event, nullptr);
-        filter[static_cast<int>(InputAction::MOVE_UP)] = false;
+        filter[InputAction::IA_MOVE_UP] = false;
     }
-    if (keys[commands[static_cast<int>(InputAction::MOVE_DOWN)]] &&
-        filter[static_cast<int>(InputAction::MOVE_DOWN)])
+    if (keys[commands[InputAction::IA_MOVE_DOWN]] &&
+        filter[InputAction::IA_MOVE_DOWN])
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::DOWN);
+        event.user.data1 = STGCharCommand::SCC_DOWN;
         al_emit_user_event(&InputMaster, &event, nullptr);
-        filter[static_cast<int>(InputAction::MOVE_DOWN)] = false;
+        filter[InputAction::IA_MOVE_DOWN] = false;
     }
-    if (keys[commands[static_cast<int>(InputAction::MOVE_LEFT)]] &&
-        filter[static_cast<int>(InputAction::MOVE_LEFT)])
+    if (keys[commands[InputAction::IA_MOVE_LEFT]] &&
+        filter[InputAction::IA_MOVE_LEFT])
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::LEFT);
+        event.user.data1 = STGCharCommand::SCC_LEFT;
         al_emit_user_event(&InputMaster, &event, nullptr);
-        filter[static_cast<int>(InputAction::MOVE_LEFT)] = false;
+        filter[InputAction::IA_MOVE_LEFT] = false;
     }
-    if (keys[commands[static_cast<int>(InputAction::MOVE_RIGHT)]] &&
-        filter[static_cast<int>(InputAction::MOVE_RIGHT)])
+    if (keys[commands[InputAction::IA_MOVE_RIGHT]] &&
+        filter[InputAction::IA_MOVE_RIGHT])
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::RIGHT);
+        event.user.data1 = STGCharCommand::SCC_RIGHT;
         al_emit_user_event(&InputMaster, &event, nullptr);
-        filter[static_cast<int>(InputAction::MOVE_RIGHT)] = false;
+        filter[InputAction::IA_MOVE_RIGHT] = false;
     }
 
     /* action fire or cease */
-    if (check_button_just_pressed(InputAction::ACTION, keys))
+    if (check_button_just_pressed(InputAction::IA_ACTION, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::STG_FIRE);
+        event.user.data1 = STGCharCommand::SCC_STG_FIRE;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
-    else if (check_button_just_released(InputAction::ACTION, keys))
+    else if (check_button_just_released(InputAction::IA_ACTION, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::STG_CEASE);
+        event.user.data1 = STGCharCommand::SCC_STG_CEASE;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 
     /* shift */
-    if (check_button_just_pressed(InputAction::SHIFT, keys))
+    if (check_button_just_pressed(InputAction::IA_SHIFT, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::STG_CHANGE);
+        event.user.data1 = STGCharCommand::SCC_STG_CHANGE;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 
     /* skill */
-    if (check_button_just_pressed(InputAction::CANCEL, keys))
+    if (check_button_just_pressed(InputAction::IA_CANCEL, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(STGCharCommand::STG_SYNC);
+        event.user.data1 = STGCharCommand::SCC_STG_SYNC;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 
     /* bomb fire or cease */
-    if (check_button_just_pressed(InputAction::SPECIAL, keys))
+    if (check_button_just_pressed(InputAction::IA_SPECIAL, keys))
     {
-        event.user.data1 =
-            static_cast<intptr_t>(STGCharCommand::STG_FORCE_SYNC_REQUEST);
+        event.user.data1 = STGCharCommand::SCC_STG_FORCE_SYNC_REQUEST;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
-    else if (check_button_just_released(InputAction::SPECIAL, keys))
+    else if (check_button_just_released(InputAction::IA_SPECIAL, keys))
     {
-        event.user.data1 =
-            static_cast<intptr_t>(STGCharCommand::STG_FORCE_SYNC_RESPONE);
+        event.user.data1 = STGCharCommand::SCC_STG_FORCE_SYNC_RESPONE;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 }
@@ -178,32 +176,32 @@ void STGInput::check_buttons(const bool keys[])
 void MenuInput::check_buttons(const bool keys[])
 {
     ALLEGRO_EVENT event;
-    event.type = static_cast<ALLEGRO_EVENT_TYPE>(GameEventType::INPUT_COMMAND);
+    // event.type = static_cast<ALLEGRO_EVENT_TYPE>(GameEventType::INPUT_COMMAND);
 
-    if (check_button_just_pressed(InputAction::MOVE_UP, keys))
+    if (check_button_just_pressed(InputAction::IA_MOVE_UP, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(InputAction::MOVE_UP);
+        event.user.data1 = InputAction::IA_MOVE_UP;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
-    if (check_button_just_pressed(InputAction::MOVE_DOWN, keys))
+    if (check_button_just_pressed(InputAction::IA_MOVE_DOWN, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(InputAction::MOVE_DOWN);
+        event.user.data1 = InputAction::IA_MOVE_DOWN;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
-    if (check_button_just_pressed(InputAction::MOVE_LEFT, keys))
+    if (check_button_just_pressed(InputAction::IA_MOVE_LEFT, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(InputAction::MOVE_LEFT);
+        event.user.data1 = InputAction::IA_MOVE_LEFT;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
-    if (check_button_just_pressed(InputAction::MOVE_RIGHT, keys))
+    if (check_button_just_pressed(InputAction::IA_MOVE_RIGHT, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(InputAction::MOVE_RIGHT);
+        event.user.data1 = InputAction::IA_MOVE_RIGHT;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 
-    if (check_button_just_pressed(InputAction::ACTION, keys))
+    if (check_button_just_pressed(InputAction::IA_ACTION, keys))
     {
-        event.user.data1 = static_cast<intptr_t>(InputAction::ACTION);
+        event.user.data1 = InputAction::IA_ACTION;
         al_emit_user_event(&InputMaster, &event, nullptr);
     }
 }
