@@ -158,13 +158,13 @@ STGLevel::~STGLevel()
     al_destroy_timer(count_down);
 }
 
-void STGLevel::Load(float time_step, const STGLevelSetting &setting)
+void STGLevel::Load(const STGLevelSetting &setting)
 {
 #ifdef STG_PERFORMENCE_SHOW
-    tr_bullets_n.SetText({"Number of bullets: ", ResourceManager::GetFont("m+10r_10"),
-                          0.f, 0.f, ALLEGRO_ALIGN_LEFT});
-    tr_bn.SetText({"", ResourceManager::GetFont("m+10r_10"), tr_bullets_n.GetWidth(),
-                   0.f, ALLEGRO_ALIGN_LEFT});
+    tr_bullets_n.Text = {reinterpret_cast<const char *>(u8"×ÓŽÊýÁ¿£º"), ResourceManager::GetFont("hana_a_10"),
+                         10.f, 10.f, ALLEGRO_ALIGN_LEFT};
+    tr_bn.Text = {"", ResourceManager::GetFont("hana_a_10"), tr_bullets_n.GetRight(),
+                  10.f, ALLEGRO_ALIGN_LEFT};
 #endif
 
     timer = 0;
@@ -172,13 +172,18 @@ void STGLevel::Load(float time_step, const STGLevelSetting &setting)
     Name = setting.Name;
     CodeName = setting.CodeName;
 
-    this->time_step = time_step;
+    this->time_step = g_time_step;
     bound[0] = 0.f - STG_FIELD_BOUND_BUFFER;
     bound[1] = PHYSICAL_HEIGHT + STG_FIELD_BOUND_BUFFER;
     bound[2] = 0.f - STG_FIELD_BOUND_BUFFER;
     bound[3] = PHYSICAL_WIDTH + STG_FIELD_BOUND_BUFFER;
     world = new b2World(b2Vec2(0.f, 0.f));
     world->SetContactListener(&contact_listener);
+
+    al_identity_transform(&TS);
+    al_scale_transform(&TS, g_scale, g_scale);
+    al_translate_transform(&TS, g_offset_x, g_offset_y);
+    al_identity_transform(&TT);
 
 #ifdef STG_DEBUG_PHY_DRAW
     p_draw.Init(PIXIL_PRE_M);
@@ -604,6 +609,8 @@ void STGLevel::Update()
 
 void STGLevel::Render(float forward_time)
 {
+    al_use_transform(&TS);
+
 #ifndef STG_JUST_DRAW_PHY
     for (int i = 0; i < sprite_renderers_n; i++)
         sprite_renderers[i].Draw(forward_time);
@@ -622,6 +629,8 @@ void STGLevel::Render(float forward_time)
 #endif
 
 #ifdef STG_PERFORMENCE_SHOW
+    al_use_transform(&TT);
+
     tr_bullets_n.Draw();
     tr_bn.Draw();
 #endif

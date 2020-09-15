@@ -30,7 +30,6 @@ public:
     /* Game state */
     GameState State;
     bool Keys[ALLEGRO_KEY_MAX];
-    float TimeStep;
 
     /* Constructor/Destructor */
     Game();
@@ -58,8 +57,6 @@ public:
     void STGReturn(bool from_level) final;
 
 private:
-    ALLEGRO_TRANSFORM T;
-
     STGInput stg_input;
     MenuInput menu_input;
 
@@ -69,6 +66,8 @@ private:
     Menu stg_menu;
 
 #ifdef STG_PERFORMENCE_SHOW
+    ALLEGRO_TRANSFORM T;
+
     TextRenderer update_cost, uc_ms;
     TextRenderer render_cost, rc_ms;
     TextRenderer fps, fps_ms;

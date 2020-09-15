@@ -68,7 +68,7 @@ public:
     ~STGLevel();
 
     /* Self constructor */
-    void Load(float time_step, const STGLevelSetting &setting);
+    void Load(const STGLevelSetting &setting);
     void Unload();
 
     /* GameLoop */
@@ -119,6 +119,7 @@ private:
     /* STG Field Buffer Area */
     float bound[4];
     float time_step;
+    ALLEGRO_TRANSFORM TT, TS;
 
     /* Physical things. */
     STGContactListener contact_listener;

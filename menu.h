@@ -42,7 +42,7 @@ public:
     ~Menu();
 
     void Setup(const std::vector<TextItem> &items, const std::vector<std::string> &funcs,
-               int width, int height, const std::string &code_name);
+               const std::string &code_name);
     void Attach() noexcept;
     void Detach() noexcept;
 
@@ -51,6 +51,8 @@ public:
 
 private:
     static constexpr int MAX_MENU_ITEM = 32;
+
+    ALLEGRO_TRANSFORM T;
 
     MenuBtn items[MAX_MENU_ITEM];
     TextRenderer items_text[MAX_MENU_ITEM];

@@ -634,17 +634,17 @@ void ResourceManager::LoadSave()
 void ResourceManager::LoadFont()
 {
     std::vector<std::pair<std::string, std::string>> font_file = {
-        {"art/SourceHanSansCN-Regular.otf", "source"},
+        {"art/HanaMinA.ttf", "hana_a"},
         {"art/PixelMplus12-Regular.ttf", "m+12r"},
         {"art/PixelMplus10-Regular.ttf", "m+10r"},
         {"art/PixelMplus12-Bold.ttf", "m+12b"},
         {"art/PixelMplus10-Bold.ttf", "m+10b"}};
-    std::vector<int> size = {10, 12, 20, 24, 30, 36};
+    std::vector<int> size = {10, 12, 20, 24, 30, 36, 40, 48};
 
     for (auto e : font_file)
         for (auto ee : size)
         {
-            ALLEGRO_FONT *font = al_load_font(e.first.c_str(), ee, 0);
+            ALLEGRO_FONT* font = al_load_font(e.first.c_str(), std::lroundf(static_cast<float>(ee) * g_scale), 0);
             if (!font)
                 std::cerr << "Fail to load font: " << e.first << ee << "!\n";
             else

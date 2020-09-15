@@ -10,12 +10,9 @@
 
 class TextRenderer
 {
-private:
-    float x, y;
-    TextItem text;
-
 public:
     ALLEGRO_COLOR Color;
+    TextItem Text;
 
     TextRenderer();
     TextRenderer(const TextRenderer &) = delete;
@@ -25,14 +22,14 @@ public:
     ~TextRenderer() = default;
 
     void Draw() const;
-    void SetText(TextItem t) noexcept;
-    const std::string &GetContent() const noexcept;
 
     void ChangeText(float f, int w);
     void ChangeText(int i);
 
     float GetWidth() const;
     float GetRight() const;
+    float GetHeight() const;
+    float GetBottom() const;
 };
 
 #endif

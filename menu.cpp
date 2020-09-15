@@ -1,5 +1,7 @@
 #include "menu.h"
 
+#include "cppsuckdef.h"
+
 #include <iostream>
 
 static inline void nothing(Menu *m) noexcept {}
@@ -47,7 +49,7 @@ void Menu::down() noexcept
 void Menu::confirm()
 {
 #ifdef _DEBUG
-    std::cout << "Menu-" << CodeName << " confirmed: \"" << items_text[cursor].GetContent() << "\"\n";
+    std::cout << "Menu-" << CodeName << " confirmed: \"" << items_text[cursor].Text.Text << "\"\n";
 #endif
 
     /* Highlight the confirm */
@@ -134,7 +136,7 @@ Menu::~Menu()
 }
 
 void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string> &funcs,
-                 int width, int height, const std::string &code_name)
+                 const std::string &code_name)
 {
 #ifdef _DEBUG
     std::cout << "Menu-" << code_name << " setup.\n";
@@ -147,7 +149,7 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
 
     for (auto &&e : its)
     {
-        items_text[item_n].SetText(e);
+        items_text[item_n].Text = e;
 
         if (btn_n < funcs.size())
         {
@@ -159,6 +161,8 @@ void Menu::Setup(const std::vector<TextItem> &its, const std::vector<std::string
 
         item_n += 1;
     }
+
+    al_identity_transform(&T);
 }
 
 void Menu::Attach() noexcept
@@ -202,6 +206,8 @@ void Menu::Update()
 
 void Menu::Render(float forward_time)
 {
+    al_use_transform(&T);
+
     for (int i = 0; i < item_n; i++)
         items_text[i].Draw();
 }
