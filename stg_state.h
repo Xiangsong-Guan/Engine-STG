@@ -158,7 +158,8 @@ public:
             else
             {
 #ifdef _DEBUG
-                std::cout << "Charactor-" << sc->CodeName << " need to respwan (one frame): " << respwan_id << ".\n";
+                std::cout << "Charactor-" << sc->CodeName
+                          << " need to respwan (one frame): " << respwan_id << ".\n";
 #endif
 
                 sc->Con->HelpRespwan(respwan_id, sc->ID);
@@ -249,7 +250,8 @@ public:
             else
             {
 #ifdef _DEBUG
-                std::cout << "Charactor-" << sc->CodeName << " need to respwan: " << respwan_id << ".\n";
+                std::cout << "Charactor-" << sc->CodeName
+                          << " need to respwan: " << respwan_id << ".\n";
 #endif
 
                 sc->Con->HelpRespwan(respwan_id, sc->ID);

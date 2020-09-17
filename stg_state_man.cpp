@@ -84,7 +84,8 @@ SCS *STGStateMan::MakeChar(const STGTexture &texs)
 SCS *STGStateMan::CopyChar(const SCS *enter, const STGTexture &texs)
 {
 #ifdef _DEBUG
-    std::cout << "SCS-" << enter << "copied. Sprite name is" << texs.SpriteMovement[Movement::MM_IDLE] << ".\n";
+    std::cout << "SCS-" << enter << "copied. Sprite name is"
+              << texs.SpriteMovement[Movement::MM_IDLE] << ".\n";
 #endif
 
     SCSBornAnimed *b = nullptr;
@@ -109,7 +110,8 @@ SCS *STGStateMan::CopyChar(const SCS *enter, const STGTexture &texs)
 
     if (texs.SpriteDisableType == SpriteType::SPT_ANIMED)
     {
-        disable[disable_n].Copy(reinterpret_cast<SCSDisabledAnimed *>(movement_enter->NextDisable));
+        disable[disable_n].Copy(
+            reinterpret_cast<SCSDisabledAnimed *>(movement_enter->NextDisable));
         d = disable + disable_n;
         disable_n += 1;
 

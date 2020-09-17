@@ -65,8 +65,10 @@ public:
             DebugDraw->DrawSegment(physical->GetPosition() + my_xf.p,
                                    physical->GetPosition() + 30.f * b2Mul(my_xf, front), yellow);
         for (int s = 0; s < luncher_n; s++)
-            /* Charactor will never rot, use pos instead of GetWorldPoint will be more efficiency. */
-            DebugDraw->DrawSolidCircle(physical->GetPosition() + lunchers_clc_pos[s], .2f, b2Mul(my_xf, front), yellow);
+            /* Charactor will never rot, 
+             * use pos instead of GetWorldPoint will be more efficiency. */
+            DebugDraw->DrawSolidCircle(physical->GetPosition() + lunchers_clc_pos[s],
+                                       .2f, b2Mul(my_xf, front), yellow);
         return Next;
     }
 #endif

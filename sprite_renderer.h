@@ -42,7 +42,8 @@ private:
     float cx, cy;
 
     /* Command Things */
-    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM>
+    static std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
+                      GameRenderCommand::GRC_NUM>
         commands;
     void change_texture(const ALLEGRO_EVENT *e) noexcept;
 };

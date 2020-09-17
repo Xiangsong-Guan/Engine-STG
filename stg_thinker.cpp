@@ -136,10 +136,12 @@ static int fire(lua_State *L)
 
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_STG_FIRE;
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
-    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to fire.\n";
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to fire.\n";
 #endif
 
     return 0;
@@ -156,10 +158,12 @@ static int cease(lua_State *L)
 
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_STG_CEASE;
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
-    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to cease fire.\n";
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to cease fire.\n";
 #endif
 
     return 0;
@@ -178,7 +182,8 @@ static int chain(lua_State *L)
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_STG_CHAIN;
     event.user.data2 = lua_tointeger(L, 2);
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
     std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
@@ -199,10 +204,12 @@ static int unchain(lua_State *L)
 
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_STG_UNCHAIN;
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
-    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to unchain shooters.\n";
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to unchain shooters.\n";
 #endif
 
     return 0;
@@ -219,10 +226,12 @@ static int shift(lua_State *L)
 
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_STG_CHANGE;
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
-    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to shift.\n";
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to shift.\n";
 #endif
 
     return 0;
@@ -241,7 +250,8 @@ static int respwan(lua_State *L)
     ALLEGRO_EVENT event;
     event.user.data1 = STGCharCommand::SCC_RESPAWN;
     event.user.data2 = lua_tointeger(L, 2) - 1;
-    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster, &event, nullptr);
+    al_emit_user_event(reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->InputMaster,
+                       &event, nullptr);
 
 #ifdef _DEBUG
     std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
@@ -261,12 +271,15 @@ static int is_now(lua_State *L)
     luaL_checktype(L, 2, LUA_TSTRING);
 #endif
 
-    lua_pushboolean(L, reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->Communication.EventBits &
+    lua_pushboolean(L, reinterpret_cast<STGThinker *>(
+                           lua_touserdata(L, 1))
+                               ->Communication.EventBits &
                            STG_CHAR_EVENT_BIT[luaL_checkoption(L, 2, nullptr, STG_CHAR_EVENT)]);
 
 #ifdef _DEBUG
     std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
-              << " asked for event \"" << lua_tostring(L, 2) << "\". The answer is " << lua_toboolean(L, -1) << ".\n";
+              << " asked for event \"" << lua_tostring(L, 2)
+              << "\". The answer is " << lua_toboolean(L, -1) << ".\n";
 #endif
 
     return 1;
@@ -282,7 +295,8 @@ static int wait(lua_State *L)
 #endif
 
 #ifdef _DEBUG
-    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID << " want to wait. ";
+    std::cout << "Thinker-" << reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->ID
+              << " want to wait. ";
 #endif
 
     auto &c = reinterpret_cast<STGThinker *>(lua_touserdata(L, 1))->Communication;
@@ -383,7 +397,8 @@ bool STGThinker::controlled()
         if (patterns[sub_ptn](this))
         {
 #ifdef _DEBUG
-            std::cout << "Thinker-" << ID << " sub-pattern done: " << SC_PATTERNS_CODE[sub_ptn] << "\n";
+            std::cout << "Thinker-" << ID << " sub-pattern done: "
+                      << SC_PATTERNS_CODE[sub_ptn] << "\n";
 #endif
 
             sub_ptn = SCPatternsCode::SCPC_CONTROLLED;
@@ -441,7 +456,8 @@ bool STGThinker::move_to()
 {
     vec4u = data.vec - physics->GetPosition();
 
-    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() *
+                                    SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
         event.user.data1 = STGCharCommand::SCC_MOVE_XY;
@@ -468,7 +484,8 @@ bool STGThinker::move_passby()
 {
     vec4u = data.passby.Vec[where] - physics->GetPosition();
 
-    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() * SEC_PER_UPDATE_BY2_SQ)
+    if (vec4u.LengthSquared() > physics->GetLinearVelocity().LengthSquared() *
+                                    SEC_PER_UPDATE_BY2_SQ)
     {
         ALLEGRO_EVENT event;
         event.user.data1 = STGCharCommand::SCC_MOVE_XY;

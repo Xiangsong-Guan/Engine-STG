@@ -72,9 +72,10 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
     if (born.DURATION == 1)
         born.Forward();
 
-    /* Usully we count timer from -1, but here renderer takes frame asynchronously (FOR DEAD ONES). So conut from -1 will 
-     * make error. Count from 0 and check in end of a frame will cause one frame more in the final end. That
-     * is clearly visible. Minus one for total duration to avoid this happens. */
+    /* Usully we count timer from -1, but here renderer takes frame asynchronously (FOR DEAD ONES).
+     * So conut from -1 will make error. Count from 0 and check in end of a frame will cause one
+     * frame more in the final end. That is clearly visible. Minus one for total duration to avoid 
+     * this happens. */
     hit.LG_DURATION -= 1;
 
     world = w;
@@ -86,7 +87,9 @@ void Bullet::Load(const STGBulletSetting &bs, const b2Filter &f, b2World *w)
 
     phy.FD.filter = f;
     /* FD will loose shape, it just store its pointer. COPY WILL HAPPEN ONLY WHEN CREATION! */
-    phy.FD.shape = phy.Shape == ShapeType::ST_CIRCLE ? static_cast<b2Shape *>(&phy.C) : static_cast<b2Shape *>(&phy.P);
+    phy.FD.shape = phy.Shape == ShapeType::ST_CIRCLE
+                       ? static_cast<b2Shape *>(&phy.C)
+                       : static_cast<b2Shape *>(&phy.P);
 
     if (ks.Track)
         /* Different side never use same bullet! */
@@ -283,7 +286,9 @@ void Bullet::Farewell()
     for (int i = 0; i < fly_bullets_n; i++)
     {
         /* Note that dead bullets count from 0.*/
-        return_proxy(reinterpret_cast<BulletCollisionHandler *>(fly_bullets[i].SB.Physics->GetUserData()) - collision_proxy);
+        return_proxy(
+            reinterpret_cast<BulletCollisionHandler *>(fly_bullets[i].SB.Physics->GetUserData()) -
+            collision_proxy);
         fly_bullets[i].SB.Physics->SetUserData(nullptr);
 
         if (dead_bullets_n < MAX_DEAD_BULLETS)
@@ -299,7 +304,9 @@ void Bullet::Farewell()
     for (int i = 0; i < flt_bullets_n; i++)
     {
         /* Note that dead bullets count from 0.*/
-        return_proxy(reinterpret_cast<BulletCollisionHandler *>(flt_bullets[i].Physics->GetUserData()) - collision_proxy);
+        return_proxy(
+            reinterpret_cast<BulletCollisionHandler *>(flt_bullets[i].Physics->GetUserData()) -
+            collision_proxy);
         flt_bullets[i].Physics->SetUserData(nullptr);
 
         if (dead_bullets_n < MAX_DEAD_BULLETS)
@@ -353,7 +360,9 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
         if (flaw + 1 != flt_bullets_n)
         {
             flt_bullets[flaw] = flt_bullets[flt_bullets_n - 1];
-            reinterpret_cast<BulletCollisionHandler *>(flt_bullets[flaw].Physics->GetUserData())->PhysicsIndex = flaw;
+            reinterpret_cast<BulletCollisionHandler *>(
+                flt_bullets[flaw].Physics->GetUserData())
+                ->PhysicsIndex = flaw;
         }
         flt_bullets_n -= 1;
     }
@@ -368,7 +377,9 @@ void Bullet::Disappear(const BulletCollisionHandler *who)
         if (flaw + 1 != fly_bullets_n)
         {
             fly_bullets[flaw] = fly_bullets[fly_bullets_n - 1];
-            reinterpret_cast<BulletCollisionHandler *>(fly_bullets[flaw].SB.Physics->GetUserData())->PhysicsIndex = flaw;
+            reinterpret_cast<BulletCollisionHandler *>(
+                fly_bullets[flaw].SB.Physics->GetUserData())
+                ->PhysicsIndex = flaw;
         }
         fly_bullets_n -= 1;
     }
@@ -430,26 +441,34 @@ inline void Bullet::return_proxy(int id) noexcept
 
 inline void Bullet::outsider_flt(int s)
 {
-    return_proxy(reinterpret_cast<BulletCollisionHandler *>(flt_bullets[s].Physics->GetUserData()) - collision_proxy);
+    return_proxy(
+        reinterpret_cast<BulletCollisionHandler *>(flt_bullets[s].Physics->GetUserData()) -
+        collision_proxy);
     world->DestroyBody(flt_bullets[s].Physics);
 
     if (s + 1 != flt_bullets_n)
     {
         flt_bullets[s] = flt_bullets[flt_bullets_n - 1];
-        reinterpret_cast<BulletCollisionHandler *>(flt_bullets[s].Physics->GetUserData())->PhysicsIndex = s;
+        reinterpret_cast<BulletCollisionHandler *>(
+            flt_bullets[s].Physics->GetUserData())
+            ->PhysicsIndex = s;
     }
     flt_bullets_n -= 1;
 }
 
 inline void Bullet::outsider_fly(int s)
 {
-    return_proxy(reinterpret_cast<BulletCollisionHandler *>(fly_bullets[s].SB.Physics->GetUserData()) - collision_proxy);
+    return_proxy(
+        reinterpret_cast<BulletCollisionHandler *>(fly_bullets[s].SB.Physics->GetUserData()) -
+        collision_proxy);
     world->DestroyBody(fly_bullets[s].SB.Physics);
 
     if (s + 1 != fly_bullets_n)
     {
         fly_bullets[s] = fly_bullets[fly_bullets_n - 1];
-        reinterpret_cast<BulletCollisionHandler *>(fly_bullets[s].SB.Physics->GetUserData())->PhysicsIndex = s;
+        reinterpret_cast<BulletCollisionHandler *>(
+            fly_bullets[s].SB.Physics->GetUserData())
+            ->PhysicsIndex = s;
     }
     fly_bullets_n -= 1;
 }
@@ -698,7 +717,8 @@ void Bullet::kinematic()
             if ((fly_bullets[s].KTimer >= ks.Seq[fly_bullets[s].KSI].PhaseTime &&
                  fly_bullets[s].KTimer < ks.Seq[fly_bullets[s].KSI].TransEnd) ||
                 fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
-                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+                kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                 fly_bullets[s].SB.Front);
 
             while (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].TransEnd)
             {
@@ -707,14 +727,16 @@ void Bullet::kinematic()
                 if (fly_bullets[s].KSI < ks.SeqSize)
                 {
                     if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
-                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                         fly_bullets[s].SB.Front);
                 }
                 else if (ks.Loop)
                 {
                     fly_bullets[s].KSI = 0;
                     fly_bullets[s].KTimer = 0;
                     if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
-                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI], fly_bullets[s].SB.Front);
+                        kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
+                                         fly_bullets[s].SB.Front);
                 }
                 else
                     move_from_fly_to_flt_with_cp(s);
@@ -793,7 +815,8 @@ void Bullet::kinematic_d()
                 {
                     if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
                         kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
-                                         fly_bullets[s].SB.Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
+                                         fly_bullets[s].SB.Physics->GetWorldVector(
+                                             b2Vec2(0.f, -1.f)));
                 }
                 else if (ks.Loop)
                 {
@@ -801,7 +824,8 @@ void Bullet::kinematic_d()
                     fly_bullets[s].KTimer = 0;
                     if (fly_bullets[s].KTimer == ks.Seq[fly_bullets[s].KSI].PhaseTime)
                         kinematic_update(fly_bullets[s].SB.Physics, ks.Seq[fly_bullets[s].KSI],
-                                         fly_bullets[s].SB.Physics->GetWorldVector(b2Vec2(0.f, -1.f)));
+                                         fly_bullets[s].SB.Physics->GetWorldVector(
+                                             b2Vec2(0.f, -1.f)));
                 }
                 else
                     no_more = true;

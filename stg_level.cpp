@@ -3,6 +3,8 @@
 #include "resource_manger.h"
 #include "llauxlib.h"
 
+#include <allegro5/allegro_primitives.h>
+
 #include <unordered_map>
 #include <iostream>
 #include <queue>
@@ -161,10 +163,10 @@ STGLevel::~STGLevel()
 void STGLevel::Load(const STGLevelSetting &setting)
 {
 #ifdef STG_PERFORMENCE_SHOW
-    tr_bullets_n.Text = {reinterpret_cast<const char *>(u8"◊”èé ˝¡ø£∫"), ResourceManager::GetFont("hana_a_10"),
-                         10.f, 10.f, ALLEGRO_ALIGN_LEFT};
-    tr_bn.Text = {"", ResourceManager::GetFont("hana_a_10"), tr_bullets_n.GetRight(),
-                  10.f, ALLEGRO_ALIGN_LEFT};
+    tr_bullets_n.Text = {reinterpret_cast<const char *>(u8"Number of bullets: "),
+                         ResourceManager::GetFont("hana_a_10"), 10.f, 10.f, ALLEGRO_ALIGN_LEFT};
+    tr_bn.Text = {"", ResourceManager::GetFont("hana_a_10"),
+                  tr_bullets_n.GetRight(), 10.f, ALLEGRO_ALIGN_LEFT};
 #endif
 
     timer = 0;
@@ -179,11 +181,6 @@ void STGLevel::Load(const STGLevelSetting &setting)
     bound[3] = PHYSICAL_WIDTH + STG_FIELD_BOUND_BUFFER;
     world = new b2World(b2Vec2(0.f, 0.f));
     world->SetContactListener(&contact_listener);
-
-    al_identity_transform(&TS);
-    al_scale_transform(&TS, g_scale, g_scale);
-    al_translate_transform(&TS, g_offset_x, g_offset_y);
-    al_identity_transform(&TT);
 
 #ifdef STG_DEBUG_PHY_DRAW
     p_draw.Init(PIXIL_PRE_M);
@@ -233,7 +230,9 @@ void STGLevel::Load(const STGLevelSetting &setting)
     }
     for (const auto &sn : SPlayer.Shooters)
     {
-        many_shooters[shooters_n + player_shooters_n].Load(bound, ResourceManager::GetSTGShooter(sn), bss);
+        many_shooters[shooters_n + player_shooters_n].Load(bound,
+                                                           ResourceManager::GetSTGShooter(sn),
+                                                           bss);
         many_shooters[shooters_n + player_shooters_n].MyDearPlayer();
         many_shooters[shooters_n + player_shooters_n].ShiftDown =
             many_shooters + shooters_n + player_shooters_n + 1;
@@ -292,9 +291,13 @@ void STGLevel::Load(const STGLevelSetting &setting)
         }
         for (const auto &sn : setting.Charactors[i].Shooters)
         {
-            many_shooters[shooters_n + my_shooters_n].Load(bound, ResourceManager::GetSTGShooter(sn), bss);
-            many_shooters[shooters_n + my_shooters_n].ShiftDown = many_shooters + shooters_n + my_shooters_n + 1;
-            many_shooters[shooters_n + my_shooters_n].ShiftUp = many_shooters + shooters_n + my_shooters_n - 1;
+            many_shooters[shooters_n + my_shooters_n].Load(bound,
+                                                           ResourceManager::GetSTGShooter(sn),
+                                                           bss);
+            many_shooters[shooters_n + my_shooters_n].ShiftDown =
+                many_shooters + shooters_n + my_shooters_n + 1;
+            many_shooters[shooters_n + my_shooters_n].ShiftUp =
+                many_shooters + shooters_n + my_shooters_n - 1;
             my_shooters_n += 1;
         }
         if (my_shooters_n > 0)
@@ -313,7 +316,8 @@ void STGLevel::Load(const STGLevelSetting &setting)
     }
 
     /* Get stage thread in position. (coroutine, function already on the top) */
-    L_stage = ResourceManager::GetCoroutine(ResourceManager::STG_STAGE_FUNCTIONS_KEY, setting.CodeName);
+    L_stage = ResourceManager::GetCoroutine(ResourceManager::STG_STAGE_FUNCTIONS_KEY,
+                                            setting.CodeName);
     /* Initialize call. thinker lib, Level lib and level light userdata passed in. 
      * Player watching will be return. */
     int rn = 1;
@@ -339,9 +343,12 @@ void STGLevel::Load(const STGLevelSetting &setting)
     lua_pop(L_stage, rn);
 
     /* Connect player's comps. */
-    al_register_event_source(onstage_charactors[charactors_n].InputTerminal, onstage_thinkers[thinkers_n].InputMaster);
-    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
-    al_register_event_source(onstage_thinkers[thinkers_n].Recv, onstage_charactors[charactors_n].KneeJump);
+    al_register_event_source(onstage_charactors[charactors_n].InputTerminal,
+                             onstage_thinkers[thinkers_n].InputMaster);
+    al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
+                             onstage_charactors[charactors_n].RendererMaster);
+    al_register_event_source(onstage_thinkers[thinkers_n].Recv,
+                             onstage_charactors[charactors_n].KneeJump);
     /* Make body and tune fixture for player */
     bd.position.Set(PHYSICAL_WIDTH * .5f, PHYSICAL_HEIGHT * .75f);
     player = world->CreateBody(&bd);
@@ -351,9 +358,11 @@ void STGLevel::Load(const STGLevelSetting &setting)
     /* Player on stage. */
     SCPatternData pd;
     pd.ai = player_watching;
-    onstage_charactors[charactors_n].Enable(p_id, GPlayer.MyChar, player, GPlayer.MyShooters, GPlayer.MyEnter);
+    onstage_charactors[charactors_n].Enable(p_id, GPlayer.MyChar, player,
+                                            GPlayer.MyShooters, GPlayer.MyEnter);
     sprite_renderers[sprite_renderers_n].Show(p_id, player, GPlayer.MyChar.Texs.VeryFirstTex);
-    onstage_thinkers[thinkers_n].Active(p_id, SCPatternsCode::SCPC_CONTROLLED, std::move(pd), player);
+    onstage_thinkers[thinkers_n].Active(p_id, SCPatternsCode::SCPC_CONTROLLED, std::move(pd),
+                                        player);
     Shooter *sp = GPlayer.MyShooters;
     do
         sp = sp->Undershift(player);
@@ -368,11 +377,39 @@ void STGLevel::Load(const STGLevelSetting &setting)
     charactors_n += 1;
     thinkers_n += 1;
     sprite_renderers_n += 1;
+
+    /* set right draw */
+    ALLEGRO_TRANSFORM ts;
+    float inner_scale =
+        (static_cast<float>(SCREEN_HEIGHT) - FRAME_TKN * 2.f) / static_cast<float>(SCREEN_HEIGHT);
+    al_identity_transform(&T);
+    al_identity_transform(&TC);
+    al_translate_transform(&TC, g_offset + 1.f, 0.f);
+    al_translate_transform(&TC, FRAME_TKN * g_scale, FRAME_TKN * g_scale);
+    al_identity_transform(&ts);
+    al_scale_transform(&ts, inner_scale, inner_scale);
+    al_scale_transform(&ts, g_scale, g_scale);
+
+    al_set_new_bitmap_flags(ALLEGRO_NO_PRESERVE_TEXTURE | ALLEGRO_VIDEO_BITMAP);
+    cover = al_create_bitmap(std::lroundf(static_cast<float>(SCREEN_WIDTH) *
+                                          inner_scale * g_scale),
+                             std::lroundf(static_cast<float>(SCREEN_HEIGHT) *
+                                          inner_scale * g_scale));
+    if (cover == nullptr)
+    {
+        std::cerr << "Failed to initialize STG Level's cover bitmap!\n";
+        std::abort();
+    }
+
+    al_set_target_bitmap(cover);
+    al_use_transform(&ts);
+    g_set_orignal_bitmap();
 }
 
 /* ONLY call by outside. */
 void STGLevel::Unload()
 {
+    al_destroy_bitmap(cover);
     delete world;
 }
 
@@ -410,8 +447,8 @@ void STGLevel::Update()
     /* Thinking... Disable has not been submit to flow controller can be cancel here. */
     /* Disable can be invoked by AI thinker (I think I am dead...). Thinker will notify charactor,
      * charactor will notify render... All these comps will tell level to disable themselves.
-     * While simple pattern do not recieve feedback from charactor, that means they do no thinking or 
-     * do reaction. So they do not save disable. */
+     * While simple pattern do not recieve feedback from charactor, that means they do no thinking
+     * or do reaction. So they do not save disable. */
     for (int i = 0; i < thinkers_n; i++)
         onstage_thinkers[i].Think();
 
@@ -452,7 +489,8 @@ void STGLevel::Update()
             records[id][STGCompType::SCT_CHARACTOR] = -1;
 
 #ifdef _DEBUG
-            std::cout << "Charactor final disable: " << id << "-" << onstage_charactors[flaw].CodeName << ".\n";
+            std::cout << "Charactor final disable: "
+                      << id << "-" << onstage_charactors[flaw].CodeName << ".\n";
 #endif
 
             world->DestroyBody(onstage_charactors[flaw].Physics);
@@ -609,7 +647,12 @@ void STGLevel::Update()
 
 void STGLevel::Render(float forward_time)
 {
-    al_use_transform(&TS);
+    static const ALLEGRO_COLOR OLIVE_GREEN = al_map_rgb(128, 128, 0);
+    static const ALLEGRO_COLOR ORANGE = al_map_rgb(211, 211, 211);
+    static const ALLEGRO_COLOR BLACK = al_map_rgb(25, 25, 112);
+
+    al_set_target_bitmap(cover);
+    al_clear_to_color(BLACK);
 
 #ifndef STG_JUST_DRAW_PHY
     for (int i = 0; i < sprite_renderers_n; i++)
@@ -628,9 +671,19 @@ void STGLevel::Render(float forward_time)
         sp = sp->DrawDebugData();
 #endif
 
-#ifdef STG_PERFORMENCE_SHOW
-    al_use_transform(&TT);
+    g_set_orignal_bitmap();
 
+    al_use_transform(&T);
+    al_draw_filled_rectangle(g_offset, 0.f, g_oppo_offset, static_cast<float>(g_height), ORANGE);
+    al_draw_filled_rectangle(0.f, 0.f, g_offset, static_cast<float>(g_height), OLIVE_GREEN);
+    al_draw_filled_rectangle(g_oppo_offset, 0.f,
+                             static_cast<float>(g_width), static_cast<float>(g_height),
+                             OLIVE_GREEN);
+
+    al_use_transform(&TC);
+    al_draw_bitmap(cover, 0.f, 0.f, 0);
+
+#ifdef STG_PERFORMENCE_SHOW
     tr_bullets_n.Draw();
     tr_bn.Draw();
 #endif
@@ -643,8 +696,10 @@ const b2Body *STGLevel::TrackEnemy() const noexcept
     float closest_distance_sq = 2000.f * 2000.f; /* Most box2d can do efficiency. */
 
     for (int i = 1; i < charactors_n; i++)
-        /* When charactor is actully dying, she will still need body to represent her untill disable animation done.
-         * While body will be destroyed when dead. So use this to determine if charactor can be collision to make damage. */
+        /* When charactor is actully dying, 
+         * she will still need body to represent her untill disable animation done.
+         * While body will be destroyed when dead. 
+         * So use this to determine if charactor can be collision to make damage. */
         if (onstage_charactors[i].Physics->IsActive())
         {
             float dis_sq = (onstage_charactors[i].Physics->GetPosition() - pp).LengthSquared();
@@ -773,13 +828,16 @@ void STGLevel::Debut(int id, float x, float y)
     /* Renderer */
     if (standby[id].MyChar.Texs.VeryFirstTex.Sprite != nullptr)
     {
-        sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
-        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        sprite_renderers[sprite_renderers_n].Show(real_id, b,
+                                                  standby[id].MyChar.Texs.VeryFirstTex);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
+                                 onstage_charactors[charactors_n].RendererMaster);
         records[real_id][STGCompType::SCT_RENDER] = sprite_renderers_n;
         sprite_renderers_n += 1;
     }
 
-    onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b, standby[id].MyShooters, standby[id].MyEnter);
+    onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b,
+                                            standby[id].MyShooters, standby[id].MyEnter);
     records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
 
@@ -830,14 +888,16 @@ void STGLevel::Airborne(int id, float x, float y, SCPatternsCode ptn, SCPatternD
     if (standby[id].MyChar.Texs.VeryFirstTex.Sprite != nullptr)
     {
         sprite_renderers[sprite_renderers_n].Show(real_id, b, standby[id].MyChar.Texs.VeryFirstTex);
-        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv, onstage_charactors[charactors_n].RendererMaster);
+        al_register_event_source(sprite_renderers[sprite_renderers_n].Recv,
+                                 onstage_charactors[charactors_n].RendererMaster);
         records[real_id][STGCompType::SCT_RENDER] = sprite_renderers_n;
         sprite_renderers_n += 1;
     }
 
     /* Charactor, on stage things must contain characotrs (expect bullet). */
     onstage_charactors[charactors_n].Enable(real_id, standby[id].MyChar, b, my_shooters,
-                                            all_state.CopyChar(standby[id].MyEnter, standby[id].MyChar.Texs));
+                                            all_state.CopyChar(standby[id].MyEnter,
+                                                               standby[id].MyChar.Texs));
     records[real_id][STGCompType::SCT_CHARACTOR] = charactors_n;
     charactors_n += 1;
 
@@ -945,8 +1005,10 @@ Shooter *STGLevel::copy_shooters(const Shooter *first)
 #endif
 
         many_shooters[shooters_n + copied_shooters_n] = *sp;
-        many_shooters[shooters_n + copied_shooters_n].ShiftDown = many_shooters + shooters_n + copied_shooters_n + 1;
-        many_shooters[shooters_n + copied_shooters_n].ShiftUp = many_shooters + shooters_n + copied_shooters_n - 1;
+        many_shooters[shooters_n + copied_shooters_n].ShiftDown =
+            many_shooters + shooters_n + copied_shooters_n + 1;
+        many_shooters[shooters_n + copied_shooters_n].ShiftUp =
+            many_shooters + shooters_n + copied_shooters_n - 1;
         sp = sp->ShiftDown;
         copied_shooters_n += 1;
     } while (sp != first);
@@ -991,7 +1053,8 @@ void STGLevel::DisableBullet(Bullet *b)
 void STGLevel::HelpRespwan(int preload_id, int real_id)
 {
 #ifdef _DEBUG
-    std::cout << "STG-" << CodeName << " respwan charactor-" << real_id << " with pre-load ID: " << preload_id << ".\n";
+    std::cout << "STG-" << CodeName << " respwan charactor-" << real_id
+              << " with pre-load ID: " << preload_id << ".\n";
 #endif
 
     STGCharactor &rc = onstage_charactors[records[real_id][STGCompType::SCT_CHARACTOR]];

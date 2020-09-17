@@ -119,7 +119,8 @@ private:
     /* STG Field Buffer Area */
     float bound[4];
     float time_step;
-    ALLEGRO_TRANSFORM TT, TS;
+    ALLEGRO_TRANSFORM T, TC;
+    ALLEGRO_BITMAP *cover;
 
     /* Physical things. */
     STGContactListener contact_listener;

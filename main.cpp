@@ -10,11 +10,13 @@ StaticInit s_init;
 /* the game */
 Game STG;
 
+/* the display */
+ALLEGRO_DISPLAY *disp;
+
 int main(int argc, char **argv)
 {
     float prev_time_sec = 0.f, cur_time_sec = 0.f, lag = 0.f;
     ALLEGRO_EVENT_QUEUE *input_event_bus;
-    ALLEGRO_DISPLAY *disp;
     ALLEGRO_EVENT event;
 
     input_event_bus = al_create_event_queue();

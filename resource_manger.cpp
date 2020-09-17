@@ -60,7 +60,8 @@ void ResourceManager::LoadTexture(const std::string &name)
     if (image == nullptr)
         std::cerr << "Couldn't load image: " << name << std::endl;
     else
-        textures.emplace(name, SpriteItem{image, static_cast<float>(al_get_bitmap_width(image) / 2.f),
+        textures.emplace(name, SpriteItem{image,
+                                          static_cast<float>(al_get_bitmap_width(image) / 2.f),
                                           static_cast<float>(al_get_bitmap_height(image) / 2.f)});
 }
 
@@ -124,10 +125,16 @@ void ResourceManager::LoadSpriteSheet(const std::string &name)
 
                 textures.emplace(tag_name,
                                  SpriteItem{sub_image,
-                                            (static_cast<float>(source_size.at("w").get<int>()) / 2.f) -
-                                                static_cast<float>(sprite_source_size.at("x").get<int>()),
-                                            (static_cast<float>(source_size.at("h").get<int>()) / 2.f) -
-                                                static_cast<float>(sprite_source_size.at("y").get<int>())});
+                                            (static_cast<float>(
+                                                 source_size.at("w").get<int>()) /
+                                             2.f) -
+                                                static_cast<float>(
+                                                    sprite_source_size.at("x").get<int>()),
+                                            (static_cast<float>(
+                                                 source_size.at("h").get<int>()) /
+                                             2.f) -
+                                                static_cast<float>(
+                                                    sprite_source_size.at("y").get<int>())});
             }
             else
             {
@@ -559,7 +566,8 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
         break;
 
     case SSPatternsCode::SSPC_SPLIT_TURN:
-        if (lua_getfield(L_main, -1, "data") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
+        if (lua_getfield(L_main, -1, "data") != LUA_TTABLE ||
+            luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
             INVALID_SHOOTER(name, "invalid split turn speeds!", balance_top)
         for (int i = 0; i < luaL_len(L_main, -1); i++)
         {
@@ -573,7 +581,8 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
     }
 
     /* lunchers */
-    if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
+    if (lua_getfield(L_main, -1, "lunchers") != LUA_TTABLE ||
+        luaL_len(L_main, -1) > MAX_LUNCHERS_NUM)
         INVALID_SHOOTER(name, "invalid lunchers", balance_top);
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {
@@ -595,7 +604,8 @@ void ResourceManager::LoadSTGShooter(const std::string &name)
 
         if (lua_getfield(L_main, -1, "interval") != LUA_TNUMBER)
             INVALID_SHOOTER(name, "invalid lunchers' interval", balance_top);
-        ss.Lunchers[i].Interval = std::lroundf(lua_tonumber(L_main, -1) * static_cast<float>(UPDATE_PER_SEC));
+        ss.Lunchers[i].Interval =
+            std::lroundf(lua_tonumber(L_main, -1) * static_cast<float>(UPDATE_PER_SEC));
         lua_pop(L_main, 1);
 
         if (lua_getfield(L_main, -1, "ammo_slot") != LUA_TNUMBER || !lua_isinteger(L_main, -1))
@@ -644,7 +654,8 @@ void ResourceManager::LoadFont()
     for (auto e : font_file)
         for (auto ee : size)
         {
-            ALLEGRO_FONT* font = al_load_font(e.first.c_str(), std::lroundf(static_cast<float>(ee) * g_scale), 0);
+            ALLEGRO_FONT *font =
+                al_load_font(e.first.c_str(), std::lroundf(static_cast<float>(ee) * g_scale), 0);
             if (!font)
                 std::cerr << "Fail to load font: " << e.first << ee << "!\n";
             else
@@ -715,7 +726,8 @@ PhysicalFixture ResourceManager::load_phyfix(const std::string &name)
         case ShapeType::ST_BOX:
             if (lua_geti(L_main, -1, 1) != LUA_TNUMBER || lua_geti(L_main, -2, 2) != LUA_TNUMBER)
                 INVALID_PHYSICS(name, "invalid size!", balance_top);
-            pf.P.SetAsBox(lua_tonumber(L_main, -2) * M_PRE_PIXIL, lua_tonumber(L_main, -1) * M_PRE_PIXIL, b2Vec2(x, y), 0.f);
+            pf.P.SetAsBox(lua_tonumber(L_main, -2) * M_PRE_PIXIL,
+                          lua_tonumber(L_main, -1) * M_PRE_PIXIL, b2Vec2(x, y), 0.f);
             lua_pop(L_main, 3);
             break;
         }
@@ -901,7 +913,8 @@ KinematicSeq ResourceManager::load_kinematic_seq(const std::string &name)
     lua_pop(L_main, 1);
 
     /* Speed change. */
-    if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE || luaL_len(L_main, -1) > MAX_KINEMATIC_PHASE_NUM)
+    if (lua_getfield(L_main, -1, "seq") != LUA_TTABLE ||
+        luaL_len(L_main, -1) > MAX_KINEMATIC_PHASE_NUM)
         INVALID_KINEMATIC_PHASES(name, "invalid speed seq!", balance_top);
     for (int i = 0; i < luaL_len(L_main, -1); i++)
     {

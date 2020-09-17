@@ -8,7 +8,7 @@
 inline int luaNOERROR_checkoption(lua_State *L, int arg, const char *def, const char *const lst[])
 {
     /* From lauxlib.c */
-    const char *name = (def) ? luaL_optstring(L, arg, def) : luaL_checkstring(L, arg);
+    const char *name = (def) ? luaL_optstring(L, arg, def) : lua_tostring(L, arg);
     int i;
     for (i = 0; lst[i]; i++)
         if (strcmp(lst[i], name) == 0)
@@ -56,13 +56,9 @@ inline SCPatternsCode use_sc_pattern(lua_State *L, int pd_idx, SCPatternData &da
         data.round.P.y = luaL_checknumber(L, pd_idx + 2);
         data.round.Dir = luaL_checknumber(L, pd_idx + 3);
         break;
-
-    default:
-        /* STAY will be the default. Not thinking. */
-        return SCPatternsCode::SCPC_STAY;
     }
 #else
-    ptn = static_cast<SCPatternsCode>(luaL_checkoption(L, pd_idx, "STAY", SC_PATTERNS_CODE));
+    ptn = static_cast<SCPatternsCode>(luaNOERROR_checkoption(L, pd_idx, "STAY", SC_PATTERNS_CODE));
     switch (ptn)
     {
     case SCPatternsCode::SCPC_CONTROLLED:
@@ -94,10 +90,6 @@ inline SCPatternsCode use_sc_pattern(lua_State *L, int pd_idx, SCPatternData &da
         data.round.P.y = lua_tonumber(L, pd_idx + 2);
         data.round.Dir = lua_tonumber(L, pd_idx + 3);
         break;
-
-    default:
-        /* STAY will be the default. Not thinking. */
-        return SCPatternsCode::SCPC_STAY;
     }
 #endif
 

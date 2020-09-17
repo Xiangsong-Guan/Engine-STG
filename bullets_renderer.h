@@ -41,7 +41,9 @@ public:
         position *= PIXIL_PRE_M;
 
         /* begin to draw */
-        al_draw_tinted_rotated_bitmap(s_sprite->Sprite, Color, s_sprite->CX, s_sprite->CY, position.x, position.y, rotate, 0);
+        al_draw_tinted_rotated_bitmap(s_sprite->Sprite, Color,
+                                      s_sprite->CX, s_sprite->CY, position.x, position.y,
+                                      rotate, 0);
     }
 
     inline void Flush()

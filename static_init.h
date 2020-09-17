@@ -5,10 +5,7 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
-
-#ifdef STG_DEBUG_PHY_DRAW
 #include <allegro5/allegro_primitives.h>
-#endif
 
 #include <iostream>
 
@@ -29,10 +26,7 @@ public:
         MustInit(al_init_image_addon(), "image IO");
         MustInit(al_init_font_addon(), "font");
         MustInit(al_init_ttf_addon(), "TTF");
-
-#ifdef STG_DEBUG_PHY_DRAW
         MustInit(al_init_primitives_addon(), "primitives");
-#endif
     }
 };
 

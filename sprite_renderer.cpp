@@ -71,7 +71,8 @@ void SpriteRenderer::Draw(float forward_time)
         commands[event.user.data1](this, &event);
 
     /* begin to draw */
-    al_draw_tinted_rotated_bitmap(Sprite.Sprite, Color, Sprite.CX, Sprite.CY, position.x, position.y, rotate, 0);
+    al_draw_tinted_rotated_bitmap(Sprite.Sprite, Color, Sprite.CX, Sprite.CY,
+                                  position.x, position.y, rotate, 0);
 }
 
 /*************************************************************************************************
@@ -80,7 +81,9 @@ void SpriteRenderer::Draw(float forward_time)
  *                                                                                               *
  *************************************************************************************************/
 
-std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>, GameRenderCommand::GRC_NUM> SpriteRenderer::commands;
+std::array<std::function<void(SpriteRenderer *, const ALLEGRO_EVENT *)>,
+           GameRenderCommand::GRC_NUM>
+    SpriteRenderer::commands;
 
 void SpriteRenderer::InitRndrCmd()
 {

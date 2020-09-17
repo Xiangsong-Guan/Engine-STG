@@ -40,7 +40,8 @@ STGCharactor::~STGCharactor()
 void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 {
 #ifdef _DEBUG
-    std::cout << "Charactor-" << o.CodeName << "-" << o.ID << " is moving, while " << CodeName << "-" << ID << " is flawed.\n";
+    std::cout << "Charactor-" << o.CodeName << "-" << o.ID
+              << " is moving, while " << CodeName << "-" << ID << " is flawed.\n";
 #endif
 
     this->ID = o.ID;
@@ -57,7 +58,8 @@ void STGCharactor::CPPSuckSwap(STGCharactor &o) noexcept
 }
 
 /* Do something when char is loaded. */
-void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, Shooter *sht, SCS *enter)
+void STGCharactor::Enable(int id, const STGCharactorSetting &sc,
+                          b2Body *body, Shooter *sht, SCS *enter)
 {
 #ifdef _DEBUG
     std::cout << "Charactor-" << sc.CodeName << " enable. ID: " << id << ".\n";
@@ -80,7 +82,8 @@ void STGCharactor::Enable(int id, const STGCharactorSetting &sc, b2Body *body, S
         speed = sc.DefaultSpeed;
 }
 
-/* This is the final disable. Release the things need to be set free (such as shooter). Pass the point of no return. */
+/* This is the final disable. Release the things need to be set free (such as shooter). 
+ * Pass the point of no return. */
 void STGCharactor::Farewell() const noexcept
 {
 #ifdef _DEBUG
@@ -109,7 +112,8 @@ void STGCharactor::Update()
             commands[event.user.data1](this, &event);
 #ifdef _DEBUG
         else
-            std::cout << "Charactor-" << CodeName << " reject command: " << event.user.data1 << "\n";
+            std::cout << "Charactor-" << CodeName
+                      << " reject command: " << event.user.data1 << "\n";
 #endif
 
     Velocity.Normalize();
@@ -156,7 +160,8 @@ void STGCharactor::Hurt(const STGChange *c)
                 std::cout << "Charactor-" << CodeName << " lost some shooters!\n";
 #endif
 
-                /* Break the chain, disconnected shooter will also lost. Also shift out all followed shooters. */
+                /* Break the chain, disconnected shooter will also lost. 
+                 * Also shift out all followed shooters. */
                 int left_chains_l = shooter->Breakchain();
 
                 Shooter *str = shooter;
@@ -185,12 +190,6 @@ void STGCharactor::Hurt(const STGChange *c)
                     speed = str->ShiftIn();
 
                     assert(shooter == str);
-
-                    // /* Set new shooter's firing state. */
-                    // if (shooter->IsFiring() != str->IsFiring())
-                    //     /* The only situation is head shooter is disconnected and firing, while new one is coming. */
-                    //     str->SetFire(true);
-                    // shooter = str;
                 }
 
                 /* Relink the last chain member. */

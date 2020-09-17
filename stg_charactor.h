@@ -70,7 +70,9 @@ private:
     float speed;
     Shooter *shooter;
 
-    static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>, STGCharCommand::SCC_NUM> commands;
+    static std::array<std::function<void(STGCharactor *, const ALLEGRO_EVENT *)>,
+                      STGCharCommand::SCC_NUM>
+        commands;
 
     void up(const ALLEGRO_EVENT *e) noexcept;
     void down(const ALLEGRO_EVENT *e) noexcept;
